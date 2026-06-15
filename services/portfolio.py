@@ -7,14 +7,14 @@ def add_position(chat_id: int, pair: str, side: str, entry_price: float, amount:
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO positions (chat_id, pair, side, entry_price, amount) "
-        "VALUES (?, ?, ?, ?, ?) RETURNING id",
+        "INSERT INTO positions (chat_id, pair, side, entry_price, amount) VALUES (?, ?, ?, ?, ?)",
         (chat_id, pair.upper(), side.lower(), entry_price, amount),
     )
-    row = cursor.fetchone()
     conn.commit()
-    position_id = row["id"] if row else 0
-    return position_id
+    # Ambil ID terbaru milik user ini
+    cursor.execute("SELECT MAX(id) FROM positions WHERE chat_id = ?", (chat_id,))
+    row = cursor.fetchone()
+    return row[0] if row and row[0] else 0
 
 
 def get_positions(chat_id: int) -> list:

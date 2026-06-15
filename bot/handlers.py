@@ -251,67 +251,21 @@ async def removeposition_command(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def myportfolio_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler /myportfolio — tampilkan semua posisi + P&L"""
+    """Handler /myportfolio — tampilkan posisi tanpa P&L dulu"""
     chat_id = update.effective_chat.id
     positions = get_positions(chat_id)
 
     if not positions:
-        await update.message.reply_text(
-            "📭 Kamu belum punya posisi aktif.\n"
-            "Gunakan `/addposition` untuk mencatat posisi."
-        )
+        await update.message.reply_text("📭 Kamu belum punya posisi aktif.")
         return
 
-    await update.message.reply_text("📊 Menghitung P&L...")
-
     message = "📋 *Portfolio Kamu*\n\n"
-    total_pnl = 0.0
-
     for pos in positions:
-        pos_id = pos["id"]
-        pair = pos["pair"]
-        side = pos["side"]
-        entry = pos["entry_price"]
-        amount = pos["amount"]
-
-        try:
-            # Ambil harga terkini dari CoinGecko
-            from services.coingecko import get_price
-            from bot.handlers import SYMBOL_TO_COINGECKO_ID
-
-            coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
-            if not coin_id:
-                message += f"❌ *{pair}* (ID: {pos_id}) — simbol tidak dikenali\n\n"
-                continue
-
-            price_data = await get_price(coin_id)
-            current_price = price_data.get("current_price")
-
-            if current_price is None:
-                message += f"⚠️ *{pair}* (ID: {pos_id}) — gagal ambil harga\n\n"
-                continue
-
-            pnl_pct = calculate_pnl(entry, current_price, side)
-            emoji = "🟢" if pnl_pct >= 0 else "🔴"
-
-            message += (
-                f"#{pos_id} {emoji} *{pair}* {side.upper()}\n"
-                f"   Entry: ${entry:,.2f}\n"
-                f"   Now: ${current_price:,.2f}\n"
-                f"   P&L: {emoji} {pnl_pct:+.2f}%\n"
-                f"   Amount: {amount}\n\n"
-            )
-
-            total_pnl += pnl_pct
-
-        except Exception as e:
-            logger.error(f"Error /myportfolio untuk posisi {pos_id}: {e}")
-            message += f"⚠️ *{pair}* (ID: {pos_id}) — error ambil data\n\n"
-
-    # Ringkasan
-    total_emoji = "🟢" if total_pnl >= 0 else "🔴"
-    message += f"───\n{total_emoji} *Total P&L: {total_pnl:+.2f}%*"
-
+        message += (
+            f"#{pos['id']} *{pos['pair']}* {pos['side'].upper()}\n"
+            f"   Entry: ${pos['entry_price']:,.2f}\n"
+            f"   Amount: {pos['amount']}\n\n"
+        )
     await update.message.reply_text(message, parse_mode="Markdown")
 
 
