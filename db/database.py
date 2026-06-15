@@ -31,9 +31,12 @@ class TursoCursor:
     def execute(self, sql, params=None):
         if params:
             for param in params:
-                # Gunakan repr agar string tetap dalam tanda kutip, angka tetap polos
                 sql = sql.replace("?", repr(param), 1)
         result = self._conn._conn.execute_query(sql)
+        # Debug: catat hasil query
+        from loguru import logger
+        logger.info(f"QUERY: {sql}")
+        logger.info(f"RESULT: {result}")
         if isinstance(result, list):
             self._rows = result
         elif isinstance(result, dict) and "rows" in result:

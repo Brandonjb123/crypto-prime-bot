@@ -1,20 +1,26 @@
 # services/portfolio.py
 from db.database import get_connection
+from loguru import logger
 
 
 def add_position(chat_id: int, pair: str, side: str, entry_price: float, amount: float) -> int:
-    """Tambah posisi baru, return ID posisi."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO positions (chat_id, pair, side, entry_price, amount) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO positions (chat_id, pair, side, entry_price, amount) VALUES (?, ?, ?, ?, ?) RETURNING id",
         (chat_id, pair.upper(), side.lower(), entry_price, amount),
     )
     conn.commit()
-    # Ambil ID terbaru milik user ini
-    cursor.execute("SELECT MAX(id) FROM positions WHERE chat_id = ?", (chat_id,))
     row = cursor.fetchone()
-    return row[0] if row and row[0] else 0
+    # Debug
+    logger.info(f"ROW: {row}")
+    if row:
+        # Jika row adalah dict, gunakan key 'id', jika list, gunakan index
+        if isinstance(row, dict):
+            return row.get("id", 0)
+        elif isinstance(row, (list, tuple)):
+            return row[0] if len(row) > 0 else 0
+    return 0
 
 
 def get_positions(chat_id: int) -> list:
