@@ -2,6 +2,69 @@
 from datetime import datetime
 from db.database import get_connection
 from loguru import logger
+from services.coingecko import get_price
+from utils.symbols import SYMBOL_TO_COINGECKO_ID
+
+
+async def check_and_update_signal(signal: dict) -> dict:
+    """
+    Cek apakah sinyal sudah kena target atau stop loss berdasarkan harga terkini.
+    Return dict dengan status terbaru.
+    """
+    pair = signal["pair"]
+    side = signal["side"]
+    entry = signal["entry_price"]
+    target = signal["target_price"]
+    stop = signal["stop_loss"]
+
+    # Ambil harga terkini
+    coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
+    if not coin_id:
+        return signal  # tidak bisa cek, kembalikan apa adanya
+
+    try:
+        price_data = await get_price(coin_id)
+        current_price = price_data.get("current_price")
+        if current_price is None:
+            return signal
+    except Exception:
+        return signal
+
+    # Cek status
+    new_status = None
+    if side == "long":
+        if current_price >= target:
+            new_status = "hit_target"
+            result_pct = ((target - entry) / entry) * 100
+        elif current_price <= stop:
+            new_status = "hit_stoploss"
+            result_pct = ((stop - entry) / entry) * 100
+    elif side == "short":
+        if current_price <= target:
+            new_status = "hit_target"
+            result_pct = ((entry - target) / entry) * 100
+        elif current_price >= stop:
+            new_status = "hit_stoploss"
+            result_pct = ((entry - stop) / entry) * 100
+
+    if new_status:
+        # Update database
+        now = datetime.utcnow().isoformat()
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE signals SET status = ?, result_pct = ?, closed_at = ? WHERE id = ?",
+            (new_status, result_pct, now, signal["id"]),
+        )
+        conn.commit()
+        conn.close()
+
+        logger.info(f"Sinyal #{signal['id']} berubah status: {new_status} ({result_pct:+.2f}%)")
+        signal["status"] = new_status
+        signal["result_pct"] = result_pct
+        signal["closed_at"] = now
+
+    return signal
 
 
 def save_signal(chat_id: int, pair: str, side: str, entry_price: float,

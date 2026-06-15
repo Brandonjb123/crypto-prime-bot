@@ -1,6 +1,6 @@
 # bot/handlers.py
 import json
-from datetime import datetime
+
 from services.signals import save_signal
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -16,34 +16,7 @@ from db.models import register_user
 from utils.rate_limiter import check_and_increment, get_remaining
 from services.portfolio import add_position, get_positions, remove_position, calculate_pnl
 from services.signals import save_signal, get_open_signals
- 
-
-SYMBOL_TO_COINGECKO_ID = {
-    "BTC": "bitcoin",
-    "ETH": "ethereum",
-    "BNB": "binancecoin",
-    "XRP": "ripple",
-    "ADA": "cardano",
-    "SOL": "solana",
-    "DOGE": "dogecoin",
-    "DOT": "polkadot",
-    "MATIC": "matic-network",
-    "POL": "polygon-ecosystem-token",
-    "TRX": "tron",
-    "AVAX": "avalanche-2",
-    "LINK": "chainlink",
-    "UNI": "uniswap",
-    "ATOM": "cosmos",
-    "LTC": "litecoin",
-    "FIL": "filecoin",
-    "APT": "aptos",
-    "ARB": "arbitrum",
-    "OP": "optimism",
-    "NEAR": "near",
-    "INJ": "injective-protocol",
-    "SUI": "sui",
-    "PEPE": "pepe",
-}
+from utils.symbols import SYMBOL_TO_COINGECKO_ID
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
