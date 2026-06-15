@@ -444,13 +444,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 /myportfolio — Lihat semua posisi & P&L real-time
 /removeposition <ID> — Hapus posisi
 
-📋 *Lainnya*
-/usage — Cek sisa kuota harian
-/help — Tampilkan bantuan ini
-
 💾 *Backup & Restore*
 /backup — Export semua posisi ke teks
 /restore <JSON> — Import posisi dari backup
+
+📋 *Lainnya*
+/usage — Cek sisa kuota harian
+/help — Tampilkan bantuan ini 
+
 
 ⚠️ *Disclaimer:* Bot ini hanya alat bantu analisis, bukan saran keuangan. Selalu lakukan riset sendiri.
 """
