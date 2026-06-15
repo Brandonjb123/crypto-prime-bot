@@ -5,6 +5,54 @@ from loguru import logger
 from services.coingecko import get_price
 from utils.symbols import SYMBOL_TO_COINGECKO_ID
 
+def get_signal_stats(chat_id: int) -> dict:
+    """Hitung statistik performa sinyal user."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Ambil semua sinyal yang sudah closed
+    cursor.execute(
+        "SELECT id, pair, side, entry_price, target_price, stop_loss, status, result_pct, created_at, closed_at "
+        "FROM signals WHERE chat_id = ? AND status != 'open' ORDER BY closed_at DESC",
+        (chat_id,),
+    )
+    closed_rows = cursor.fetchall()
+
+    # Hitung sinyal yang masih open
+    cursor.execute(
+        "SELECT COUNT(*) as open_count FROM signals WHERE chat_id = ? AND status = 'open'",
+        (chat_id,),
+    )
+    open_row = cursor.fetchone()
+    conn.close()
+
+    total_closed = len(closed_rows) if closed_rows else 0
+    hit_target = [r for r in closed_rows if r["status"] == "hit_target"]
+    hit_stoploss = [r for r in closed_rows if r["status"] == "hit_stoploss"]
+
+    win_count = len(hit_target)
+    loss_count = len(hit_stoploss)
+    win_rate = (win_count / total_closed * 100) if total_closed > 0 else 0
+
+    avg_profit = 0.0
+    if hit_target:
+        avg_profit = sum(r["result_pct"] for r in hit_target) / len(hit_target)
+
+    avg_loss = 0.0
+    if hit_stoploss:
+        avg_loss = sum(r["result_pct"] for r in hit_stoploss) / len(hit_stoploss)
+
+    open_count = open_row["open_count"] if open_row else 0
+
+    return {
+        "total_closed": total_closed,
+        "win_count": win_count,
+        "loss_count": loss_count,
+        "win_rate": win_rate,
+        "avg_profit": avg_profit,
+        "avg_loss": avg_loss,
+        "open_count": open_count,
+    }
 
 async def check_and_update_signal(signal: dict) -> dict:
     """

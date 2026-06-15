@@ -17,7 +17,7 @@ from services.portfolio import add_position, get_positions, remove_position, cal
 from services.signals import save_signal, get_open_signals
 from utils.symbols import SYMBOL_TO_COINGECKO_ID
 from datetime import datetime
-from services.signals import save_signal, get_open_signals, check_and_update_signal
+from services.signals import save_signal, get_open_signals, check_and_update_signal, get_signal_stats
 
 
 
@@ -399,6 +399,53 @@ async def mysignals_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             "📭 Semua sinyal sudah closed. Gunakan `/analyze` untuk dapat sinyal baru."
         )
+
+
+async def paperstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler /paperstats — statistik performa sinyal"""
+    chat_id = update.effective_chat.id
+
+    # Refresh status sinyal open dulu
+    open_signals = get_open_signals(chat_id)
+    notifications = []
+    for sig in open_signals:
+        sig = await check_and_update_signal(sig)
+        if sig["status"] != "open":
+            emoji_result = "🎯" if sig["status"] == "hit_target" else "🛑"
+            notifications.append(
+                f"{emoji_result} *Sinyal #{sig['id']} {sig['pair']} {sig['side'].upper()}* "
+                f"baru saja closed: {sig.get('result_pct', 0):+.2f}%"
+            )
+
+    for notif in notifications:
+        await update.message.reply_text(notif, parse_mode="Markdown")
+
+    stats = get_signal_stats(chat_id)
+
+    if stats["total_closed"] == 0 and stats["open_count"] == 0:
+        await update.message.reply_text(
+            "📭 Belum ada sinyal tercatat.\n"
+            "Gunakan `/analyze` untuk dapat rekomendasi trading."
+        )
+        return
+
+    message = "📊 *Statistik Sinyal Paper Trading*\n\n"
+    message += f"🔖 Sinyal Open: {stats['open_count']}\n"
+    message += f"✅ Total Closed: {stats['total_closed']}\n\n"
+
+    if stats["total_closed"] > 0:
+        message += f"🎯 Hit Target: {stats['win_count']}\n"
+        message += f"🛑 Hit Stop Loss: {stats['loss_count']}\n"
+        message += f"📈 Win Rate: {stats['win_rate']:.1f}%\n\n"
+
+        avg_profit_emoji = "🟢" if stats["avg_profit"] >= 0 else "🔴"
+        avg_loss_emoji = "🔴" if stats["avg_loss"] < 0 else "🟢"
+
+        message += f"💰 Rata-rata Profit: {avg_profit_emoji} {stats['avg_profit']:+.2f}%\n"
+        message += f"💸 Rata-rata Loss: {avg_loss_emoji} {stats['avg_loss']:+.2f}%\n\n"
+
+    message += "Gunakan `/mysignals` untuk lihat sinyal aktif."
+    await update.message.reply_text(message, parse_mode="Markdown")
 
 
 async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
