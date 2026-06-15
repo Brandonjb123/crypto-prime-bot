@@ -572,7 +572,12 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 /news <PAIR> — Berita terkini & sentimen
   Contoh: `/news BTC`
 
-💼 *Portfolio*
+📡 *Paper Trading (Fase 3)*
+/analyze — Sekarang otomatis menyimpan sinyal
+/mysignals — Lihat sinyal yang masih aktif
+/paperstats — Statistik performa sinyal (win rate, avg profit)
+
+💼 *Portfolio Manual*
 /addposition <PAIR> <long/short> <ENTRY> <AMOUNT> — Catat posisi
   Contoh: `/addposition BTC long 65000 0.01`
 /myportfolio — Lihat semua posisi & P&L real-time
@@ -584,9 +589,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 📋 *Lainnya*
 /usage — Cek sisa kuota harian
-/help — Tampilkan bantuan ini 
-
+/help — Tampilkan bantuan ini
 
 ⚠️ *Disclaimer:* Bot ini hanya alat bantu analisis, bukan saran keuangan. Selalu lakukan riset sendiri.
 """
     await update.message.reply_text(help_text, parse_mode="Markdown")
+
