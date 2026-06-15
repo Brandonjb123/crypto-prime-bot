@@ -1,7 +1,6 @@
 # bot/handlers.py
 import json
 
-from services.signals import save_signal
 from telegram import Update
 from telegram.ext import ContextTypes
 from loguru import logger
@@ -18,6 +17,8 @@ from services.portfolio import add_position, get_positions, remove_position, cal
 from services.signals import save_signal, get_open_signals
 from utils.symbols import SYMBOL_TO_COINGECKO_ID
 from datetime import datetime
+from services.signals import save_signal, get_open_signals, check_and_update_signal
+
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -330,7 +331,7 @@ async def myportfolio_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 async def mysignals_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler /mysignals — tampilkan sinyal open user."""
+    """Handler /mysignals — tampilkan sinyal open + cek status otomatis"""
     chat_id = update.effective_chat.id
     signals = get_open_signals(chat_id)
 
@@ -341,11 +342,27 @@ async def mysignals_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
+    await update.message.reply_text("📡 Mengecek status sinyal...")
+
     now = datetime.utcnow()
     message = "📡 *Sinyal Aktif Kamu*\n\n"
+    notifications = []
+    still_open_count = 0
 
     for sig in signals:
-        sig_id = sig["id"]
+        # Cek & update status otomatis
+        sig = await check_and_update_signal(sig)
+
+        if sig["status"] != "open":
+            emoji_result = "🎯" if sig["status"] == "hit_target" else "🛑"
+            notifications.append(
+                f"{emoji_result} *Sinyal #{sig['id']} {sig['pair']} {sig['side'].upper()}* "
+                f"telah {sig['status'].replace('_', ' ').title()}! "
+                f"P&L: {sig.get('result_pct', 0):+.2f}%"
+            )
+            continue
+
+        still_open_count += 1
         pair = sig["pair"]
         side = sig["side"].upper()
         entry = sig["entry_price"]
@@ -353,29 +370,35 @@ async def mysignals_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         stop = sig["stop_loss"]
         created_str = sig["created_at"]
 
-        # Hitung umur sinyal
         created_at = datetime.fromisoformat(created_str)
         age = now - created_at
         hours, remainder = divmod(int(age.total_seconds()), 3600)
         minutes = remainder // 60
-        if hours > 0:
-            age_str = f"{hours}j {minutes}m"
-        else:
-            age_str = f"{minutes}m"
+        age_str = f"{hours}j {minutes}m" if hours > 0 else f"{minutes}m"
 
         emoji = "🟢" if side == "LONG" else "🔴"
 
         message += (
-            f"#{sig_id} {emoji} *{pair}* {side}\n"
+            f"#{sig['id']} {emoji} *{pair}* {side}\n"
             f"   Entry: ${entry:,.2f}\n"
             f"   Target: ${target:,.2f}\n"
             f"   Stop: ${stop:,.2f}\n"
             f"   Umur: {age_str}\n\n"
         )
 
-    message += "Gunakan `/paperstats` untuk lihat performa sinyal."
+    # Kirim notifikasi sinyal yang baru closed
+    if notifications:
+        for notif in notifications:
+            await update.message.reply_text(notif, parse_mode="Markdown")
 
-    await update.message.reply_text(message, parse_mode="Markdown")
+    # Kirim daftar sinyal open
+    if still_open_count > 0:
+        message += "Gunakan `/paperstats` untuk lihat performa sinyal."
+        await update.message.reply_text(message, parse_mode="Markdown")
+    else:
+        await update.message.reply_text(
+            "📭 Semua sinyal sudah closed. Gunakan `/analyze` untuk dapat sinyal baru."
+        )
 
 
 async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -32,6 +32,8 @@ async def check_and_update_signal(signal: dict) -> dict:
 
     # Cek status
     new_status = None
+    result_pct = 0.0
+
     if side == "long":
         if current_price >= target:
             new_status = "hit_target"
