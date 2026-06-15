@@ -189,6 +189,7 @@ async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def addposition_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info("DEBUG: /addposition dipanggil")
     """Handler /addposition <pair> <long/short> <entry_price> <amount>"""
     if not context.args or len(context.args) < 4:
         await update.message.reply_text(
