@@ -1,5 +1,6 @@
 # bot/handlers.py
 import json
+from datetime import datetime
 from services.signals import save_signal
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -14,6 +15,7 @@ from db.database import init_db
 from db.models import register_user
 from utils.rate_limiter import check_and_increment, get_remaining
 from services.portfolio import add_position, get_positions, remove_position, calculate_pnl
+from services.signals import save_signal, get_open_signals
  
 
 SYMBOL_TO_COINGECKO_ID = {
@@ -349,6 +351,55 @@ async def myportfolio_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Ringkasan total P&L
     total_emoji = "🟢" if total_pnl >= 0 else "🔴"
     message += f"───\n{total_emoji} *Total P&L: {total_pnl:+.2f}%*"
+
+    await update.message.reply_text(message, parse_mode="Markdown")
+
+
+async def mysignals_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler /mysignals — tampilkan sinyal open user."""
+    chat_id = update.effective_chat.id
+    signals = get_open_signals(chat_id)
+
+    if not signals:
+        await update.message.reply_text(
+            "📭 Kamu belum punya sinyal aktif.\n"
+            "Gunakan `/analyze` untuk dapat rekomendasi trading."
+        )
+        return
+
+    now = datetime.utcnow()
+    message = "📡 *Sinyal Aktif Kamu*\n\n"
+
+    for sig in signals:
+        sig_id = sig["id"]
+        pair = sig["pair"]
+        side = sig["side"].upper()
+        entry = sig["entry_price"]
+        target = sig["target_price"]
+        stop = sig["stop_loss"]
+        created_str = sig["created_at"]
+
+        # Hitung umur sinyal
+        created_at = datetime.fromisoformat(created_str)
+        age = now - created_at
+        hours, remainder = divmod(int(age.total_seconds()), 3600)
+        minutes = remainder // 60
+        if hours > 0:
+            age_str = f"{hours}j {minutes}m"
+        else:
+            age_str = f"{minutes}m"
+
+        emoji = "🟢" if side == "LONG" else "🔴"
+
+        message += (
+            f"#{sig_id} {emoji} *{pair}* {side}\n"
+            f"   Entry: ${entry:,.2f}\n"
+            f"   Target: ${target:,.2f}\n"
+            f"   Stop: ${stop:,.2f}\n"
+            f"   Umur: {age_str}\n\n"
+        )
+
+    message += "Gunakan `/paperstats` untuk lihat performa sinyal."
 
     await update.message.reply_text(message, parse_mode="Markdown")
 

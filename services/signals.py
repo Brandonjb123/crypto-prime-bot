@@ -25,3 +25,17 @@ def save_signal(chat_id: int, pair: str, side: str, entry_price: float,
         logger.info(f"Sinyal #{signal_id} disimpan: {pair} {side}")
         return signal_id
     return 0
+
+
+def get_open_signals(chat_id: int) -> list:
+    """Ambil semua sinyal open milik user."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, pair, side, entry_price, target_price, stop_loss, created_at "
+        "FROM signals WHERE chat_id = ? AND status = 'open' ORDER BY created_at DESC",
+        (chat_id,),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return rows if rows else []
