@@ -103,6 +103,8 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Silakan coba lagi besok atau gunakan `/usage` untuk cek sisa kuota."
         )
         return
+    
+    chat_id = update.effective_chat.id
 
     if not context.args or len(context.args) < 3:
         await update.message.reply_text(
