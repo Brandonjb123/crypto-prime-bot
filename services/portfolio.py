@@ -7,12 +7,13 @@ def add_position(chat_id: int, pair: str, side: str, entry_price: float, amount:
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO positions (chat_id, pair, side, entry_price, amount) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO positions (chat_id, pair, side, entry_price, amount) "
+        "VALUES (?, ?, ?, ?, ?) RETURNING id",
         (chat_id, pair.upper(), side.lower(), entry_price, amount),
     )
+    row = cursor.fetchone()
     conn.commit()
-    position_id = cursor.lastrowid
-    conn.close()
+    position_id = row["id"] if row else 0
     return position_id
 
 
@@ -21,34 +22,35 @@ def get_positions(chat_id: int) -> list:
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT id, pair, side, entry_price, amount, opened_at FROM positions WHERE chat_id = ? ORDER BY opened_at DESC",
+        "SELECT id, pair, side, entry_price, amount, opened_at FROM positions "
+        "WHERE chat_id = ? ORDER BY opened_at DESC",
         (chat_id,),
     )
     rows = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    return rows if rows else []
 
 
 def remove_position(chat_id: int, position_id: int) -> bool:
     """Hapus posisi berdasarkan ID. Return True jika berhasil."""
     conn = get_connection()
     cursor = conn.cursor()
+    # Cek dulu apakah posisi ada
     cursor.execute(
-        "DELETE FROM positions WHERE id = ? AND chat_id = ?",
+        "SELECT id FROM positions WHERE id = ? AND chat_id = ?",
         (position_id, chat_id),
     )
-    conn.commit()
-    deleted = cursor.rowcount > 0
-    conn.close()
-    return deleted
+    if cursor.fetchone():
+        cursor.execute(
+            "DELETE FROM positions WHERE id = ? AND chat_id = ?",
+            (position_id, chat_id),
+        )
+        conn.commit()
+        return True
+    return False
 
 
 def calculate_pnl(entry_price: float, current_price: float, side: str) -> float:
-    """
-    Hitung persentase profit/loss.
-    side: 'long' atau 'short'
-    Return: persentase P&L (positif = untung, negatif = rugi)
-    """
+    """Hitung persentase profit/loss."""
     if side == "long":
         return ((current_price - entry_price) / entry_price) * 100
     elif side == "short":

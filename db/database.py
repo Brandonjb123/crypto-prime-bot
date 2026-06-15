@@ -8,32 +8,12 @@ TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
 
 _connection = None
 
-class TursoCursor:
-    """Membungkus hasil query Turso agar mirip sqlite3.Cursor."""
-    def __init__(self, conn, rows=None, description=None):
-        self._conn = conn
-        self._rows = rows or []
-        self.description = description
-        self.rowcount = len(self._rows)
-        self._index = 0
-
-    def fetchone(self):
-        if self._index < len(self._rows):
-            row = self._rows[self._index]
-            self._index += 1
-            return row
-        return None
-
-    def fetchall(self):
-        return self._rows[self._index:]
-
-    def execute(self, sql, params=None):
+def execute(self, sql, params=None):
         if params:
-            # Ganti placeholder ? menjadi nilai konkrit (hindari SQL injection)
             for param in params:
                 sql = sql.replace("?", repr(param), 1)
         result = self._conn._conn.execute_query(sql)
-        # result biasanya list of dict
+        # result bisa berupa list of dicts atau list of values
         if isinstance(result, list):
             self._rows = result
         elif isinstance(result, dict) and "rows" in result:
@@ -44,9 +24,6 @@ class TursoCursor:
         self.rowcount = len(self._rows)
         self._index = 0
         return self
-
-    def close(self):
-        pass
 
 class TursoAdapter:
     """Adapter agar TursoConnection berperilaku seperti sqlite3.Connection."""
