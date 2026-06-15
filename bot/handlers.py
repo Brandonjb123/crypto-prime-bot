@@ -17,6 +17,7 @@ from utils.rate_limiter import check_and_increment, get_remaining
 from services.portfolio import add_position, get_positions, remove_position, calculate_pnl
 from services.signals import save_signal, get_open_signals
 from utils.symbols import SYMBOL_TO_COINGECKO_ID
+from datetime import datetime
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
