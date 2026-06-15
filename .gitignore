@@ -2,3 +2,5 @@
 *.log
 venv/
 __pycache__crypto_prime.db 
+crypto_prime.db
+*.db
