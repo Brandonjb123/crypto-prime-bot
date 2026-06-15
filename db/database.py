@@ -2,6 +2,7 @@
 import os
 import sqlite3
 from turso_python import TursoConnection
+from loguru import logger
 
 TURSO_URL = os.getenv("TURSO_DATABASE_URL")
 TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
@@ -26,26 +27,52 @@ class TursoCursor:
         return None
 
     def fetchall(self):
-        return self._rows[self._index:]
+        remaining = self._rows[self._index:]
+        self._index = len(self._rows)
+        return remaining
 
     def execute(self, sql, params=None):
+        # Ganti placeholder ? dengan nilai parameter
         if params:
             for param in params:
-                sql = sql.replace("?", repr(param), 1)
-        result = self._conn._conn.execute_query(sql)
-        # Debug: catat hasil query
-        from loguru import logger
-        logger.info(f"QUERY: {sql}")
-        logger.info(f"RESULT: {result}")
-        if isinstance(result, list):
-            self._rows = result
-        elif isinstance(result, dict) and "rows" in result:
-            self._rows = result["rows"]
-        else:
-            self._rows = []
-        self.description = None
-        self.rowcount = len(self._rows)
+                if isinstance(param, str):
+                    sql = sql.replace("?", f"'{param}'", 1)
+                else:
+                    sql = sql.replace("?", str(param), 1)
+
+        # Eksekusi query via Turso
+        raw_result = self._conn._conn.execute_query(sql)
+
+        # Parsing hasil dari struktur respons Turso
+        rows = []
+        if isinstance(raw_result, dict) and "results" in raw_result:
+            for item in raw_result["results"]:
+                if item.get("type") == "ok":
+                    response = item.get("response", {})
+                    result = response.get("result", {})
+                    # Ambil kolom untuk pemetaan nama
+                    cols = [col["name"] for col in result.get("cols", [])]
+                    # Ambil baris data
+                    raw_rows = result.get("rows", [])
+                    for row in raw_rows:
+                        # Konversi setiap sel dari {'type': ..., 'value': ...} menjadi nilai biasa
+                        converted_row = []
+                        for cell in row:
+                            converted_row.append(cell.get("value", cell))
+                        # Jika ada kolom, buat dictionary; jika tidak, simpan sebagai list
+                        if cols:
+                            row_dict = {}
+                            for i, col_name in enumerate(cols):
+                                row_dict[col_name] = converted_row[i] if i < len(converted_row) else None
+                            rows.append(row_dict)
+                        else:
+                            rows.append(converted_row)
+
+        self._rows = rows
+        self.rowcount = len(rows)
         self._index = 0
+        self.description = None
+        logger.info(f"QUERY: {sql} → ROWS PARSED: {self._rows}")
         return self
 
     def close(self):
@@ -62,7 +89,7 @@ class TursoAdapter:
         return TursoCursor(self)
 
     def commit(self):
-        pass  # Turso auto-commit
+        pass
 
     def close(self):
         pass
