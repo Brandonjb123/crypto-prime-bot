@@ -55,10 +55,17 @@ class TursoCursor:
                     # Ambil baris data
                     raw_rows = result.get("rows", [])
                     for row in raw_rows:
-                        # Konversi setiap sel dari {'type': ..., 'value': ...} menjadi nilai biasa
                         converted_row = []
                         for cell in row:
-                            converted_row.append(cell.get("value", cell))
+                            val = cell.get("value", cell)
+                            # Konversi tipe data sesuai type dari Turso
+                            if cell.get("type") == "integer":
+                                val = int(val)
+                            elif cell.get("type") == "real":
+                                val = float(val)
+                            # text dan lainnya biarkan apa adanya
+                            converted_row.append(val)
+
                         # Jika ada kolom, buat dictionary; jika tidak, simpan sebagai list
                         if cols:
                             row_dict = {}
