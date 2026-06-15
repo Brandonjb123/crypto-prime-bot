@@ -216,16 +216,16 @@ async def addposition_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     chat_id = update.effective_chat.id
     position_id = add_position(chat_id, pair, side, entry_price, amount)
 
-    await update.message.reply_text(
+    reply_msg = (
         f"✅ Posisi berhasil dicatat!\n\n"
-        f"ID: `{position_id}`\n"
-        f"Pair: {pair}\n"
-        f"Side: {side.upper()}\n"
-        f"Entry: ${entry_price:,.2f}\n"
-        f"Amount: {amount}\n\n"
-        f"Gunakan `/myportfolio` untuk lihat semua posisi.",
-        parse_mode="Markdown"
+        f"🔹 ID: {position_id}\n"
+        f"🔹 Pair: {pair}\n"
+        f"🔹 Side: {side.upper()}\n"
+        f"🔹 Entry: ${entry_price:,.2f}\n"
+        f"🔹 Amount: {amount}\n\n"
+        f"Gunakan /myportfolio untuk lihat semua posisi."
     )
+    await update.message.reply_text(reply_msg)  # tanpa parse_mode
 
 
 async def removeposition_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
