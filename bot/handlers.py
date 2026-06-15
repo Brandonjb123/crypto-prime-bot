@@ -1,4 +1,5 @@
 # bot/handlers.py
+import json
 from telegram import Update
 from telegram.ext import ContextTypes
 from loguru import logger
@@ -327,6 +328,102 @@ async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(message, parse_mode="Markdown")
 
 
+async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler /backup — export semua posisi ke JSON"""
+    chat_id = update.effective_chat.id
+    positions = get_positions(chat_id)
+    
+    if not positions:
+        await update.message.reply_text("📭 Tidak ada posisi untuk di-backup.")
+        return
+    
+    # Konversi ke format yang bisa di-restore
+    export_data = []
+    for p in positions:
+        export_data.append({
+            "pair": p["pair"],
+            "side": p["side"],
+            "entry_price": p["entry_price"],
+            "amount": p["amount"]
+        })
+    
+    json_str = json.dumps(export_data)
+    await update.message.reply_text(
+        f"📦 *Backup Posisi*\n\n"
+        f"Salin teks berikut untuk `/restore` nanti:\n\n"
+        f"`{json_str}`",
+        parse_mode="Markdown"
+    )
+
+async def restore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler /restore <json> — import posisi dari backup"""
+    if not context.args:
+        await update.message.reply_text("⚠️ Format: `/restore <JSON>`\nGunakan hasil dari `/backup`.")
+        return
+    
+    json_str = " ".join(context.args)
+    try:
+        data = json.loads(json_str)
+    except:
+        await update.message.reply_text("❌ Format JSON tidak valid.")
+        return
+    
+    chat_id = update.effective_chat.id
+    count = 0
+    for item in data:
+        add_position(chat_id, item["pair"], item["side"], item["entry_price"], item["amount"])
+        count += 1
+    
+    await update.message.reply_text(f"✅ {count} posisi berhasil di-restore.\nGunakan `/myportfolio` untuk lihat.")
+
+async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler /backup — export semua posisi ke JSON"""
+    chat_id = update.effective_chat.id
+    positions = get_positions(chat_id)
+    
+    if not positions:
+        await update.message.reply_text("📭 Tidak ada posisi untuk di-backup.")
+        return
+    
+    export_data = []
+    for p in positions:
+        export_data.append({
+            "pair": p["pair"],
+            "side": p["side"],
+            "entry_price": p["entry_price"],
+            "amount": p["amount"]
+        })
+    
+    json_str = json.dumps(export_data)
+    await update.message.reply_text(
+        f"📦 *Backup Posisi*\n\n"
+        f"Salin teks berikut untuk `/restore` nanti:\n\n"
+        f"`{json_str}`",
+        parse_mode="Markdown"
+    )
+
+async def restore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler /restore <json> — import posisi dari backup"""
+    if not context.args:
+        await update.message.reply_text("⚠️ Format: `/restore <JSON>`\nGunakan hasil dari `/backup`.")
+        return
+    
+    json_str = " ".join(context.args)
+    try:
+        data = json.loads(json_str)
+    except:
+        await update.message.reply_text("❌ Format JSON tidak valid.")
+        return
+    
+    chat_id = update.effective_chat.id
+    count = 0
+    for item in data:
+        add_position(chat_id, item["pair"], item["side"], item["entry_price"], item["amount"])
+        count += 1
+    
+    await update.message.reply_text(f"✅ {count} posisi berhasil di-restore.\nGunakan `/myportfolio` untuk lihat.")
+
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = """
 🤖 *Crypto Prime Bot — AI Trading Assistant*
@@ -350,6 +447,10 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 📋 *Lainnya*
 /usage — Cek sisa kuota harian
 /help — Tampilkan bantuan ini
+
+💾 *Backup & Restore*
+/backup — Export semua posisi ke teks
+/restore <JSON> — Import posisi dari backup
 
 ⚠️ *Disclaimer:* Bot ini hanya alat bantu analisis, bukan saran keuangan. Selalu lakukan riset sendiri.
 """

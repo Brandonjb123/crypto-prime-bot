@@ -14,7 +14,7 @@ from bot.handlers import (
     start_command, price_command, analyze_command,
     news_command, help_command, usage_command,
     addposition_command, removeposition_command,
-    myportfolio_command,
+    myportfolio_command, backup_command, restore_command,
 )
 
 # Setup loguru ke file dan console
@@ -36,6 +36,8 @@ def main():
     app.add_handler(CommandHandler("addposition", addposition_command))
     app.add_handler(CommandHandler("removeposition", removeposition_command))
     app.add_handler(CommandHandler("myportfolio", myportfolio_command))
+    app.add_handler(CommandHandler("backup", backup_command))
+    app.add_handler(CommandHandler("restore", restore_command))
     logger.info("Bot berjalan...")
     app.run_polling()
 
