@@ -1,5 +1,6 @@
 # bot/handlers.py
 import json
+from services.signals import save_signal
 from telegram import Update
 from telegram.ext import ContextTypes
 from loguru import logger
@@ -129,7 +130,45 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         price_data = await get_price(coin_id)
         prompt = build_analysis_prompt(pair, timeframe, market_condition, price_data)
         analysis = await ask_llm(SYSTEM_PROMPT, prompt)
-        await update.message.reply_text(analysis)
+
+        # Coba parse sebagai JSON
+        try:
+            data = json.loads(analysis)
+            # Validasi field wajib
+            required = ["side", "entry_price", "target_price", "stop_loss", "summary", "risk_notes"]
+            if all(k in data for k in required):
+                side = data["side"].lower()
+                entry = float(data["entry_price"])
+                target = float(data["target_price"])
+                stop = float(data["stop_loss"])
+                summary = data["summary"]
+                risk = data["risk_notes"]
+
+                # Simpan sinyal ke database
+                signal_id = save_signal(chat_id, pair, side, entry, target, stop)
+
+                # Format pesan untuk user
+                emoji_side = "🟢 LONG" if side == "long" else "🔴 SHORT"
+                message = (
+                    f"📊 *Analisis {pair} — {emoji_side}*\n\n"
+                    f"💰 Entry: `${entry:,.2f}`\n"
+                    f"🎯 Target: `${target:,.2f}`\n"
+                    f"🛑 Stop Loss: `${stop:,.2f}`\n\n"
+                    f"📝 *Ringkasan:*\n{summary}\n\n"
+                    f"⚠️ *Risk Notes:*\n{risk}\n\n"
+                    f"🔖 Sinyal #{signal_id} tersimpan.\n"
+                    f"Gunakan `/mysignals` untuk tracking.\n\n"
+                    f"_Disclaimer: Bukan saran keuangan._"
+                )
+                await update.message.reply_text(message, parse_mode="Markdown")
+                return
+            else:
+                raise ValueError("JSON tidak lengkap")
+        except (json.JSONDecodeError, ValueError, KeyError) as parse_error:
+            logger.warning(f"Gagal parse JSON dari LLM: {parse_error}")
+            # Fallback: tampilkan response mentah
+            await update.message.reply_text(analysis)
+
     except Exception as e:
         await update.message.reply_text("😔 Gagal melakukan analisis. Coba lagi nanti.")
         logger.error(f"Error /analyze: {e}")

@@ -1,16 +1,4 @@
-# prompts/templates.py
-
-
-def build_analysis_prompt(
-    pair: str,
-    timeframe: str,
-    market_condition: str,
-    current_price_data: dict,
-) -> str:
-    """
-    Susun prompt lengkap untuk analisis trading.
-    Gabungkan data real-time dengan input user.
-    """
+def build_analysis_prompt(pair: str, timeframe: str, market_condition: str, current_price_data: dict) -> str:
     name = current_price_data.get("name", pair)
     symbol = current_price_data.get("symbol", pair)
     price = current_price_data.get("current_price", "N/A")
@@ -31,14 +19,26 @@ def build_analysis_prompt(
 - 24h Volume: ${volume:,.2f}
 - Market Cap: ${market_cap:,.2f}
 
-Based on the above data and user context, please provide a structured analysis:
+Based on the above data and user context, provide a structured analysis.
 
-1. **Entry Zone** — Suggested buy zone or entry area
-2. **Exit / Take Profit** — Suggested target(s)
-3. **Stop Loss** — Suggested stop loss level
-4. **Risk Assessment** — Potential risks and risk/reward ratio
-5. **Key Notes** — Any additional observations or warnings
+**IMPORTANT: You MUST respond in valid JSON format only. No markdown, no extra text outside the JSON.**
 
-Remember: Never guarantee profits. Always emphasize risk management.
+The JSON must have exactly these fields:
+{{
+  "pair": "{symbol}",
+  "side": "long" or "short",
+  "entry_price": number,
+  "target_price": number,
+  "stop_loss": number,
+  "summary": "brief analysis in 1-2 sentences, in the same language as the user",
+  "risk_notes": "risk management notes, including disclaimer"
+}}
+
+Rules:
+- Never guarantee profits or give financial advice
+- Always mention risk management in risk_notes
+- entry_price, target_price, stop_loss must be realistic numbers based on current price
+- side must be either "long" or "short" based on your analysis
+- Respond in the same language as the user for summary and risk_notes (ID/EN)
 """
     return prompt
