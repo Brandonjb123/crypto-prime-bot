@@ -8,6 +8,11 @@ from services.llm import ask_llm
 from prompts.system import SYSTEM_PROMPT
 from prompts.templates import build_analysis_prompt
 from services.news import get_news
+from db.database import init_db
+from db.models import register_user
+from utils.rate_limiter import check_and_increment, get_remaining
+from services.portfolio import add_position, get_positions, remove_position, calculate_pnl
+ 
 
 SYMBOL_TO_COINGECKO_ID = {
     "BTC": "bitcoin",
@@ -38,12 +43,26 @@ SYMBOL_TO_COINGECKO_ID = {
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_first_name = update.effective_user.first_name
-    welcome_message = (
-        f"👋 Halo {user_first_name}!\n\n"
-        "Aku Crypto Prime Assistant, siap bantu analisis trading crypto kamu.\n\n"
-        "Ketik /help untuk lihat semua perintah yang tersedia."
-    )
+    user = update.effective_user
+    chat_id = update.effective_chat.id
+
+    init_db()
+    is_new = register_user(chat_id, user.username, user.first_name)
+
+    if is_new:
+        welcome_message = (
+            f"👋 Halo {user.first_name}!\n\n"
+            "Selamat datang di Crypto Prime Assistant! 🎉\n"
+            "Aku siap bantu analisis trading crypto kamu.\n\n"
+            "Ketik /help untuk lihat semua perintah yang tersedia."
+        )
+    else:
+        welcome_message = (
+            f"👋 Halo lagi {user.first_name}!\n\n"
+            "Senang bertemu kamu lagi. Ada yang bisa aku bantu hari ini?\n\n"
+            "Ketik /help untuk lihat semua perintah."
+        )
+
     await update.message.reply_text(welcome_message)
 
 
@@ -75,6 +94,14 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Rate limiting – cek sebelum validasi input
+    if not check_and_increment(update.effective_chat.id, "analyze"):
+        await update.message.reply_text(
+            "⚠️ Kuota harian `/analyze` kamu sudah habis.\n"
+            "Silakan coba lagi besok atau gunakan `/usage` untuk cek sisa kuota."
+        )
+        return
+
     if not context.args or len(context.args) < 3:
         await update.message.reply_text(
             "⚠️ Format: `/analyze <PAIR> <TIMEFRAME> <KONDISI_MARKET>`\n\n"
@@ -108,6 +135,14 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Rate limiting – cek sebelum validasi input
+    if not check_and_increment(update.effective_chat.id, "news"):
+        await update.message.reply_text(
+            "⚠️ Kuota harian `/news` kamu sudah habis.\n"
+            "Silakan coba lagi besok atau gunakan `/usage` untuk cek sisa kuota."
+        )
+        return
+
     if not context.args:
         await update.message.reply_text(
             "⚠️ Mohon masukkan pair.\nContoh: `/news BTC` atau `/news ETH`",
@@ -152,19 +187,168 @@ async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"Error /news: {e}")
 
 
+async def addposition_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler /addposition <pair> <long/short> <entry_price> <amount>"""
+    if not context.args or len(context.args) < 4:
+        await update.message.reply_text(
+            "⚠️ Format: `/addposition <PAIR> <long/short> <ENTRY_PRICE> <AMOUNT>`\n\n"
+            "Contoh:\n"
+            "`/addposition BTC long 65000 0.01`\n"
+            "`/addposition ETH short 3200 0.5`"
+        )
+        return
+
+    pair = context.args[0].upper()
+    side = context.args[1].lower()
+
+    if side not in ("long", "short"):
+        await update.message.reply_text("❌ Side harus `long` atau `short`.")
+        return
+
+    try:
+        entry_price = float(context.args[2])
+        amount = float(context.args[3])
+    except ValueError:
+        await update.message.reply_text("❌ Entry price dan amount harus angka.")
+        return
+
+    chat_id = update.effective_chat.id
+    position_id = add_position(chat_id, pair, side, entry_price, amount)
+
+    await update.message.reply_text(
+        f"✅ Posisi berhasil dicatat!\n\n"
+        f"ID: `{position_id}`\n"
+        f"Pair: {pair}\n"
+        f"Side: {side.upper()}\n"
+        f"Entry: ${entry_price:,.2f}\n"
+        f"Amount: {amount}\n\n"
+        f"Gunakan `/myportfolio` untuk lihat semua posisi.",
+        parse_mode="Markdown"
+    )
+
+
+async def removeposition_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler /removeposition <id>"""
+    if not context.args:
+        await update.message.reply_text("⚠️ Format: `/removeposition <ID>`")
+        return
+
+    try:
+        position_id = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("❌ ID harus angka.")
+        return
+
+    chat_id = update.effective_chat.id
+    deleted = remove_position(chat_id, position_id)
+
+    if deleted:
+        await update.message.reply_text(f"✅ Posisi #{position_id} dihapus.")
+    else:
+        await update.message.reply_text(f"❌ Posisi #{position_id} tidak ditemukan.")
+
+
+async def myportfolio_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler /myportfolio — tampilkan semua posisi + P&L"""
+    chat_id = update.effective_chat.id
+    positions = get_positions(chat_id)
+
+    if not positions:
+        await update.message.reply_text(
+            "📭 Kamu belum punya posisi aktif.\n"
+            "Gunakan `/addposition` untuk mencatat posisi."
+        )
+        return
+
+    await update.message.reply_text("📊 Menghitung P&L...")
+
+    message = "📋 *Portfolio Kamu*\n\n"
+    total_pnl = 0.0
+
+    for pos in positions:
+        pos_id = pos["id"]
+        pair = pos["pair"]
+        side = pos["side"]
+        entry = pos["entry_price"]
+        amount = pos["amount"]
+
+        try:
+            # Ambil harga terkini dari CoinGecko
+            from services.coingecko import get_price
+            from bot.handlers import SYMBOL_TO_COINGECKO_ID
+
+            coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
+            if not coin_id:
+                message += f"❌ *{pair}* (ID: {pos_id}) — simbol tidak dikenali\n\n"
+                continue
+
+            price_data = await get_price(coin_id)
+            current_price = price_data.get("current_price")
+
+            if current_price is None:
+                message += f"⚠️ *{pair}* (ID: {pos_id}) — gagal ambil harga\n\n"
+                continue
+
+            pnl_pct = calculate_pnl(entry, current_price, side)
+            emoji = "🟢" if pnl_pct >= 0 else "🔴"
+
+            message += (
+                f"#{pos_id} {emoji} *{pair}* {side.upper()}\n"
+                f"   Entry: ${entry:,.2f}\n"
+                f"   Now: ${current_price:,.2f}\n"
+                f"   P&L: {emoji} {pnl_pct:+.2f}%\n"
+                f"   Amount: {amount}\n\n"
+            )
+
+            total_pnl += pnl_pct
+
+        except Exception as e:
+            logger.error(f"Error /myportfolio untuk posisi {pos_id}: {e}")
+            message += f"⚠️ *{pair}* (ID: {pos_id}) — error ambil data\n\n"
+
+    # Ringkasan
+    total_emoji = "🟢" if total_pnl >= 0 else "🔴"
+    message += f"───\n{total_emoji} *Total P&L: {total_pnl:+.2f}%*"
+
+    await update.message.reply_text(message, parse_mode="Markdown")
+
+
+async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler untuk /usage — cek sisa kuota harian."""
+    chat_id = update.effective_chat.id
+    remaining = get_remaining(chat_id)
+
+    message = (
+        "📊 *Kuota Harian Kamu*\n\n"
+        f"🔍 /analyze : {remaining['analyze_remaining']}x tersisa\n"
+        f"📰 /news    : {remaining['news_remaining']}x tersisa\n\n"
+        "Kuota di-reset setiap hari pukul 00:00 UTC."
+    )
+    await update.message.reply_text(message, parse_mode="Markdown")
+
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = """
 🤖 *Crypto Prime Bot — AI Trading Assistant*
 
-Berikut perintah yang tersedia:
-
-/start — Sapaan dan perkenalan
+📊 *Market Data*
 /price <SYMBOL> — Cek harga real-time
   Contoh: `/price BTC`
+
+🔍 *Analisis AI*
 /analyze <PAIR> <TF> <KONDISI> — Analisis setup trade
   Contoh: `/analyze ETH 1D bearish, dekat support`
 /news <PAIR> — Berita terkini & sentimen
   Contoh: `/news BTC`
+
+💼 *Portfolio*
+/addposition <PAIR> <long/short> <ENTRY> <AMOUNT> — Catat posisi
+  Contoh: `/addposition BTC long 65000 0.01`
+/myportfolio — Lihat semua posisi & P&L real-time
+/removeposition <ID> — Hapus posisi
+
+📋 *Lainnya*
+/usage — Cek sisa kuota harian
 /help — Tampilkan bantuan ini
 
 ⚠️ *Disclaimer:* Bot ini hanya alat bantu analisis, bukan saran keuangan. Selalu lakukan riset sendiri.
