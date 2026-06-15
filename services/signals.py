@@ -97,7 +97,7 @@ def get_open_signals(chat_id: int) -> list:
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT id, pair, side, entry_price, target_price, stop_loss, created_at "
+        "SELECT id, pair, side, entry_price, target_price, stop_loss, status, created_at "
         "FROM signals WHERE chat_id = ? AND status = 'open' ORDER BY created_at DESC",
         (chat_id,),
     )
