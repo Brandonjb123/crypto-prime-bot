@@ -608,12 +608,98 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await help_command(update, context)
     elif data.startswith("refresh_price_"):
         symbol = data.replace("refresh_price_", "")
-        context.args = [symbol]
-        await price_command(update, context)
+        coin_id = SYMBOL_TO_COINGECKO_ID.get(symbol)
+        if coin_id:
+            try:
+                price_data = await get_price(coin_id)
+                message = format_price(price_data)
+                await query.edit_message_text(
+                    text=message,
+                    parse_mode="Markdown",
+                    reply_markup=price_keyboard(symbol)
+                )
+            except Exception as e:
+                await query.answer("❌ Gagal memperbarui harga.")
+                logger.error(f"Error refresh price: {e}")
+        else:
+            await query.answer("❌ Simbol tidak valid.")
+            
     elif data == "refresh_signals":
-        await mysignals_command(update, context)
+        signals = get_open_signals(query.message.chat_id)
+        if signals:
+            # Update status & harga terkini
+            updated = []
+            for sig in signals:
+                sig = await check_and_update_signal(sig)
+                if sig["status"] == "open":
+                    try:
+                        coin_id = SYMBOL_TO_COINGECKO_ID.get(sig["pair"])
+                        if coin_id:
+                            price_data = await get_price(coin_id)
+                            sig["current_price"] = price_data.get("current_price")
+                    except Exception:
+                        sig["current_price"] = sig["entry_price"]
+                    updated.append(sig)
+            if updated:
+                message = format_signals(updated)
+                await query.edit_message_text(
+                    text=message,
+                    parse_mode="Markdown",
+                    reply_markup=signals_keyboard()
+                )
+            else:
+                await query.edit_message_text(
+                    text="📭 Semua sinyal sudah closed.",
+                    reply_markup=signals_keyboard()
+                )
+        else:
+            await query.answer("📭 Tidak ada sinyal aktif.")
+            
     elif data == "refresh_portfolio":
-        await myportfolio_command(update, context)
+        positions = get_positions(query.message.chat_id)
+        if positions:
+            positions_data = []
+            for pos in positions:
+                pair = pos["pair"]
+                side = pos["side"]
+                entry = pos["entry_price"]
+                amount = pos["amount"]
+                try:
+                    coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
+                    if coin_id:
+                        price_data = await get_price(coin_id)
+                        current_price = price_data.get("current_price")
+                        if current_price is None:
+                            continue
+                        pnl_pct = calculate_pnl(entry, current_price, side)
+                        positions_data.append({
+                            "id": pos["id"],
+                            "pair": pair,
+                            "side": side,
+                            "entry_price": entry,
+                            "current_price": current_price,
+                            "pnl_pct": pnl_pct,
+                            "amount": amount,
+                        })
+                except Exception:
+                    pass
+            if positions_data:
+                message = format_portfolio(positions_data)
+                await query.edit_message_text(
+                    text=message,
+                    parse_mode="Markdown",
+                    reply_markup=portfolio_keyboard()
+                )
+            else:
+                await query.edit_message_text(
+                    text="⚠️ Gagal mengambil data harga.",
+                    reply_markup=portfolio_keyboard()
+                )
+        else:
+            await query.edit_message_text(
+                text="📭 Kamu belum punya posisi aktif.",
+                reply_markup=portfolio_keyboard()
+            )
     elif data.startswith("analyze_"):
         symbol = data.replace("analyze_", "")
         await query.message.reply_text(f"Silakan ketik `/analyze {symbol} <TF> <KONDISI>` untuk analisis {symbol}.")
