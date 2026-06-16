@@ -15,8 +15,10 @@ from bot.handlers import (
     news_command, help_command, usage_command,
     addposition_command, removeposition_command,
     myportfolio_command, backup_command, restore_command,
-    mysignals_command, paperstats_command,
+    mysignals_command, paperstats_command, handle_callback,
 )
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
+
 
 # Setup loguru ke file dan console
 logger.add("bot.log", rotation="1 day", retention="7 days", level="DEBUG")
@@ -41,6 +43,7 @@ def main():
     app.add_handler(CommandHandler("restore", restore_command))
     app.add_handler(CommandHandler("mysignals", mysignals_command))
     app.add_handler(CommandHandler("paperstats", paperstats_command))
+    app.add_handler(CallbackQueryHandler(handle_callback))
     logger.info("Bot berjalan...")
     app.run_polling()
 

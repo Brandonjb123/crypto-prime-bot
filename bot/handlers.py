@@ -18,6 +18,11 @@ from services.signals import save_signal, get_open_signals
 from utils.symbols import SYMBOL_TO_COINGECKO_ID
 from datetime import datetime
 from services.signals import save_signal, get_open_signals, check_and_update_signal, get_signal_stats
+from bot.keyboards import (
+    main_menu_keyboard, price_keyboard, analyze_keyboard,
+    signals_keyboard, portfolio_keyboard, paperstats_keyboard,
+    back_to_menu_keyboard,
+)
 
 
 
@@ -42,7 +47,10 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Ketik /help untuk lihat semua perintah."
         )
 
-    await update.message.reply_text(welcome_message)
+    await update.message.reply_text(
+        welcome_message,
+        reply_markup=main_menu_keyboard()
+    )
 
 
 async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -556,6 +564,57 @@ async def restore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         count += 1
     
     await update.message.reply_text(f"✅ {count} posisi berhasil di-restore.\nGunakan `/myportfolio` untuk lihat.")
+
+
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Router untuk semua klik tombol inline keyboard"""
+    query = update.callback_query
+    await query.answer()  # Hentikan loading spinner di tombol
+
+    data = query.data  # callback_data dari tombol yang ditekan
+
+    # Menu utama
+    if data == "menu_start":
+        await start_command(update, context)
+    elif data == "menu_analyze":
+        await query.message.reply_text("Silakan ketik `/analyze <PAIR> <TF> <KONDISI>` untuk analisis.")
+    elif data == "menu_price":
+        await query.message.reply_text("Silakan ketik `/price <SYMBOL>` untuk cek harga.")
+    elif data == "menu_news":
+        await query.message.reply_text("Silakan ketik `/news <PAIR>` untuk berita.")
+    elif data == "menu_portfolio":
+        await myportfolio_command(update, context)
+    elif data == "menu_signals":
+        await mysignals_command(update, context)
+    elif data == "menu_stats":
+        await paperstats_command(update, context)
+    elif data == "menu_help":
+        await help_command(update, context)
+
+    # Tombol Refresh
+    elif data.startswith("refresh_price_"):
+        symbol = data.replace("refresh_price_", "")
+        context.args = [symbol]
+        await price_command(update, context)
+    elif data == "refresh_signals":
+        await mysignals_command(update, context)
+    elif data == "refresh_portfolio":
+        await myportfolio_command(update, context)
+
+    # Tombol Analyze dari price keyboard
+    elif data.startswith("analyze_"):
+        symbol = data.replace("analyze_", "")
+        await query.message.reply_text(f"Silakan ketik `/analyze {symbol} <TF> <KONDISI>` untuk analisis {symbol}.")
+
+    # Tombol tambah posisi
+    elif data == "add_position":
+        await query.message.reply_text(
+            "Gunakan `/addposition <PAIR> <long/short> <ENTRY> <AMOUNT>`\n"
+            "Contoh: `/addposition BTC long 65000 0.01`"
+        )
+
+    else:
+        await query.message.reply_text("❌ Tombol tidak dikenali.")
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
