@@ -91,8 +91,11 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=price_keyboard(symbol)
         )
     except Exception as e:
-        await update.effective_message.reply_text("😔 Gagal mengambil data harga. Coba lagi nanti.")
         logger.error(f"Error /price: {e}")
+        await update.effective_message.reply_text(
+            f"😔 Gagal mengambil data harga. ({str(e)})",
+            reply_markup=back_to_menu_keyboard()
+        )
 
 
 # ==================== ANALYZE COMMAND ====================
