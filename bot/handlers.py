@@ -47,7 +47,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Ketik /help untuk lihat semua perintah."
         )
 
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         welcome_message,
         reply_markup=main_menu_keyboard()
     )
@@ -65,7 +65,7 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     coin_id = SYMBOL_TO_COINGECKO_ID.get(symbol)
 
     if not coin_id:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             f"❌ Simbol *{symbol}* tidak dikenali.\n"
             "Coba simbol seperti: BTC, ETH, SOL, DOGE, dll.",
         )
@@ -74,16 +74,16 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         data = await get_price(coin_id)
         message = format_price(data)
-        await update.message.reply_text(message, parse_mode="Markdown")
+        await update.effective_message.reply_text(message, parse_mode="Markdown")
     except Exception as e:
-        await update.message.reply_text("😔 Gagal mengambil data harga. Coba lagi nanti.")
+        await update.effective_message.reply_text("😔 Gagal mengambil data harga. Coba lagi nanti.")
         logger.error(f"Error /price: {e}")
 
 
 async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Rate limiting – cek sebelum validasi input
     if not check_and_increment(update.effective_chat.id, "analyze"):
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "⚠️ Kuota harian `/analyze` kamu sudah habis.\n"
             "Silakan coba lagi besok atau gunakan `/usage` untuk cek sisa kuota."
         )
@@ -92,7 +92,7 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
 
     if not context.args or len(context.args) < 3:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "⚠️ Format: `/analyze <PAIR> <TIMEFRAME> <KONDISI_MARKET>`\n\n"
             "Contoh:\n"
             "`/analyze BTC 4H bullish, dekat resistance 64k`\n"
@@ -106,12 +106,12 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
     if not coin_id:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             f"❌ Pair *{pair}* tidak dikenali. Gunakan simbol seperti BTC, ETH, SOL.",
         )
         return
 
-    await update.message.reply_text("🔍 Menganalisis setup trade... Mohon tunggu.")
+    await update.effective_message.reply_text("🔍 Menganalisis setup trade... Mohon tunggu.")
 
     try:
         price_data = await get_price(coin_id)
@@ -147,44 +147,44 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"Gunakan `/mysignals` untuk tracking.\n\n"
                     f"_Disclaimer: Bukan saran keuangan._"
                 )
-                await update.message.reply_text(message, parse_mode="Markdown")
+                await update.effective_message.reply_text(message, parse_mode="Markdown")
                 return
             else:
                 raise ValueError("JSON tidak lengkap")
         except (json.JSONDecodeError, ValueError, KeyError) as parse_error:
             logger.warning(f"Gagal parse JSON dari LLM: {parse_error}")
             # Fallback: tampilkan response mentah
-            await update.message.reply_text(analysis)
+            await update.effective_message.reply_text(analysis)
 
     except Exception as e:
-        await update.message.reply_text("😔 Gagal melakukan analisis. Coba lagi nanti.")
+        await update.effective_message.reply_text("😔 Gagal melakukan analisis. Coba lagi nanti.")
         logger.error(f"Error /analyze: {e}")
 
 
 async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Rate limiting – cek sebelum validasi input
     if not check_and_increment(update.effective_chat.id, "news"):
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "⚠️ Kuota harian `/news` kamu sudah habis.\n"
             "Silakan coba lagi besok atau gunakan `/usage` untuk cek sisa kuota."
         )
         return
 
     if not context.args:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "⚠️ Mohon masukkan pair.\nContoh: `/news BTC` atau `/news ETH`",
         )
         return
 
     pair = context.args[0].upper()
 
-    await update.message.reply_text(f"📰 Mencari berita terkini untuk *{pair}*...")
+    await update.effective_message.reply_text(f"📰 Mencari berita terkini untuk *{pair}*...")
 
     try:
         articles = await get_news(pair)
 
         if not articles:
-            await update.message.reply_text(
+            await update.effective_message.reply_text(
                 f"😔 Tidak ada berita terkini untuk *{pair}*."
             )
             return
@@ -195,7 +195,7 @@ async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             source = article.get("source", "Unknown")
             summary += f"{i}. *{title}*\n   Sumber: {source}\n\n"
 
-        await update.message.reply_text(summary, parse_mode="Markdown")
+        await update.effective_message.reply_text(summary, parse_mode="Markdown")
 
         articles_text = "\n".join([
             f"- {a.get('title', '')} ({a.get('source', '')})"
@@ -207,10 +207,10 @@ async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"dan beri penjelasan singkat (2-3 kalimat):\n\n{articles_text}"
         )
         sentiment = await ask_llm(SYSTEM_PROMPT, sentiment_prompt)
-        await update.message.reply_text(sentiment)
+        await update.effective_message.reply_text(sentiment)
 
     except Exception as e:
-        await update.message.reply_text("😔 Gagal mengambil berita. Coba lagi nanti.")
+        await update.effective_message.reply_text("😔 Gagal mengambil berita. Coba lagi nanti.")
         logger.error(f"Error /news: {e}")
 
 
@@ -218,7 +218,7 @@ async def addposition_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     logger.info("DEBUG: /addposition dipanggil")
     """Handler /addposition <pair> <long/short> <entry_price> <amount>"""
     if not context.args or len(context.args) < 4:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "⚠️ Format: `/addposition <PAIR> <long/short> <ENTRY_PRICE> <AMOUNT>`\n\n"
             "Contoh:\n"
             "`/addposition BTC long 65000 0.01`\n"
@@ -230,14 +230,14 @@ async def addposition_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     side = context.args[1].lower()
 
     if side not in ("long", "short"):
-        await update.message.reply_text("❌ Side harus `long` atau `short`.")
+        await update.effective_message.reply_text("❌ Side harus `long` atau `short`.")
         return
 
     try:
         entry_price = float(context.args[2])
         amount = float(context.args[3])
     except ValueError:
-        await update.message.reply_text("❌ Entry price dan amount harus angka.")
+        await update.effective_message.reply_text("❌ Entry price dan amount harus angka.")
         return
 
     chat_id = update.effective_chat.id
@@ -252,28 +252,28 @@ async def addposition_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         f"🔹 Amount: {amount}\n\n"
         f"Gunakan /myportfolio untuk lihat semua posisi."
     )
-    await update.message.reply_text(reply_msg)  # tanpa parse_mode
+    await update.effective_message.reply_text(reply_msg)  # tanpa parse_mode
 
 
 async def removeposition_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler /removeposition <id>"""
     if not context.args:
-        await update.message.reply_text("⚠️ Format: `/removeposition <ID>`")
+        await update.effective_message.reply_text("⚠️ Format: `/removeposition <ID>`")
         return
 
     try:
         position_id = int(context.args[0])
     except ValueError:
-        await update.message.reply_text("❌ ID harus angka.")
+        await update.effective_message.reply_text("❌ ID harus angka.")
         return
 
     chat_id = update.effective_chat.id
     deleted = remove_position(chat_id, position_id)
 
     if deleted:
-        await update.message.reply_text(f"✅ Posisi #{position_id} dihapus.")
+        await update.effective_message.reply_text(f"✅ Posisi #{position_id} dihapus.")
     else:
-        await update.message.reply_text(f"❌ Posisi #{position_id} tidak ditemukan.")
+        await update.effective_message.reply_text(f"❌ Posisi #{position_id} tidak ditemukan.")
 
 
 async def myportfolio_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -282,13 +282,13 @@ async def myportfolio_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     positions = get_positions(chat_id)
 
     if not positions:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "📭 Kamu belum punya posisi aktif.\n"
             "Gunakan `/addposition` untuk mencatat posisi."
         )
         return
 
-    await update.message.reply_text("📊 Menghitung P&L...")
+    await update.effective_message.reply_text("📊 Menghitung P&L...")
 
     message = "📋 *Portfolio Kamu*\n\n"
     total_pnl = 0.0
@@ -335,7 +335,7 @@ async def myportfolio_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     total_emoji = "🟢" if total_pnl >= 0 else "🔴"
     message += f"───\n{total_emoji} *Total P&L: {total_pnl:+.2f}%*"
 
-    await update.message.reply_text(message, parse_mode="Markdown")
+    await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
 async def mysignals_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -344,13 +344,13 @@ async def mysignals_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     signals = get_open_signals(chat_id)
 
     if not signals:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "📭 Kamu belum punya sinyal aktif.\n"
             "Gunakan `/analyze` untuk dapat rekomendasi trading."
         )
         return
 
-    await update.message.reply_text("📡 Mengecek status sinyal...")
+    await update.effective_message.reply_text("📡 Mengecek status sinyal...")
 
     now = datetime.utcnow()
     message = "📡 *Sinyal Aktif Kamu*\n\n"
@@ -397,14 +397,14 @@ async def mysignals_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Kirim notifikasi sinyal yang baru closed
     if notifications:
         for notif in notifications:
-            await update.message.reply_text(notif, parse_mode="Markdown")
+            await update.effective_message.reply_text(notif, parse_mode="Markdown")
 
     # Kirim daftar sinyal open
     if still_open_count > 0:
         message += "Gunakan `/paperstats` untuk lihat performa sinyal."
-        await update.message.reply_text(message, parse_mode="Markdown")
+        await update.effective_message.reply_text(message, parse_mode="Markdown")
     else:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "📭 Semua sinyal sudah closed. Gunakan `/analyze` untuk dapat sinyal baru."
         )
 
@@ -426,12 +426,12 @@ async def paperstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
             )
 
     for notif in notifications:
-        await update.message.reply_text(notif, parse_mode="Markdown")
+        await update.effective_message.reply_text(notif, parse_mode="Markdown")
 
     stats = get_signal_stats(chat_id)
 
     if stats["total_closed"] == 0 and stats["open_count"] == 0:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "📭 Belum ada sinyal tercatat.\n"
             "Gunakan `/analyze` untuk dapat rekomendasi trading."
         )
@@ -453,7 +453,7 @@ async def paperstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         message += f"💸 Rata-rata Loss: {avg_loss_emoji} {stats['avg_loss']:+.2f}%\n\n"
 
     message += "Gunakan `/mysignals` untuk lihat sinyal aktif."
-    await update.message.reply_text(message, parse_mode="Markdown")
+    await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
 async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -467,7 +467,7 @@ async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📰 /news    : {remaining['news_remaining']}x tersisa\n\n"
         "Kuota di-reset setiap hari pukul 00:00 UTC."
     )
-    await update.message.reply_text(message, parse_mode="Markdown")
+    await update.effective_message.reply_text(message, parse_mode="Markdown")
 
 
 async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -476,7 +476,7 @@ async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     positions = get_positions(chat_id)
     
     if not positions:
-        await update.message.reply_text("📭 Tidak ada posisi untuk di-backup.")
+        await update.effective_message.reply_text("📭 Tidak ada posisi untuk di-backup.")
         return
     
     # Konversi ke format yang bisa di-restore
@@ -490,7 +490,7 @@ async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         })
     
     json_str = json.dumps(export_data)
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         f"📦 *Backup Posisi*\n\n"
         f"Salin teks berikut untuk `/restore` nanti:\n\n"
         f"`{json_str}`",
@@ -500,14 +500,14 @@ async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def restore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler /restore <json> — import posisi dari backup"""
     if not context.args:
-        await update.message.reply_text("⚠️ Format: `/restore <JSON>`\nGunakan hasil dari `/backup`.")
+        await update.effective_message.reply_text("⚠️ Format: `/restore <JSON>`\nGunakan hasil dari `/backup`.")
         return
     
     json_str = " ".join(context.args)
     try:
         data = json.loads(json_str)
     except:
-        await update.message.reply_text("❌ Format JSON tidak valid.")
+        await update.effective_message.reply_text("❌ Format JSON tidak valid.")
         return
     
     chat_id = update.effective_chat.id
@@ -516,7 +516,7 @@ async def restore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         add_position(chat_id, item["pair"], item["side"], item["entry_price"], item["amount"])
         count += 1
     
-    await update.message.reply_text(f"✅ {count} posisi berhasil di-restore.\nGunakan `/myportfolio` untuk lihat.")
+    await update.effective_message.reply_text(f"✅ {count} posisi berhasil di-restore.\nGunakan `/myportfolio` untuk lihat.")
 
 async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler /backup — export semua posisi ke JSON"""
@@ -524,7 +524,7 @@ async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     positions = get_positions(chat_id)
     
     if not positions:
-        await update.message.reply_text("📭 Tidak ada posisi untuk di-backup.")
+        await update.effective_message.reply_text("📭 Tidak ada posisi untuk di-backup.")
         return
     
     export_data = []
@@ -537,7 +537,7 @@ async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         })
     
     json_str = json.dumps(export_data)
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         f"📦 *Backup Posisi*\n\n"
         f"Salin teks berikut untuk `/restore` nanti:\n\n"
         f"`{json_str}`",
@@ -547,14 +547,14 @@ async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def restore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler /restore <json> — import posisi dari backup"""
     if not context.args:
-        await update.message.reply_text("⚠️ Format: `/restore <JSON>`\nGunakan hasil dari `/backup`.")
+        await update.effective_message.reply_text("⚠️ Format: `/restore <JSON>`\nGunakan hasil dari `/backup`.")
         return
     
     json_str = " ".join(context.args)
     try:
         data = json.loads(json_str)
     except:
-        await update.message.reply_text("❌ Format JSON tidak valid.")
+        await update.effective_message.reply_text("❌ Format JSON tidak valid.")
         return
     
     chat_id = update.effective_chat.id
@@ -563,7 +563,7 @@ async def restore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         add_position(chat_id, item["pair"], item["side"], item["entry_price"], item["amount"])
         count += 1
     
-    await update.message.reply_text(f"✅ {count} posisi berhasil di-restore.\nGunakan `/myportfolio` untuk lihat.")
+    await update.effective_message.reply_text(f"✅ {count} posisi berhasil di-restore.\nGunakan `/myportfolio` untuk lihat.")
 
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -664,5 +664,5 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 ⚠️ *Disclaimer:* Bot ini hanya alat bantu analisis, bukan saran keuangan. Selalu lakukan riset sendiri.
 """
-    await update.message.reply_text(help_text, parse_mode="Markdown")
+    await update.effective_message.reply_text(help_text, parse_mode="Markdown")
 
