@@ -627,6 +627,127 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "refresh_signals":
         signals = get_open_signals(query.message.chat_id)
         if signals:
+            now = datetime.utcnow()
+            updated = []
+            for sig in signals:
+                sig = await check_and_update_signal(sig)
+                if sig["status"] == "open":
+                    try:
+                        coin_id = SYMBOL_TO_COINGECKO_ID.get(sig["pair"])
+                        if coin_id:
+                            price_data = await get_price(coin_id)
+                            sig["current_price"] = price_data.get("current_price")
+                    except Exception:
+                        sig["current_price"] = sig["entry_price"]
+                    
+                    # Hitung umur (di sini agar tidak N/A)
+                    created_at = datetime.fromisoformat(sig["created_at"])
+                    age = now - created_at
+                    hours, remainder = divmod(int(age.total_seconds()), 3600)
+                    minutes = remainder // 60
+                    sig["age"] = f"{hours}j {minutes}m" if hours > 0 else f"{minutes}m"
+                    
+                    updated.append(sig)
+            if updated:
+                message = format_signals(updated)
+                await query.edit_message_text(
+                    text=message,
+                    parse_mode="Markdown",
+                    reply_markup=signals_keyboard()
+                )
+            else:
+                await query.edit_message_text(
+                    text="📭 Semua sinyal sudah closed.",
+                    reply_markup=signals_keyboard()
+                )
+        else:
+            await query.edit_message_text(
+                text="📭 Tidak ada sinyal aktif.",
+                reply_markup=signals_keyboard()
+            )
+        signals = get_open_signals(query.message.chat_id)
+        if signals:
+            now = datetime.utcnow()
+            updated = []
+            for sig in signals:
+                sig = await check_and_update_signal(sig)
+                if sig["status"] == "open":
+                    try:
+                        coin_id = SYMBOL_TO_COINGECKO_ID.get(sig["pair"])
+                        if coin_id:
+                            price_data = await get_price(coin_id)
+                            sig["current_price"] = price_data.get("current_price")
+                    except Exception:
+                        sig["current_price"] = sig["entry_price"]
+                    
+                    # Hitung umur (di sini agar tidak N/A)
+                    created_at = datetime.fromisoformat(sig["created_at"])
+                    age = now - created_at
+                    hours, remainder = divmod(int(age.total_seconds()), 3600)
+                    minutes = remainder // 60
+                    sig["age"] = f"{hours}j {minutes}m" if hours > 0 else f"{minutes}m"
+                    
+                    updated.append(sig)
+            if updated:
+                message = format_signals(updated)
+                await query.edit_message_text(
+                    text=message,
+                    parse_mode="Markdown",
+                    reply_markup=signals_keyboard()
+                )
+            else:
+                await query.edit_message_text(
+                    text="📭 Semua sinyal sudah closed.",
+                    reply_markup=signals_keyboard()
+                )
+        else:
+            await query.edit_message_text(
+                text="📭 Tidak ada sinyal aktif.",
+                reply_markup=signals_keyboard()
+            )
+        signals = get_open_signals(query.message.chat_id)
+        if signals:
+            now = datetime.utcnow()
+            updated = []
+            for sig in signals:
+                sig = await check_and_update_signal(sig)
+                if sig["status"] == "open":
+                    try:
+                        coin_id = SYMBOL_TO_COINGECKO_ID.get(sig["pair"])
+                        if coin_id:
+                            price_data = await get_price(coin_id)
+                            sig["current_price"] = price_data.get("current_price")
+                    except Exception:
+                        sig["current_price"] = sig["entry_price"]
+                    
+                    # Hitung umur (di sini agar tidak N/A)
+                    created_at = datetime.fromisoformat(sig["created_at"])
+                    age = now - created_at
+                    hours, remainder = divmod(int(age.total_seconds()), 3600)
+                    minutes = remainder // 60
+                    sig["age"] = f"{hours}j {minutes}m" if hours > 0 else f"{minutes}m"
+                    
+                    updated.append(sig)
+            if updated:
+                message = format_signals(updated)
+                await query.edit_message_text(
+                    text=message,
+                    parse_mode="Markdown",
+                    reply_markup=signals_keyboard()
+                )
+            else:
+                await query.edit_message_text(
+                    text="📭 Semua sinyal sudah closed.",
+                    reply_markup=signals_keyboard()
+                )
+        else:
+            await query.edit_message_text(
+                text="📭 Tidak ada sinyal aktif.",
+                reply_markup=signals_keyboard()
+            )
+            
+        signals = get_open_signals(query.message.chat_id)
+        if signals:
             # Update status & harga terkini
             updated = []
             for sig in signals:
