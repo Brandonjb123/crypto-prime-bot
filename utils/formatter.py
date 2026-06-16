@@ -1,5 +1,9 @@
 # utils/formatter.py
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
+def _wib_now():
+    """Return current time in WIB (UTC+7)."""
+    return datetime.now(timezone.utc) + timedelta(hours=7)
 
 def format_price(data: dict) -> str:
     name = data.get("name", "Unknown")
@@ -23,7 +27,7 @@ def format_price(data: dict) -> str:
         f"Market Cap: `{usd(data.get('market_cap'))}`\n\n"
         f"_Data: CoinGecko_"
     )
-    message += f"\n🕐 *Diperbarui: {datetime.now().strftime('%H:%M:%S')} WIB*"
+    message += f"\n🕐 *Diperbarui: {_wib_now().strftime('%H:%M:%S')} WIB*"
     return message
 
 
@@ -74,7 +78,7 @@ def format_signals(signals: list) -> str:
             f"Umur: {sig.get('age', 'N/A')}\n\n"
         )
     
-    message += f"🕐 *Diperbarui: {datetime.now().strftime('%H:%M:%S')} WIB*"
+    message += f"🕐 *Diperbarui: {_wib_now().strftime('%H:%M:%S')} WIB*"
     return message
 
 
@@ -99,7 +103,7 @@ def format_portfolio(positions: list) -> str:
         f"━━━━━━━━━━━━━━\n"
         f"Total P&L: {total_emoji} {total_pnl:+.2f}%"
     )
-    message += f"\n🕐 *Diperbarui: {datetime.now().strftime('%H:%M:%S')} WIB*"
+    message += f"\n🕐 *Diperbarui: {_wib_now().strftime('%H:%M:%S')} WIB*"
     return message
 
 
@@ -111,6 +115,6 @@ def format_paperstats(stats: dict) -> str:
     message += f"📡 Open: {stats.get('open_count', 0)} sinyal aktif\n"
     message += f"✅ Closed: {stats.get('total_closed', 0)} sinyal\n\n"
     message += f"Model: llama-3.1-8b-instant\n"
-    message += f"🕐 *Diperbarui: {datetime.now().strftime('%H:%M:%S')} WIB*"
+    message += f"🕐 *Diperbarui: {_wib_now().strftime('%H:%M:%S')} WIB*"
     
     return message
