@@ -55,7 +55,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "⚠️ Mohon masukkan simbol coin.\n"
             "Contoh: `/price BTC` atau `/price ETH`",
         )
@@ -577,11 +577,23 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data == "menu_start":
         await start_command(update, context)
     elif data == "menu_analyze":
-        await query.message.reply_text("Silakan ketik `/analyze <PAIR> <TF> <KONDISI>` untuk analisis.")
+        await query.message.reply_text(
+            "Silakan gunakan command /analyze \\<PAIR\\> \\<TF\\> \\<KONDISI\\>\n"
+            "Contoh: `/analyze BTC 4H bullish`",
+            entities=[{"type": "bot_command", "offset": 24, "length": 8}]
+        )
     elif data == "menu_price":
-        await query.message.reply_text("Silakan ketik `/price <SYMBOL>` untuk cek harga.")
+        await query.message.reply_text(
+            "Silakan gunakan command /price \\<SYMBOL\\>\n"
+            "Contoh: `/price BTC`",
+            entities=[{"type": "bot_command", "offset": 24, "length": 6}]
+        )
     elif data == "menu_news":
-        await query.message.reply_text("Silakan ketik `/news <PAIR>` untuk berita.")
+        await query.message.reply_text(
+            "Silakan gunakan command /news \\<PAIR\\>\n"
+            "Contoh: `/news BTC`",
+            entities=[{"type": "bot_command", "offset": 24, "length": 5}]
+        )
     elif data == "menu_portfolio":
         await myportfolio_command(update, context)
     elif data == "menu_signals":
