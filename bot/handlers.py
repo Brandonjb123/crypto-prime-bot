@@ -125,9 +125,23 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text("🔍 Menganalisis multi-factor... Mohon tunggu.")
 
     try:
-        # 1. Fetch market data (CoinGecko)
-        from services.coingecko import get_market_data
-        price_data = await get_market_data(coin_id)
+        # 1. Fetch market data (CoinGecko) dengan fallback
+        try:
+            from services.coingecko import get_market_data
+            price_data = await get_market_data(coin_id)
+        except Exception as market_error:
+            logger.warning(f"Gagal get_market_data, fallback ke get_price: {market_error}")
+            # Fallback: gunakan get_price (cache-friendly) dan isi field minimal
+            basic = await get_price(coin_id)
+            price_data = {
+                "current_price": basic.get("current_price"),
+                "price_change_24h": basic.get("price_change_percentage_24h", 0) or 0,
+                "price_change_7d": 0,  # tidak tersedia di get_price
+                "total_volume": basic.get("total_volume"),
+                "market_cap": basic.get("market_cap"),
+                "high_24h": None,
+                "low_24h": None,
+            }
 
         # 2. Fetch news headlines (Google News RSS)
         from services.news import get_news
