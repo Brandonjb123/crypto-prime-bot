@@ -655,39 +655,47 @@ async def setplan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ==================== HELP COMMAND ====================
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = """
-🤖 *Crypto Prime Bot — AI Trading Assistant*
+🤖 *Crypto Prime — AI Trading Assistant*
+
+━━━━━━━━━━━━━━━━━━━━
 
 📊 *Market Data*
 /price <SYMBOL> — Cek harga real-time
   Contoh: `/price BTC`
 
+━━━━━━━━━━━━━━━━━━━━
+
 🔍 *Analisis AI*
-/analyze <PAIR> <TF> <KONDISI> — Analisis setup trade
-  Contoh: `/analyze ETH 1D bearish, dekat support`
+/analyze <PAIR> — Analisis multi-factor
+  Contoh: `/analyze BTC`
 /news <PAIR> — Berita terkini & sentimen
-  Contoh: `/news BTC`
+  Contoh: `/news ETH`
 
-📡 *Paper Trading (Fase 3)*
-/analyze — Sekarang otomatis menyimpan sinyal
-/mysignals — Lihat sinyal yang masih aktif
-/paperstats — Statistik performa sinyal (win rate, avg profit)
+━━━━━━━━━━━━━━━━━━━━
 
-💼 *Portfolio Manual*
-/addposition <PAIR> <long/short> <ENTRY> <AMOUNT> — Catat posisi
-  Contoh: `/addposition BTC long 65000 0.01`
-/myportfolio — Lihat semua posisi & P&L real-time
-/removeposition <ID> — Hapus posisi
+📡 *Paper Trading*
+/mysignals — Sinyal aktif & status
+/paperstats — Statistik performa sinyal
 
-💾 *Backup & Restore*
-/backup — Export semua posisi ke teks
-/restore <JSON> — Import posisi dari backup
+━━━━━━━━━━━━━━━━━━━━
 
-📋 *Lainnya*
+💼 *Portfolio*
+/addposition — Catat posisi manual
+/myportfolio — Lihat P&L real-time
+/removeposition — Hapus posisi
+
+━━━━━━━━━━━━━━━━━━━━
+
+⭐ *Upgrade*
+/upgrade — Lihat paket premium
 /usage — Cek sisa kuota harian
-/upgrade — Lihat paket premium & upgrade
-/help — Tampilkan bantuan ini
 
-⚠️ *Disclaimer:* Bot ini hanya alat bantu analisis, bukan saran keuangan. Selalu lakukan riset sendiri.
+━━━━━━━━━━━━━━━━━━━━
+
+⚠️ *Disclaimer:*
+Bot ini hanya alat bantu analisis, bukan saran keuangan. Selalu lakukan riset sendiri sebelum trading.
+
+📞 *Admin:* @BenzAckerman
 """
     await update.effective_message.reply_text(
         help_text,

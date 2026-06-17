@@ -40,8 +40,6 @@ def main():
     app.add_handler(CommandHandler("addposition", addposition_command))
     app.add_handler(CommandHandler("removeposition", removeposition_command))
     app.add_handler(CommandHandler("myportfolio", myportfolio_command))
-    app.add_handler(CommandHandler("backup", backup_command))
-    app.add_handler(CommandHandler("restore", restore_command))
     app.add_handler(CommandHandler("mysignals", mysignals_command))
     app.add_handler(CommandHandler("paperstats", paperstats_command))
     app.add_handler(CallbackQueryHandler(handle_callback))
