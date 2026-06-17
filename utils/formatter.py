@@ -120,23 +120,23 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
 def format_signals(signals: list) -> str:
     if not signals:
         return "📭 Tidak ada sinyal aktif."
-        
+
     message = f"📡 *Sinyal Aktif Kamu ({len(signals)})*\n\n"
-    
+
     for sig in signals:
         side_emoji = "🟢" if sig["side"] == "long" else "🔴"
         entry = sig["entry_price"]
         current = sig.get("current_price", entry)
         pnl = ((current - entry) / entry * 100) if sig["side"] == "long" else ((entry - current) / entry * 100)
         pnl_emoji = "🟢" if pnl >= 0 else "🔴"
-        
+
         message += (
             f"#{sig['id']} {side_emoji} *{sig['pair']}* {sig['side'].upper()}\n"
-            f"Entry: ${entry:,.2f} → Now: ${current:,.2f} ({pnl_emoji} {pnl:+.2f}%)\n"
-            f"Target: ${sig['target_price']:,.2f} | Stop: ${sig['stop_loss']:,.2f}\n"
+            f"Entry: {_smart_price(entry)} → Now: {_smart_price(current)} ({pnl_emoji} {pnl:+.2f}%)\n"
+            f"Target: {_smart_price(sig['target_price'])} | Stop: {_smart_price(sig['stop_loss'])}\n"
             f"Umur: {sig.get('age', 'N/A')}\n\n"
         )
-    
+
     message += f"🕐 *Diperbarui: {_wib_now().strftime('%H:%M:%S')} WIB*"
     return message
 
