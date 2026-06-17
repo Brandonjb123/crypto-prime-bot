@@ -9,7 +9,6 @@ from loguru import logger
 from services.coingecko import get_price, get_market_data
 from services.llm import ask_llm
 from services.news import get_news
-from services.portfolio import add_position, get_positions, remove_position, calculate_pnl
 from services.signals import save_signal, get_open_signals, check_and_update_signal, get_signal_stats
 
 from db.database import init_db
@@ -185,100 +184,6 @@ async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.effective_message.reply_text("😔 Gagal mengambil berita. Coba lagi nanti.")
         logger.error(f"Error /news: {e}")
-
-
-# ==================== PORTFOLIO ====================
-async def addposition_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args or len(context.args) < 4:
-        await update.effective_message.reply_text(
-            "⚠️ Format: `/addposition <PAIR> <long/short> <ENTRY_PRICE> <AMOUNT>`\n\n"
-            "Contoh:\n`/addposition BTC long 65000 0.01`\n`/addposition ETH short 3200 0.5`",
-            reply_markup=back_to_menu_keyboard())
-        return
-
-    pair = context.args[0].upper()
-    side = context.args[1].lower()
-    if side not in ("long", "short"):
-        await update.effective_message.reply_text("❌ Side harus `long` atau `short`.")
-        return
-
-    try:
-        entry_price = float(context.args[2])
-        amount = float(context.args[3])
-    except ValueError:
-        await update.effective_message.reply_text("❌ Entry price dan amount harus angka.")
-        return
-
-    chat_id = update.effective_chat.id
-    position_id = add_position(chat_id, pair, side, entry_price, amount)
-
-    reply_msg = (
-        f"✅ Posisi berhasil dicatat!\n\n"
-        f"🔹 ID: {position_id}\n🔹 Pair: {pair}\n🔹 Side: {side.upper()}\n"
-        f"🔹 Entry: ${entry_price:,.2f}\n🔹 Amount: {amount}\n\n"
-        f"Gunakan /myportfolio untuk lihat semua posisi."
-    )
-    await update.effective_message.reply_text(reply_msg, reply_markup=back_to_menu_keyboard())
-
-
-async def removeposition_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
-        await update.effective_message.reply_text("⚠️ Format: `/removeposition <ID>`")
-        return
-    try:
-        position_id = int(context.args[0])
-    except ValueError:
-        await update.effective_message.reply_text("❌ ID harus angka.")
-        return
-
-    chat_id = update.effective_chat.id
-    deleted = remove_position(chat_id, position_id)
-    if deleted:
-        await update.effective_message.reply_text(f"✅ Posisi #{position_id} dihapus.", reply_markup=back_to_menu_keyboard())
-    else:
-        await update.effective_message.reply_text(f"❌ Posisi #{position_id} tidak ditemukan.", reply_markup=back_to_menu_keyboard())
-
-
-async def myportfolio_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    positions = get_positions(chat_id)
-    if not positions:
-        await update.effective_message.reply_text(
-            "📭 Kamu belum punya posisi aktif.\nGunakan `/addposition` untuk mencatat posisi.",
-            reply_markup=portfolio_keyboard())
-        return
-
-    await update.effective_message.reply_text("📊 Menghitung P&L...")
-
-    positions_data = []
-    for pos in positions:
-        pair = pos["pair"]
-        side = pos["side"]
-        entry = pos["entry_price"]
-        amount = pos["amount"]
-        pos_id = pos["id"]
-        try:
-            coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
-            if not coin_id:
-                continue
-            price_data = await get_price(coin_id)
-            current_price = price_data.get("current_price")
-            if current_price is None:
-                continue
-            pnl_pct = calculate_pnl(entry, current_price, side)
-            positions_data.append({
-                "id": pos_id, "pair": pair, "side": side,
-                "entry_price": entry, "current_price": current_price,
-                "pnl_pct": pnl_pct, "amount": amount,
-            })
-        except Exception as e:
-            logger.error(f"Error /myportfolio untuk posisi {pos_id}: {e}")
-
-    if positions_data:
-        msg = format_portfolio(positions_data)
-        await update.effective_message.reply_text(msg, parse_mode="Markdown", reply_markup=portfolio_keyboard())
-    else:
-        await update.effective_message.reply_text("⚠️ Gagal mengambil data harga.", reply_markup=portfolio_keyboard())
 
 
 # ==================== SIGNALS & STATS ====================
@@ -551,13 +456,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 📡 *Paper Trading*
 /mysignals — Sinyal aktif & status
 /paperstats — Statistik performa sinyal
-
-━━━━━━━━━━━━━━━━━━━━
-
-💼 *Portfolio*
-/addposition — Catat posisi manual
-/myportfolio — Lihat P&L real-time
-/removeposition — Hapus posisi
 
 ━━━━━━━━━━━━━━━━━━━━
 

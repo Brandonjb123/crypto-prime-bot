@@ -4,15 +4,14 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 def main_menu_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
-        [InlineKeyboardButton("📈 Analyze", callback_data="menu_analyze"),
+        [InlineKeyboardButton("📡 Scan Market", callback_data="menu_scan"),
          InlineKeyboardButton("💰 Price", callback_data="menu_price")],
         [InlineKeyboardButton("📰 News", callback_data="menu_news"),
-         InlineKeyboardButton("📊 Portfolio", callback_data="menu_portfolio")],
-        [InlineKeyboardButton("📡 Signals", callback_data="menu_signals"),
-         InlineKeyboardButton("📋 Stats", callback_data="menu_stats")],
-        [InlineKeyboardButton("👤 Profile", callback_data="menu_profile"),
-         InlineKeyboardButton("⭐ Upgrade", callback_data="menu_upgrade")],
-        [InlineKeyboardButton("❓ Help", callback_data="menu_help")],
+         InlineKeyboardButton("🎯 Signals", callback_data="menu_signals")],
+        [InlineKeyboardButton("📊 Stats", callback_data="menu_stats"),
+         InlineKeyboardButton("👤 Profile", callback_data="menu_profile")],
+        [InlineKeyboardButton("⭐ Upgrade", callback_data="menu_upgrade"),
+         InlineKeyboardButton("❓ Help", callback_data="menu_help")],
     ]
     return InlineKeyboardMarkup(keyboard)
 

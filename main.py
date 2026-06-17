@@ -5,10 +5,8 @@ from db.database import init_db
 from bot.handlers import (
     start_command, price_command, analyze_command,
     news_command, help_command, usage_command,
-    addposition_command, removeposition_command,
-    myportfolio_command, mysignals_command, paperstats_command,
-    setplan_command, upgrade_command, handle_callback,
-    userinfo_command,
+    mysignals_command, paperstats_command, setplan_command, 
+    upgrade_command, handle_callback, userinfo_command,
 )
 
 logger.add("bot.log", rotation="1 day", retention="7 days", level="DEBUG")
@@ -25,9 +23,6 @@ def main():
     app.add_handler(CommandHandler("news", news_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("usage", usage_command))
-    app.add_handler(CommandHandler("addposition", addposition_command))
-    app.add_handler(CommandHandler("removeposition", removeposition_command))
-    app.add_handler(CommandHandler("myportfolio", myportfolio_command))
     app.add_handler(CommandHandler("mysignals", mysignals_command))
     app.add_handler(CommandHandler("paperstats", paperstats_command))
     app.add_handler(CallbackQueryHandler(handle_callback))
