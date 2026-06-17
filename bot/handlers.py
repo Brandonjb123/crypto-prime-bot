@@ -106,7 +106,7 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     plan = get_user_plan(chat_id)
 
     if not check_and_increment(chat_id, "analyze", plan):
-        plan_label = {"free": "Free (3x/hari)", "premium": "⭐ Premium", "admin": "👑 Admin"}.get(plan, "Free")
+        plan_label = {"free": "Free (3x/hari)", "premium": "⭐ Premium", "elite": "👑 Elite", "admin": "👑 Admin"}.get(plan, "Free")
         await update.effective_message.reply_text(
             f"⛔ Kuota /analyze kamu habis hari ini (plan {plan_label}).\n"
             "Upgrade ke Premium untuk kuota lebih banyak.\n"
@@ -192,7 +192,7 @@ async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     plan = get_user_plan(chat_id)
 
     if not check_and_increment(chat_id, "news", plan):
-        plan_label = {"free": "Free (5x/hari)", "premium": "⭐ Premium", "admin": "👑 Admin"}.get(plan, "Free")
+        plan_label = {"free": "Free (5x/hari)", "premium": "⭐ Premium", "elite": "👑 Elite", "admin": "👑 Admin"}.get(plan, "Free")
         await update.effective_message.reply_text(
             f"⛔ Kuota /news kamu habis hari ini (plan {plan_label}).\n"
             "Upgrade ke Premium untuk kuota lebih banyak.\n"
@@ -476,7 +476,7 @@ async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     plan = get_user_plan(chat_id)
     remaining = get_remaining(chat_id, plan)
 
-    plan_label = {"free": "🆓 Free", "premium": "⭐ Premium", "admin": "👑 Admin"}.get(plan, "Free")
+    plan_label = {"free": "🆓 Free", "premium": "⭐ Premium", "elite": "👑 Elite", "admin": "👑 Admin"}.get(plan, "Free")
 
     message = (
         f"📊 *Kuota Harian Kamu*\n\n"
