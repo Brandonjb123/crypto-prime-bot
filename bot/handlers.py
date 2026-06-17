@@ -31,7 +31,7 @@ from bot.keyboards import (
     paperstats_keyboard,
     back_to_menu_keyboard,
 )
-
+from services.coingecko import get_price, get_market_data
 
 # ==================== START COMMAND ====================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -109,19 +109,14 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     chat_id = update.effective_chat.id
 
-    if not context.args or len(context.args) < 3:
+    if not context.args:
         await update.effective_message.reply_text(
-            "⚠️ Format: `/analyze <PAIR> <TIMEFRAME> <KONDISI_MARKET>`\n\n"
-            "Contoh:\n"
-            "`/analyze BTC 4H bullish, dekat resistance 64k`\n"
-            "`/analyze ETH 1D bearish, turun setelah news SEC`",
+            "⚠️ Format: `/analyze <PAIR>`\n"
+            "Contoh: `/analyze BTC`",
         )
         return
 
     pair = context.args[0].upper()
-    timeframe = context.args[1]
-    market_condition = " ".join(context.args[2:])
-
     coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
     if not coin_id:
         await update.effective_message.reply_text(
@@ -129,44 +124,47 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    await update.effective_message.reply_text("🔍 Menganalisis setup trade... Mohon tunggu.")
+    await update.effective_message.reply_text("🔍 Menganalisis multi-factor... Mohon tunggu.")
 
     try:
-        price_data = await get_price(coin_id)
-        prompt = build_analysis_prompt(pair, timeframe, market_condition, price_data)
+        # 1. Fetch market data (CoinGecko)
+        from services.coingecko import get_market_data
+        price_data = await get_market_data(coin_id)
+
+        # 2. Fetch news headlines (Google News RSS)
+        from services.news import get_news
+        articles = await get_news(pair)
+        headlines = [a["title"] for a in articles[:5]]
+
+        # 3. Build prompt & call Groq
+        prompt = build_analyze_prompt(pair, price_data, headlines)
         analysis = await ask_llm(SYSTEM_PROMPT, prompt)
 
+        # 4. Parse JSON
         try:
             data = json.loads(analysis)
-            required = ["side", "entry_price", "target_price", "stop_loss", "summary", "risk_notes"]
-            if all(k in data for k in required):
-                side = data["side"].lower()
-                entry = float(data["entry_price"])
-                target = float(data["target_price"])
-                stop = float(data["stop_loss"])
-                summary = data["summary"]
-                risk = data["risk_notes"]
+            verdict = data.get("verdict", "TIDAK LAYAK")
 
-                signal_id = save_signal(chat_id, pair, side, entry, target, stop)
+            # Format output pakai formatter
+            message = format_analyze(data, pair, price_data)
 
-                analyze_data = {
-                    "pair": pair,
-                    "side": side,
-                    "entry_price": entry,
-                    "target_price": target,
-                    "stop_loss": stop,
-                    "summary": summary,
-                    "risk_notes": risk,
-                }
-                message = format_analyze(analyze_data)
-                await update.effective_message.reply_text(
-                    message,
-                    parse_mode="Markdown",
-                    reply_markup=analyze_keyboard()
+            # 5. Simpan sinyal jika LAYAK dan data valid
+            if verdict == "LAYAK" and data.get("entry_price"):
+                save_signal(
+                    chat_id,
+                    pair,
+                    data["side"].lower(),
+                    float(data["entry_price"]),
+                    float(data["target_price"]),
+                    float(data["stop_loss"])
                 )
-                return
-            else:
-                raise ValueError("JSON tidak lengkap")
+
+            await update.effective_message.reply_text(
+                message,
+                parse_mode="Markdown",
+                reply_markup=analyze_keyboard()
+            )
+
         except (json.JSONDecodeError, ValueError, KeyError) as parse_error:
             logger.warning(f"Gagal parse JSON dari LLM: {parse_error}")
             await update.effective_message.reply_text(analysis)

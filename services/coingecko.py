@@ -37,3 +37,40 @@ async def get_price(coin_id: str) -> dict:
     price_cache.set(coin_id, result)
     logger.info(f"Fetched price for {coin_id}")
     return result
+
+
+async def get_market_data(coin_id: str) -> dict:
+    """
+    Ambil data pasar yang lebih lengkap dari CoinGecko.
+    Return dict dengan: current_price, price_change_24h, price_change_7d,
+    total_volume, market_cap, high_24h, low_24h.
+    """
+    from utils.cache import price_cache  # reuse cache yang sama
+    cached = price_cache.get(f"market_{coin_id}")
+    if cached:
+        return cached
+
+    url = f"{COINGECKO_BASE_URL}/coins/{coin_id}"
+    params = {
+        "localization": "false",
+        "tickers": "false",
+        "community_data": "false",
+        "developer_data": "false",
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params, timeout=15.0)
+        response.raise_for_status()
+        data = response.json()
+
+    market_data = data.get("market_data", {})
+    result = {
+        "current_price": market_data.get("current_price", {}).get("usd"),
+        "price_change_24h": market_data.get("price_change_percentage_24h", 0),
+        "price_change_7d": market_data.get("price_change_percentage_7d_in_currency", {}).get("usd", 0),
+        "total_volume": market_data.get("total_volume", {}).get("usd"),
+        "market_cap": market_data.get("market_cap", {}).get("usd"),
+        "high_24h": market_data.get("high_24h", {}).get("usd"),
+        "low_24h": market_data.get("low_24h", {}).get("usd"),
+    }
+    price_cache.set(f"market_{coin_id}", result)
+    return result

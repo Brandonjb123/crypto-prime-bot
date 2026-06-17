@@ -31,31 +31,75 @@ def format_price(data: dict) -> str:
     return message
 
 
-def format_analyze(data: dict) -> str:
-    emoji_side = "🟢" if data["side"] == "long" else "🔴"
-    side_str = f"{emoji_side} {data['side'].upper()}"
-    
-    entry = data["entry_price"]
-    target = data["target_price"]
-    stop = data["stop_loss"]
-    
-    reward = abs(target - entry)
-    risk = abs(entry - stop)
-    rr_ratio = f"1:{reward/risk:.1f}" if risk > 0 else "N/A"
-    
-    message = (
-        f"📈 *Analisis {data['pair']}*\n\n"
-        f"📍 Entry: `${entry:,.2f}`\n"
-        f"🎯 Target: `${target:,.2f}` (+{(target/entry-1)*100:.2f}%)\n"
-        f"🛑 Stop Loss: `${stop:,.2f}` (-{(entry/stop-1)*100:.2f}%)\n"
-        f"📊 Side: {side_str}\n"
-        f"⚖️ R/R Ratio: {rr_ratio}\n\n"
-        f"📝 Ringkasan:\n{data.get('summary', 'N/A')}\n\n"
-        f"⚠️ Risk Notes:\n{data.get('risk_notes', 'N/A')}\n\n"
-        f"━━━━━━━━━━━━━━\n"
-        f"⚠️ *Bukan financial advice. Trade dengan risiko sendiri.*"
+def format_analyze(data: dict, pair: str, price_data: dict) -> str:
+    verdict = data.get('verdict', 'TIDAK LAYAK')
+    is_layak = verdict == 'LAYAK'
+
+    # Teknikal section
+    change_24h = price_data.get('price_change_24h', 0)
+    change_7d = price_data.get('price_change_7d', 0)
+    current_price = price_data.get('current_price', 0)
+    teknikal = (
+        f"📊 *Teknikal*\n"
+        f"   Harga: ${current_price:,.6f}\n"
+        f"   24h: {change_24h:+.1f}%  |  7d: {change_7d:+.1f}%\n"
+        f"   Tren: {data.get('technical_bias', '-')}"
     )
-    return message
+
+    # Sentiment section
+    sentiment = data.get('sentiment', 'Neutral')
+    sent_icon = '✅' if sentiment == 'Positif' else ('⚠️' if sentiment == 'Negatif' else '➖')
+    sentimen = f"📰 *Sentimen*\n   {sent_icon} {sentiment}"
+
+    # Likuiditas section
+    vol = price_data.get('total_volume', 0) or 0
+    mcap = price_data.get('market_cap', 0) or 0
+    likuiditas = (
+        f"💧 *Likuiditas*\n"
+        f"   Volume 24h: ${vol/1e6:.1f}M\n"
+        f"   Mcap: ${mcap/1e9:.1f}B\n"
+        f"   Status: {data.get('liquidity', '-')}"
+    )
+
+    # Verdict
+    if is_layak:
+        entry = data.get('entry_price')
+        target = data.get('target_price')
+        sl = data.get('stop_loss')
+        rr = round((target - entry) / (entry - sl), 1) if sl and entry and target else '-'
+        verdict_box = "✅ *VERDICT: LAYAK TRADING*"
+        trade_section = (
+            f"📐 *Setup Trade (4H)*\n"
+            f"   Side    : {data.get('side', '-')}\n"
+            f"   Entry   : ${entry:,.4f}\n"
+            f"   Target  : ${target:,.4f}\n"
+            f"   Stop    : ${sl:,.4f}\n"
+            f"   R:R     : 1:{rr}\n\n"
+            f"📝 {data.get('summary', '')}\n"
+            f"⚠️ {data.get('risk_notes', 'DYOR, bukan financial advice')}"
+        )
+    else:
+        verdict_box = "⛔ *VERDICT: TIDAK LAYAK*"
+        trade_section = (
+            f"Alasan: {data.get('verdict_reason', '-')}\n"
+            f"Rekomendasi: Wait & see dulu"
+        )
+
+    # TradingView link — BTC/USDT → BTCUSD
+    tv_pair = pair.replace("/USDT", "USD").replace("USDT", "USD")
+    tv_link = f"https://www.tradingview.com/chart/?symbol={tv_pair}"
+
+    return (
+        f"🔍 *Analisa: {pair}*\n\n"
+        f"{teknikal}\n\n"
+        f"{sentimen}\n\n"
+        f"{likuiditas}\n\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"{verdict_box}\n"
+        f"━━━━━━━━━━━━━━━━━━\n\n"
+        f"{trade_section}\n\n"
+        f"📈 Chart: {tv_link}"
+    )
 
 
 def format_signals(signals: list) -> str:

@@ -1,44 +1,42 @@
-def build_analysis_prompt(pair: str, timeframe: str, market_condition: str, current_price_data: dict) -> str:
-    name = current_price_data.get("name", pair)
-    symbol = current_price_data.get("symbol", pair)
-    price = current_price_data.get("current_price", "N/A")
-    change = current_price_data.get("price_change_percentage_24h", "N/A")
-    volume = current_price_data.get("total_volume", "N/A")
-    market_cap = current_price_data.get("market_cap", "N/A")
+# prompts/templates.py
 
-    prompt = f"""
-📊 **TRADE SETUP ANALYSIS REQUEST**
 
-**Pair:** {name} ({symbol})
-**Timeframe:** {timeframe}
-**Market Condition (user input):** {market_condition}
+def build_analyze_prompt(pair: str, price_data: dict, news_headlines: list) -> str:
+    headlines_str = "\n".join(f"- {h}" for h in news_headlines[:5])
+    return f"""Analisa pair berikut dan kembalikan HANYA JSON, tanpa teks lain, tanpa markdown backticks, langsung JSON object saja.
 
-**Real-time Market Data (CoinGecko):**
-- Current Price: ${price:,.2f} USD
-- 24h Change: {change:.2f}%
-- 24h Volume: ${volume:,.2f}
-- Market Cap: ${market_cap:,.2f}
+PAIR: {pair}
 
-Based on the above data and user context, provide a structured analysis.
+DATA TEKNIKAL (dari CoinGecko):
+- Harga sekarang: ${price_data['current_price']}
+- Change 24h: {price_data['price_change_24h']}%
+- Change 7d: {price_data['price_change_7d']}%
+- High 24h: ${price_data['high_24h']}
+- Low 24h: ${price_data['low_24h']}
+- Volume 24h: ${price_data['total_volume']:,.0f}
+- Market Cap: ${price_data['market_cap']:,.0f}
 
-**IMPORTANT: You MUST respond in valid JSON format only. No markdown, no extra text outside the JSON.**
+BERITA & SENTIMEN (5 headline terkini dari Google News):
+{headlines_str}
 
-The JSON must have exactly these fields:
+Berikan analisa multi-factor dan verdict LAYAK atau TIDAK LAYAK.
+Return JSON sesuai schema. Kalau TIDAK LAYAK, field side/entry_price/target_price/stop_loss/summary/risk_notes diisi null.
+
+JSON schema yang harus kamu ikuti:
 {{
-  "pair": "{symbol}",
-  "side": "long" or "short",
-  "entry_price": number,
-  "target_price": number,
-  "stop_loss": number,
-  "summary": "brief analysis in 1-2 sentences, in the same language as the user",
-  "risk_notes": "risk management notes, including disclaimer"
-}}
+  "pair": "{pair}",
+  "verdict": "LAYAK",          // atau "TIDAK LAYAK"
+  "technical_bias": "Bullish", // Bullish / Bearish / Sideways
+  "sentiment": "Positif",      // Positif / Negatif / Neutral
+  "liquidity": "Tinggi",       // Tinggi / Cukup / Rendah
+  "verdict_reason": "...",     // 1-2 kalimat alasan verdict
 
-Rules:
-- Never guarantee profits or give financial advice
-- Always mention risk management in risk_notes
-- entry_price, target_price, stop_loss must be realistic numbers based on current price
-- side must be either "long" or "short" based on your analysis
-- Respond in the same language as the user for summary and risk_notes (ID/EN)
+  // Field di bawah HANYA diisi kalau verdict = "LAYAK":
+  "side": "LONG",
+  "entry_price": 67200,
+  "target_price": 70000,
+  "stop_loss": 65800,
+  "summary": "...",
+  "risk_notes": "..."
+}}
 """
-    return prompt
