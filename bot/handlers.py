@@ -315,7 +315,7 @@ async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def upgrade_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = (
+    message = (
         "🚀 *Crypto Prime — Upgrade Plan*\n\n"
         "Buka potensi trading maksimal dengan AI analisis tanpa batas.\n\n"
         "━━━━━━━━━━━━━━━━━━\n"
@@ -324,17 +324,17 @@ async def upgrade_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "✅ 30x /analyze per hari\n"
         "✅ 50x /news per hari\n"
         "✅ Analisis multi-factor (Teknikal, Sentimen, Likuiditas)\n"
+        "✅ Scan Market (/scan) — cari setup LAYAK dari 100 pair\n"
         "✅ Sinyal otomatis tersimpan\n"
-        "✅ Portfolio tracker\n"
         "✅ Support prioritas\n\n"
         "━━━━━━━━━━━━━━━━━━\n"
         "👑 *ELITE (Most Powerful)*\n"
         "💰 Rp 500.000 / bulan\n\n"
         "✅ Unlimited /analyze & /news\n"
         "✅ Analisis AI paling akurat & mendalam\n"
-        "✅ Auto-trading ready (Fase 5)\n"
+        "✅ Scan Market + Auto Broadcast Signal tiap 4 jam\n"
         "✅ Notifikasi real-time\n"
-        "✅ Portfolio tracker + Paper trading stats\n"
+        "✅ Paper trading stats + Sinyal tracker\n"
         "✅ Support VIP 1-on-1\n\n"
         "━━━━━━━━━━━━━━━━━━\n"
         "📞 *Cara Upgrade:*\n"
@@ -342,12 +342,17 @@ async def upgrade_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Pembayaran via QRIS / Transfer Bank\n\n"
         "💡 *Kenapa upgrade?*\n"
         "• Akurasi sinyal lebih tinggi\n"
+        "• Akses fitur eksklusif (Scan Market, Auto Broadcast)\n"
         "• Kuota unlimited untuk analisis harian\n"
-        "• Akses fitur eksklusif lebih awal\n"
         "• Dukung pengembangan bot ini\n\n"
-        "⚠️ *Garansi 7 hari:* Jika tidak puas, uang kembali."
+        "⚠️ *Catatan:* Hasil trading bergantung pada kondisi pasar. "
+        "Bot ini alat bantu analisis, bukan jaminan profit."
     )
-    await update.effective_message.reply_text(msg, parse_mode="Markdown", reply_markup=back_to_menu_keyboard())
+    await update.effective_message.reply_text(
+        message,
+        parse_mode="Markdown",
+        reply_markup=back_to_menu_keyboard()
+    )
 
 
 async def setplan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
