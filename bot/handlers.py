@@ -506,6 +506,64 @@ async def restore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+# ==================== BACKUP COMMAND ====================
+async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    positions = get_positions(chat_id)
+
+    if not positions:
+        await update.effective_message.reply_text(
+            "📭 Tidak ada posisi untuk di-backup.",
+            reply_markup=back_to_menu_keyboard()
+        )
+        return
+
+    export_data = []
+    for p in positions:
+        export_data.append({
+            "pair": p["pair"],
+            "side": p["side"],
+            "entry_price": p["entry_price"],
+            "amount": p["amount"]
+        })
+
+    json_str = json.dumps(export_data)
+    await update.effective_message.reply_text(
+        f"📦 *Backup Posisi*\n\n"
+        f"Salin teks berikut untuk `/restore` nanti:\n\n"
+        f"`{json_str}`",
+        parse_mode="Markdown"
+    )
+
+
+# ==================== RESTORE COMMAND ====================
+async def restore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.effective_message.reply_text(
+            "⚠️ Format: `/restore <JSON>`\nGunakan hasil dari `/backup`.",
+            reply_markup=back_to_menu_keyboard()
+        )
+        return
+
+    json_str = " ".join(context.args)
+    try:
+        data = json.loads(json_str)
+    except Exception:
+        await update.effective_message.reply_text("❌ Format JSON tidak valid.")
+        return
+
+    chat_id = update.effective_chat.id
+    count = 0
+    for item in data:
+        add_position(chat_id, item["pair"], item["side"], item["entry_price"], item["amount"])
+        count += 1
+
+    await update.effective_message.reply_text(
+        f"✅ {count} posisi berhasil di-restore.\nGunakan `/myportfolio` untuk lihat.",
+        reply_markup=back_to_menu_keyboard()
+    )    
+
+
 async def setplan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler /setplan <chat_id> <plan> — admin only"""
     caller_id = update.effective_user.id
