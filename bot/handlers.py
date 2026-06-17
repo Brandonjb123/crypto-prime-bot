@@ -13,7 +13,7 @@ from services.portfolio import add_position, get_positions, remove_position, cal
 from services.signals import save_signal, get_open_signals, check_and_update_signal, get_signal_stats
 
 from db.database import init_db
-from db.models import register_user, get_user_plan, set_user_plan
+from db.models import register_user, get_user_plan, set_user_plan, get_user
 
 from utils.rate_limiter import check_and_increment, get_remaining
 from utils.formatter import format_price, format_analyze, format_signals, format_portfolio, format_paperstats
@@ -370,14 +370,40 @@ async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     analyze_display = "Unlimited" if plan in ("elite", "admin") else f"{remaining['analyze_remaining']}x"
     news_display = "Unlimited" if plan in ("elite", "admin") else f"{remaining['news_remaining']}x"
 
-    msg = (
+    # --- MULAI MODIFIKASI: Tambahkan sisa hari ---
+    expiry_info = ""  # Default kosong
+    # Cek apakah plan bukan 'free' atau 'admin' (hanya untuk premium/elite)
+    if plan not in ("free", "admin"):
+        user = get_user(chat_id)
+        expiry_str = user.get("plan_expiry") if user else None
+        if expiry_str:
+            try:
+                # Konversi string expiry menjadi objek tanggal
+                expiry = datetime.fromisoformat(expiry_str)
+                now = datetime.utcnow()
+                # Hitung selisih hari
+                remaining_days = (expiry - now).days
+                if remaining_days < 0:
+                    remaining_days = 0
+                expiry_info = f"⏳ Sisa {remaining_days} hari\n\n"
+            except:
+                pass  # Jika format salah, abaikan
+    # --- AKHIR MODIFIKASI ---
+
+    # Susun pesan dengan expiry_info disisipkan setelah baris Plan
+    message = (
         f"📊 *Kuota Harian Kamu*\n\n"
         f"Plan: {plan_label}\n\n"
+        f"{expiry_info}"   # <-- Baris baru untuk sisa hari (jika ada)
         f"🔍 /analyze : {analyze_display} tersisa\n"
         f"📰 /news    : {news_display} tersisa\n\n"
         "Kuota di-reset setiap hari pukul 00:00 UTC."
     )
-    await update.effective_message.reply_text(msg, parse_mode="Markdown", reply_markup=back_to_menu_keyboard())
+    await update.effective_message.reply_text(
+        message,
+        parse_mode="Markdown",
+        reply_markup=back_to_menu_keyboard()
+    )
 
 
 async def upgrade_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -422,11 +448,13 @@ async def setplan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.effective_message.reply_text("⛔ Kamu tidak punya akses command ini.")
         return
 
-    if not context.args or len(context.args) != 2:
+    if not context.args or len(context.args) < 2:
         await update.effective_message.reply_text(
-            "⚠️ Format: `/setplan <chat_id> <plan>`\n"
-            "Plan tersedia: free, premium, elite, admin\n"
-            "Contoh: `/setplan 123456789 premium`")
+            "⚠️ Format: `/setplan <chat_id> <plan> [days]`\n"
+            "Plan: free, premium, elite, admin\n"
+            "Contoh: `/setplan 123456789 premium 30` (30 hari)\n"
+            "Kosongkan days untuk permanen."
+        )
         return
 
     try:
@@ -436,11 +464,67 @@ async def setplan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     plan = context.args[1].lower()
-    success = set_user_plan(target_id, plan)
+    days = None
+    if len(context.args) >= 3:
+        try:
+            days = int(context.args[2])
+        except ValueError:
+            await update.effective_message.reply_text("❌ Durasi harus angka (hari).")
+            return
+
+    success = set_user_plan(target_id, plan, days)
     if success:
-        await update.effective_message.reply_text(f"✅ User `{target_id}` berhasil diset ke plan: *{plan}*", parse_mode="Markdown")
+        if days:
+            await update.effective_message.reply_text(
+                f"✅ User `{target_id}` berhasil diset ke plan: *{plan}* selama {days} hari.",
+                parse_mode="Markdown"
+            )
+        else:
+            await update.effective_message.reply_text(
+                f"✅ User `{target_id}` berhasil diset ke plan: *{plan}* (permanen).",
+                parse_mode="Markdown"
+            )
     else:
-        await update.effective_message.reply_text("❌ Gagal. Plan tidak valid. Gunakan: free / premium / elite / admin")
+        await update.effective_message.reply_text("❌ Gagal. Plan tidak valid.")
+
+
+# ==================== (admin only) ====================
+async def userinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    caller_id = update.effective_user.id
+    if caller_id != ADMIN_CHAT_ID:
+        await update.effective_message.reply_text("⛔ Akses khusus admin.")
+        return
+
+    if not context.args:
+        await update.effective_message.reply_text("⚠️ `/userinfo <chat_id>`")
+        return
+
+    try:
+        target_id = int(context.args[0])
+    except ValueError:
+        await update.effective_message.reply_text("❌ Chat ID harus angka.")
+        return
+
+    user = get_user(target_id)
+    if not user:
+        await update.effective_message.reply_text("❌ User tidak ditemukan.")
+        return
+
+    plan = user.get("plan", "free")
+    expiry = user.get("plan_expiry")
+    first_name = user.get("first_name", "-")
+    username = user.get("username", "-")
+
+    expiry_str = expiry if expiry else "Permanen"
+    msg = (
+        f"👤 *User Info*\n\n"
+        f"🔹 Nama: {first_name}\n"
+        f"🔹 Username: @{username}\n"
+        f"🔹 Chat ID: `{target_id}`\n"
+        f"🔹 Plan: {plan}\n"
+        f"🔹 Expiry: {expiry_str}"
+    )
+    await update.effective_message.reply_text(msg, parse_mode="Markdown")
 
 
 # ==================== HELP ====================

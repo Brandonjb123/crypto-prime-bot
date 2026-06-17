@@ -7,8 +7,8 @@ from bot.handlers import (
     news_command, help_command, usage_command,
     addposition_command, removeposition_command,
     myportfolio_command, mysignals_command, paperstats_command,
-    setplan_command, upgrade_command,
-    handle_callback,
+    setplan_command, upgrade_command, handle_callback,
+    userinfo_command,
 )
 
 logger.add("bot.log", rotation="1 day", retention="7 days", level="DEBUG")
@@ -33,6 +33,7 @@ def main():
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(CommandHandler("setplan", setplan_command))
     app.add_handler(CommandHandler("upgrade", upgrade_command))
+    app.add_handler(CommandHandler("userinfo", userinfo_command))
     logger.info("Bot berjalan...")
     app.run_polling()
 
