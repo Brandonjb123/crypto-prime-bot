@@ -31,17 +31,32 @@ def format_price(data: dict) -> str:
     return message
 
 
+def _smart_price(price):
+    """Format harga dengan desimal yang sesuai untuk pair apapun."""
+    if price is None:
+        return "N/A"
+    if price >= 1000:
+        return f"${price:,.2f}"
+    elif price >= 1:
+        return f"${price:,.4f}"
+    elif price >= 0.01:
+        return f"${price:,.6f}"
+    else:
+        return f"${price:,.8f}"
+
+
 def format_analyze(data: dict, pair: str, price_data: dict) -> str:
     verdict = data.get('verdict', 'TIDAK LAYAK')
     is_layak = verdict == 'LAYAK'
 
     # Teknikal section
-    change_24h = price_data.get('price_change_24h', 0)
-    change_7d = price_data.get('price_change_7d', 0)
-    current_price = price_data.get('current_price', 0)
+    change_24h = price_data.get('price_change_24h', 0) or 0
+    change_7d = price_data.get('price_change_7d', 0) or 0
+    current_price = price_data.get('current_price', 0) or 0
+
     teknikal = (
         f"📊 *Teknikal*\n"
-        f"   Harga: ${current_price:,.6f}\n"
+        f"   Harga: {_smart_price(current_price)}\n"
         f"   24h: {change_24h:+.1f}%  |  7d: {change_7d:+.1f}%\n"
         f"   Tren: {data.get('technical_bias', '-')}"
     )
@@ -71,9 +86,9 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
         trade_section = (
             f"📐 *Setup Trade (4H)*\n"
             f"   Side    : {data.get('side', '-')}\n"
-            f"   Entry   : ${entry:,.4f}\n"
-            f"   Target  : ${target:,.4f}\n"
-            f"   Stop    : ${sl:,.4f}\n"
+            f"   Entry   : {_smart_price(entry)}\n"
+            f"   Target  : {_smart_price(target)}\n"
+            f"   Stop    : {_smart_price(sl)}\n"
             f"   R:R     : 1:{rr}\n\n"
             f"📝 {data.get('summary', '')}\n"
             f"⚠️ {data.get('risk_notes', 'DYOR, bukan financial advice')}"
@@ -85,7 +100,7 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
             f"Rekomendasi: Wait & see dulu"
         )
 
-    # TradingView link — BTC/USDT → BTCUSD
+    # TradingView link
     tv_pair = pair.replace("/USDT", "USD").replace("USDT", "USD")
     tv_link = f"https://www.tradingview.com/chart/?symbol={tv_pair}"
 
