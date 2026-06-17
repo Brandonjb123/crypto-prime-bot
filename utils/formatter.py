@@ -177,3 +177,56 @@ def format_paperstats(stats: dict) -> str:
     message += f"🕐 *Diperbarui: {_wib_now().strftime('%H:%M:%S')} WIB*"
     
     return message
+
+
+def format_scan_result(signals: list) -> str:
+    if not signals:
+        return (
+            "🔍 *Scan Market Selesai*\n\n"
+            "Tidak ada pair dengan setup LAYAK saat ini.\n"
+            "Coba lagi dalam beberapa jam."
+        )
+
+    lines = [f"📡 *Scan Market — Top Signal ({len(signals)} LAYAK)*\n"]
+    lines.append("━━━━━━━━━━━━━━━━━━\n")
+
+    for i, s in enumerate(signals, 1):
+        entry = s.get("entry_price", 0)
+        target = s.get("target_price", 0)
+        sl = s.get("stop_loss", 0)
+        side = s.get("side", "-").upper()
+        pair = s.get("pair", "-")
+        rr = round((target - entry) / max(entry - sl, 0.000001), 1)
+        side_icon = "🟢" if side == "LONG" else "🔴"
+
+        lines.append(
+            f"{i}. *{pair}* {side_icon} {side}\n"
+            f"   Entry: {_smart_price(entry)} | Target: {_smart_price(target)}\n"
+            f"   SL: {_smart_price(sl)} | R:R 1:{rr}\n\n"
+        )
+
+    lines.append("━━━━━━━━━━━━━━━━━━\n")
+    lines.append("⚠️ Bukan financial advice. DYOR.")
+    return "\n".join(lines)
+
+
+def format_broadcast_signal(signal: dict) -> str:
+    pair = signal.get("pair", "-")
+    side = signal.get("side", "-").upper()
+    entry = signal.get("entry_price", 0)
+    target = signal.get("target_price", 0)
+    sl = signal.get("stop_loss", 0)
+    summary = signal.get("summary", "")
+    side_icon = "🟢" if side == "LONG" else "🔴"
+    rr = round((target - entry) / max(entry - sl, 0.000001), 1)
+
+    return (
+        f"🚨 *VIP SIGNAL — {pair}*\n\n"
+        f"{side_icon} Side: {side}\n"
+        f"📍 Entry   : {_smart_price(entry)}\n"
+        f"🎯 Target  : {_smart_price(target)}\n"
+        f"🛑 Stop    : {_smart_price(sl)}\n"
+        f"📊 R:R     : 1:{rr}\n\n"
+        f"📝 {summary}\n\n"
+        f"⚠️ Bukan financial advice. DYOR."
+    )

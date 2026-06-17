@@ -2,6 +2,7 @@ aiohappyeyeballs==2.6.2
 aiohttp==3.14.1
 aiosignal==1.4.0
 anyio==4.13.0
+APScheduler==3.11.2
 attrs==26.1.0
 certifi==2026.5.20
 charset-normalizer==3.4.7
@@ -22,6 +23,8 @@ python-telegram-bot==22.8
 requests==2.34.2
 sgmllib3k==1.0.0
 turso-python==1.8
+tzdata==2026.2
+tzlocal==5.4.3
 urllib3==2.7.0
 win32_setctime==1.2.0
 yarl==1.24.2

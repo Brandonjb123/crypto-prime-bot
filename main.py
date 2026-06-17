@@ -7,7 +7,10 @@ from bot.handlers import (
     news_command, help_command, usage_command,
     mysignals_command, paperstats_command, setplan_command, 
     upgrade_command, handle_callback, userinfo_command,
+    scan_command,
 )
+from services.scanner import scan_market
+from services.broadcaster import broadcast_signals
 
 logger.add("bot.log", rotation="1 day", retention="7 days", level="DEBUG")
 logger.info("Starting bot...")
@@ -29,8 +32,22 @@ def main():
     app.add_handler(CommandHandler("setplan", setplan_command))
     app.add_handler(CommandHandler("upgrade", upgrade_command))
     app.add_handler(CommandHandler("userinfo", userinfo_command))
+    app.add_handler(CommandHandler("scan", scan_command))
     logger.info("Bot berjalan...")
     app.run_polling()
+
+
+# Auto broadcast tiap 4 jam
+    async def scheduled_broadcast(context):
+        signals = await scan_market(limit=100)
+        if signals:
+            await broadcast_signals(context.bot, signals)
+
+    app.job_queue.run_repeating(
+        scheduled_broadcast,
+        interval=14400,  # 4 jam
+        first=60         # 60 detik setelah bot start
+    )
 
 if __name__ == "__main__":
     main()

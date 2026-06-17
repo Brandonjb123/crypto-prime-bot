@@ -74,3 +74,37 @@ async def get_market_data(coin_id: str) -> dict:
     }
     price_cache.set(f"market_{coin_id}", result)
     return result
+
+
+async def get_top_pairs(limit: int = 100) -> list:
+    """Return list top {limit} crypto by market cap."""
+    from utils.cache import price_cache
+    cached = price_cache.get("top_pairs")
+    if cached:
+        return cached[:limit]
+
+    url = "https://api.coingecko.com/api/v3/coins/markets"
+    params = {
+        "vs_currency": "usd",
+        "order": "market_cap_desc",
+        "per_page": limit,
+        "page": 1,
+        "sparkline": "false",
+        "price_change_percentage": "24h",
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params, timeout=30.0)
+        response.raise_for_status()
+        data = response.json()
+
+    pairs = []
+    for item in data:
+        pairs.append({
+            "symbol": item["symbol"].upper(),
+            "coin_id": item["id"],
+            "name": item["name"],
+        })
+
+    # Cache 1 jam
+    price_cache.set("top_pairs", pairs)
+    return pairs[:limit]

@@ -33,6 +33,9 @@ from bot.keyboards import (
     back_to_menu_keyboard,
 )
 
+from services.scanner import scan_market
+from utils.formatter import format_scan_result
+
 
 # ==================== START ====================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -432,10 +435,43 @@ async def userinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text(msg, parse_mode="Markdown")
 
 
+async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler /scan — hanya untuk premium, elite, admin"""
+    chat_id = update.effective_chat.id
+    plan = get_user_plan(chat_id)
+
+    if plan == "free":
+        await update.effective_message.reply_text(
+            "⛔ Fitur Scan Market hanya tersedia untuk plan Premium & Elite.\n"
+            "Ketik /upgrade untuk info paket."
+        )
+        return
+
+    msg = await update.effective_message.reply_text(
+        "📡 Scanning top 100 pair...\nIni butuh 1-2 menit, mohon tunggu ⏳"
+    )
+
+    try:
+        signals = await scan_market(limit=100)
+        result = format_scan_result(signals)
+        await msg.edit_text(result, parse_mode="Markdown")
+    except Exception as e:
+        logger.error(f"Error /scan: {e}")
+        await msg.edit_text("😔 Gagal melakukan scan market. Coba lagi nanti.")
+
 # ==================== HELP ====================
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = """
 🤖 *Crypto Prime — AI Trading Assistant*
+
+
+━━━━━━━━━━━━━━━━━━━━
+
+📡 *Scan Market (Premium+)*
+/scan — Scan top 100 pair, cari setup LAYAK
+
+━━━━━━━━━━━━━━━━━━━━
+
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -509,6 +545,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await usage_command(update, context)
     elif data == "menu_help":
         await help_command(update, context)
+    elif data == "menu_scan":
+        await scan_command(update, context)    
 
     # --- REFRESH PRICE ---
     elif data.startswith("refresh_price_"):
