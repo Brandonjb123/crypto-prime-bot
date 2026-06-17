@@ -464,14 +464,10 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = """
 🤖 *Crypto Prime — AI Trading Assistant*
 
-
 ━━━━━━━━━━━━━━━━━━━━
 
 📡 *Scan Market (Premium+)*
 /scan — Scan top 100 pair, cari setup LAYAK
-
-━━━━━━━━━━━━━━━━━━━━
-
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -506,7 +502,11 @@ Bot ini hanya alat bantu analisis, bukan saran keuangan. Selalu lakukan riset se
 
 📞 *Admin:* @BenzAckerman
 """
-    await update.effective_message.reply_text(help_text, parse_mode="Markdown", reply_markup=back_to_menu_keyboard())
+    await update.effective_message.reply_text(
+        help_text,
+        parse_mode="Markdown",
+        reply_markup=back_to_menu_keyboard()
+    )
 
 
 # ==================== CALLBACKS ====================
