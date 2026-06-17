@@ -47,7 +47,7 @@ def get_user_plan(chat_id: int) -> str:
 
 def set_user_plan(chat_id: int, plan: str) -> bool:
     """Set plan user. Return True kalau berhasil."""
-    if plan not in ("free", "premium", "admin"):
+    if plan not in ("free", "premium", "elite", "admin"):
         return False
     conn = get_connection()
     cursor = conn.cursor()

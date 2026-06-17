@@ -4,7 +4,8 @@ from db.database import get_connection
 
 PLAN_LIMITS = {
     "free": {"analyze": 3, "news": 5},
-    "premium": {"analyze": 20, "news": 30},
+    "premium": {"analyze": 30, "news": 50},
+    "elite": {"analyze": 999999, "news": 999999},
     "admin": {"analyze": 999999, "news": 999999},
 }
 
