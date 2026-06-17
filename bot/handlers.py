@@ -492,6 +492,48 @@ async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+# ==================== UPGRADE COMMAND ====================
+async def upgrade_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler /upgrade — Menampilkan paket berbayar"""
+    message = (
+        "🚀 *Crypto Prime — Upgrade Plan*\n\n"
+        "Buka potensi trading maksimal dengan AI analisis tanpa batas.\n\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        "⭐ *PRO-TRADER*\n"
+        "💰 Rp 250.000 / bulan\n\n"
+        "✅ 30x /analyze per hari\n"
+        "✅ 50x /news per hari\n"
+        "✅ Analisis multi-factor (Teknikal, Sentimen, Likuiditas)\n"
+        "✅ Sinyal otomatis tersimpan\n"
+        "✅ Portfolio tracker\n"
+        "✅ Support prioritas\n\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        "👑 *ELITE (Most Powerful)*\n"
+        "💰 Rp 500.000 / bulan\n\n"
+        "✅ Unlimited /analyze & /news\n"
+        "✅ Analisis AI paling akurat & mendalam\n"
+        "✅ Auto-trading ready (Fase 5)\n"
+        "✅ Notifikasi real-time\n"
+        "✅ Portfolio tracker + Paper trading stats\n"
+        "✅ Support VIP 1-on-1\n\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        "📞 *Cara Upgrade:*\n"
+        "Hubungi admin: @BenzAckerman\n"
+        "Pembayaran via QRIS / Transfer Bank\n\n"
+        "💡 *Kenapa upgrade?*\n"
+        "• Akurasi sinyal lebih tinggi\n"
+        "• Kuota unlimited untuk analisis harian\n"
+        "• Akses fitur eksklusif lebih awal\n"
+        "• Dukung pengembangan bot ini\n\n"
+        "⚠️ *Garansi 7 hari:* Jika tidak puas, uang kembali."
+    )
+    await update.effective_message.reply_text(
+        message,
+        parse_mode="Markdown",
+        reply_markup=back_to_menu_keyboard()
+    )
+
+
 # ==================== RESTORE COMMAND ====================
 async def restore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
@@ -642,6 +684,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 📋 *Lainnya*
 /usage — Cek sisa kuota harian
+/upgrade — Lihat paket premium & upgrade
 /help — Tampilkan bantuan ini
 
 ⚠️ *Disclaimer:* Bot ini hanya alat bantu analisis, bukan saran keuangan. Selalu lakukan riset sendiri.
