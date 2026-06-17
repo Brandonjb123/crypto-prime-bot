@@ -11,6 +11,7 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
          InlineKeyboardButton("📊 Portfolio", callback_data="menu_portfolio")],
         [InlineKeyboardButton("📡 Signals", callback_data="menu_signals"),
          InlineKeyboardButton("📋 Stats", callback_data="menu_stats")],
+         [InlineKeyboardButton("⭐ Upgrade", callback_data="menu_upgrade")],
         [InlineKeyboardButton("❓ Help", callback_data="menu_help")],
     ]
     return InlineKeyboardMarkup(keyboard)
