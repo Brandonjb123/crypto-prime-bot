@@ -32,6 +32,8 @@ from bot.keyboards import (
     back_to_menu_keyboard,
 )
 from services.coingecko import get_price, get_market_data
+from config import ADMIN_CHAT_ID
+from db.models import get_user_plan, set_user_plan
 
 # ==================== START COMMAND ====================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -100,19 +102,15 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ==================== ANALYZE COMMAND ====================
 async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not check_and_increment(update.effective_chat.id, "analyze"):
-        await update.effective_message.reply_text(
-            "⚠️ Kuota harian `/analyze` kamu sudah habis.\n"
-            "Silakan coba lagi besok atau gunakan `/usage` untuk cek sisa kuota."
-        )
-        return
-
     chat_id = update.effective_chat.id
+    plan = get_user_plan(chat_id)
 
-    if not context.args:
+    if not check_and_increment(chat_id, "analyze", plan):
+        plan_label = {"free": "Free (3x/hari)", "premium": "⭐ Premium", "admin": "👑 Admin"}.get(plan, "Free")
         await update.effective_message.reply_text(
-            "⚠️ Format: `/analyze <PAIR>`\n"
-            "Contoh: `/analyze BTC`",
+            f"⛔ Kuota /analyze kamu habis hari ini (plan {plan_label}).\n"
+            "Upgrade ke Premium untuk kuota lebih banyak.\n"
+            "Reset: 00:00 UTC"
         )
         return
 
@@ -176,10 +174,15 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ==================== NEWS COMMAND ====================
 async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not check_and_increment(update.effective_chat.id, "news"):
+    chat_id = update.effective_chat.id
+    plan = get_user_plan(chat_id)
+
+    if not check_and_increment(chat_id, "news", plan):
+        plan_label = {"free": "Free (5x/hari)", "premium": "⭐ Premium", "admin": "👑 Admin"}.get(plan, "Free")
         await update.effective_message.reply_text(
-            "⚠️ Kuota harian `/news` kamu sudah habis.\n"
-            "Silakan coba lagi besok atau gunakan `/usage` untuk cek sisa kuota."
+            f"⛔ Kuota /news kamu habis hari ini (plan {plan_label}).\n"
+            "Upgrade ke Premium untuk kuota lebih banyak.\n"
+            "Reset: 00:00 UTC"
         )
         return
 
@@ -456,10 +459,14 @@ async def paperstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 # ==================== USAGE COMMAND ====================
 async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    remaining = get_remaining(chat_id)
+    plan = get_user_plan(chat_id)
+    remaining = get_remaining(chat_id, plan)
+
+    plan_label = {"free": "🆓 Free", "premium": "⭐ Premium", "admin": "👑 Admin"}.get(plan, "Free")
 
     message = (
-        "📊 *Kuota Harian Kamu*\n\n"
+        f"📊 *Kuota Harian Kamu*\n\n"
+        f"Plan: {plan_label}\n\n"
         f"🔍 /analyze : {remaining['analyze_remaining']}x tersisa\n"
         f"📰 /news    : {remaining['news_remaining']}x tersisa\n\n"
         "Kuota di-reset setiap hari pukul 00:00 UTC."
@@ -468,36 +475,6 @@ async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         message,
         parse_mode="Markdown",
         reply_markup=back_to_menu_keyboard()
-    )
-
-
-# ==================== BACKUP COMMAND ====================
-async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    positions = get_positions(chat_id)
-
-    if not positions:
-        await update.effective_message.reply_text(
-            "📭 Tidak ada posisi untuk di-backup.",
-            reply_markup=back_to_menu_keyboard()
-        )
-        return
-
-    export_data = []
-    for p in positions:
-        export_data.append({
-            "pair": p["pair"],
-            "side": p["side"],
-            "entry_price": p["entry_price"],
-            "amount": p["amount"]
-        })
-
-    json_str = json.dumps(export_data)
-    await update.effective_message.reply_text(
-        f"📦 *Backup Posisi*\n\n"
-        f"Salin teks berikut untuk `/restore` nanti:\n\n"
-        f"`{json_str}`",
-        parse_mode="Markdown"
     )
 
 
@@ -527,6 +504,38 @@ async def restore_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"✅ {count} posisi berhasil di-restore.\nGunakan `/myportfolio` untuk lihat.",
         reply_markup=back_to_menu_keyboard()
     )
+
+
+async def setplan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler /setplan <chat_id> <plan> — admin only"""
+    caller_id = update.effective_user.id
+
+    if caller_id != ADMIN_CHAT_ID:
+        await update.effective_message.reply_text("⛔ Kamu tidak punya akses command ini.")
+        return
+
+    if not context.args or len(context.args) != 2:
+        await update.effective_message.reply_text(
+            "⚠️ Format: `/setplan <chat_id> <plan>`\n"
+            "Plan tersedia: free, premium, admin\n"
+            "Contoh: `/setplan 123456789 premium`"
+        )
+        return
+
+    try:
+        target_id = int(context.args[0])
+    except ValueError:
+        await update.effective_message.reply_text("❌ Chat ID harus angka.")
+        return
+
+    plan = context.args[1].lower()
+    success = set_user_plan(target_id, plan)
+
+    if success:
+        await update.effective_message.reply_text(f"✅ User `{target_id}` berhasil diset ke plan: *{plan}*", parse_mode="Markdown")
+    else:
+        await update.effective_message.reply_text("❌ Gagal. Plan tidak valid. Gunakan: free / premium / admin")
+
 
 
 # ==================== HELP COMMAND ====================

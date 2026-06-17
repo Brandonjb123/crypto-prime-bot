@@ -16,6 +16,7 @@ from bot.handlers import (
     addposition_command, removeposition_command,
     myportfolio_command, backup_command, restore_command,
     mysignals_command, paperstats_command, handle_callback,
+    setplan_command,
 )
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
 
@@ -44,6 +45,7 @@ def main():
     app.add_handler(CommandHandler("mysignals", mysignals_command))
     app.add_handler(CommandHandler("paperstats", paperstats_command))
     app.add_handler(CallbackQueryHandler(handle_callback))
+    app.add_handler(CommandHandler("setplan", setplan_command))
     logger.info("Bot berjalan...")
     app.run_polling()
 

@@ -8,6 +8,7 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 CCDATA_API_KEY = os.getenv("CCDATA_API_KEY", "placeholder")
+ADMIN_CHAT_ID = int(os.getenv(7175294180, "0"))
 
 # Debug: print keberadaan token (tanpa menampilkan token lengkap)
 if TELEGRAM_BOT_TOKEN:
