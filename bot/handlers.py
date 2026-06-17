@@ -740,6 +740,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await paperstats_command(update, context)
     elif data == "menu_upgrade":
         await upgrade_command(update, context)
+    elif data == "menu_profile":
+        await usage_command(update, context)    
     elif data == "menu_help":
         await help_command(update, context)
 
