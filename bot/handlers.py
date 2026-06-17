@@ -20,7 +20,7 @@ from utils.formatter import format_price, format_analyze, format_signals, format
 from utils.symbols import SYMBOL_TO_COINGECKO_ID
 
 from prompts.system import SYSTEM_PROMPT
-from prompts.templates import build_analysis_prompt
+from prompts.templates import build_analyze_prompt
 
 from bot.keyboards import (
     main_menu_keyboard,
