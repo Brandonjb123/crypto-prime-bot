@@ -26,10 +26,9 @@ def price_keyboard(symbol: str) -> InlineKeyboardMarkup:
 
 
 def analyze_keyboard() -> InlineKeyboardMarkup:
-    """Keyboard untuk /analyze"""
     keyboard = [
         [InlineKeyboardButton("📡 Lihat Signals", callback_data="menu_signals"),
-         InlineKeyboardButton("📊 Portfolio", callback_data="menu_portfolio")],
+         InlineKeyboardButton("📡 Scan Market", callback_data="menu_scan")],
     ]
     return InlineKeyboardMarkup(keyboard)
 
