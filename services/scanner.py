@@ -7,6 +7,7 @@ from services.llm import ask_llm
 from prompts.system import SYSTEM_PROMPT
 from prompts.templates import build_analyze_prompt
 from loguru import logger
+from utils.validator import validate_signal_prices
 
 
 async def scan_market(limit: int = 100) -> list:
@@ -34,9 +35,11 @@ async def scan_market(limit: int = 100) -> list:
 
             data = json.loads(raw)
             if data.get("verdict") == "LAYAK":
-                data["pair"] = f"{symbol}/USDT"
-                data["price_data"] = price_data
-                results.append(data)
+                current_price = price_data.get("current_price", 0)
+                if validate_signal_prices(data, current_price):
+                    data["pair"] = f"{symbol}/USDT"
+                    data["price_data"] = price_data
+                    results.append(data)
 
         except Exception as e:
             logger.warning(f"Scan {symbol} error: {e}")

@@ -35,6 +35,7 @@ from bot.keyboards import (
 
 from services.scanner import scan_market
 from utils.formatter import format_scan_result
+from utils.validator import validate_signal_prices
 
 
 # ==================== START ====================
@@ -131,9 +132,22 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             verdict = data.get("verdict", "TIDAK LAYAK")
             msg = format_analyze(data, pair, price_data)
 
-            if verdict == "LAYAK" and data.get("entry_price"):
-                save_signal(chat_id, pair, data["side"].lower(), float(data["entry_price"]),
-                            float(data["target_price"]), float(data["stop_loss"]))
+            is_valid = validate_signal_prices(data, price_data["current_price"])
+
+            if verdict == "LAYAK" and is_valid:
+                save_signal(
+                    chat_id,
+                    pair,
+                    data["side"].lower(),
+                    float(data["entry_price"]),
+                    float(data["target_price"]),
+                    float(data["stop_loss"])
+                )
+            elif verdict == "LAYAK" and not is_valid:
+                # Override verdict jika validasi gagal
+                data["verdict"] = "TIDAK LAYAK"
+                data["verdict_reason"] = "Setup ditolak: entry price tidak realistis atau R:R di bawah minimum."
+                message = format_analyze(data, pair, price_data)
 
             await update.effective_message.reply_text(msg, parse_mode="Markdown", reply_markup=analyze_keyboard())
         except (json.JSONDecodeError, ValueError, KeyError) as parse_error:
