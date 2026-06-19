@@ -66,3 +66,19 @@ def back_to_menu_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("📊 Menu Utama", callback_data="menu_start")],
     ]
     return InlineKeyboardMarkup(keyboard)
+
+
+def analyze_result_keyboard(pair: str) -> InlineKeyboardMarkup:
+    """Tombol di bawah hasil /analyze."""
+    tv_symbol = pair.replace("/USDT", "USD").replace("USDT", "USD")
+    keyboard = [
+        [
+            InlineKeyboardButton("🔄 Refresh", callback_data=f"refresh_analyze_{pair}"),
+            InlineKeyboardButton("📊 Chart", url=f"https://www.tradingview.com/chart/?symbol={tv_symbol}")
+        ],
+        [
+            InlineKeyboardButton("📡 Scan Market", callback_data="menu_scan"),
+            InlineKeyboardButton("🏠 Menu Utama", callback_data="menu_start")
+        ]
+    ]
+    return InlineKeyboardMarkup(keyboard)

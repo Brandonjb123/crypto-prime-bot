@@ -24,12 +24,8 @@ from prompts.templates import build_analyze_prompt
 from config import ADMIN_CHAT_ID
 
 from bot.keyboards import (
-    main_menu_keyboard,
-    price_keyboard,
-    analyze_keyboard,
-    signals_keyboard,
-    paperstats_keyboard,
-    back_to_menu_keyboard,
+    main_menu_keyboard, price_keyboard, analyze_keyboard, analyze_result_keyboard,
+    signals_keyboard, paperstats_keyboard, back_to_menu_keyboard,
 )
 
 from services.scanner import scan_market
@@ -179,7 +175,10 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             msg = format_analyze(data, pair, price_data)
 
             await update.effective_message.reply_text(
-                msg, parse_mode="Markdown", reply_markup=analyze_keyboard()
+                msg,
+                parse_mode="Markdown",
+                reply_markup=analyze_result_keyboard(pair),
+                disable_web_page_preview=True
             )
 
         except (json.JSONDecodeError, ValueError, KeyError) as parse_error:
@@ -679,6 +678,54 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(
             f"Silakan gunakan `/analyze {symbol}` untuk analisis {symbol}."
         )
+
+    # --- REFRESH ANALYZE ---
+    elif data.startswith("refresh_analyze_"):
+        pair = data.replace("refresh_analyze_", "")
+        await query.answer("🔄 Menganalisis ulang...")
+
+        coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
+        if not coin_id:
+            await query.edit_message_text(f"❌ Pair {pair} tidak ditemukan.")
+            return
+
+        try:
+            price_data = await get_market_data(coin_id)
+        except Exception:
+            basic = await get_price(coin_id)
+            price_data = {
+                "current_price": basic.get("current_price"),
+                "price_change_24h": basic.get("price_change_percentage_24h", 0) or 0,
+                "price_change_7d": 0,
+                "total_volume": basic.get("total_volume"),
+                "market_cap": basic.get("market_cap"),
+                "high_24h": None,
+                "low_24h": None,
+            }
+
+        articles = await get_news(pair)
+        headlines = [a["title"] for a in articles[:5]]
+        prompt = build_analyze_prompt(pair, price_data, headlines)
+        raw = await ask_llm(SYSTEM_PROMPT, prompt)
+
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            await query.edit_message_text(raw)
+            return
+
+        is_valid = validate_signal_prices(data, price_data["current_price"])
+        if data.get("verdict") == "SETUP_VALID" and not is_valid:
+            data["verdict"] = "NO_SETUP"
+            data["verdict_reason"] = "Setup ditolak: entry tidak realistis atau R:R kurang."
+
+        msg = format_analyze(data, pair, price_data)
+        await query.edit_message_text(
+            msg,
+            parse_mode="Markdown",
+            reply_markup=analyze_result_keyboard(pair),
+            disable_web_page_preview=True
+        )    
 
     else:
         await query.message.reply_text("❌ Tombol tidak dikenali.")
