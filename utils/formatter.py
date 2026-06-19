@@ -5,6 +5,35 @@ def _wib_now():
     """Return current time in WIB (UTC+7)."""
     return datetime.now(timezone.utc) + timedelta(hours=7)
 
+def calculate_leverage_pnl(entry: float, target: float, stop: float, side: str) -> dict:
+    """Hitung estimasi PnL% untuk leverage 5x, 10x, 20x."""
+    if side.upper() == "LONG":
+        base_profit_pct = (target - entry) / entry * 100
+        base_loss_pct = (entry - stop) / entry * 100
+    else:
+        base_profit_pct = (entry - target) / entry * 100
+        base_loss_pct = (stop - entry) / entry * 100
+
+    result = {}
+    for lev in [5, 10, 20]:
+        result[lev] = {
+            "profit": round(base_profit_pct * lev, 1),
+            "loss": round(base_loss_pct * lev, 1)
+        }
+    return result
+
+
+def format_leverage_estimate(entry: float, target: float, stop: float, side: str) -> str:
+    """Format estimasi PnL leverage jadi teks."""
+    pnl_data = calculate_leverage_pnl(entry, target, stop, side)
+    lines = ["💡 *Estimasi PnL (jika TP/SL kena):*"]
+    for lev in [5, 10, 20]:
+        profit = pnl_data[lev]["profit"]
+        loss = pnl_data[lev]["loss"]
+        lines.append(f"   {lev}x  →  Profit +{profit}% / Loss -{loss}%")
+    return "\n".join(lines)
+
+
 def format_price(data: dict) -> str:
     name = data.get("name", "Unknown")
     symbol = data.get("symbol", "???")
@@ -93,6 +122,13 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
             f"📝 {data.get('summary', '')}\n"
             f"⚠️ {data.get('risk_notes', 'DYOR, bukan financial advice')}"
         )
+        side_val = data.get('side', 'LONG')
+        leverage_estimate = format_leverage_estimate(entry, target, sl, side_val)
+        trade_section = (
+            f"{trade_section}\n\n"
+            f"{leverage_estimate}\n\n"
+            f"⚠️ Leverage tinggi = risiko tinggi. Estimasi di atas untuk gambaran, bukan rekomendasi leverage."
+        )
     else:
         verdict_box = "⛔ *VERDICT: TIDAK LAYAK*"
         trade_section = (
@@ -167,7 +203,7 @@ def format_portfolio(positions: list) -> str:
 
 
 def format_paperstats(stats: dict) -> str:
-    message = "📊 *Paper Trading Stats*\n\n"
+    message = "📊 *Paper Trading Stats* (Basis: Leverage 10x)\n\n"
     message += f"📈 Win Rate: {stats.get('win_rate', 0):.1f}% ({stats.get('win_count', 0)}/{stats.get('total_closed', 0)})\n"
     message += f"💰 Avg Profit: 🟢 {stats.get('avg_profit', 0):+.2f}%\n"
     message += f"💸 Avg Loss: 🔴 {stats.get('avg_loss', 0):+.2f}%\n\n"
@@ -202,8 +238,14 @@ def format_scan_result(signals: list) -> str:
         lines.append(
             f"{i}. *{pair}* {side_icon} {side}\n"
             f"   Entry: {_smart_price(entry)} | Target: {_smart_price(target)}\n"
-            f"   SL: {_smart_price(sl)} | R:R 1:{rr}\n\n"
+            f"   SL: {_smart_price(sl)} | R:R 1:{rr}\n\n"   
         )
+        pnl_10x = calculate_leverage_pnl(entry, target, sl, side)[10]
+
+        lines.append(
+            f"   💡 Est. PnL @10x: +{pnl_10x['profit']}% / -{pnl_10x['loss']}%\n\n"
+        )
+        
 
     lines.append("━━━━━━━━━━━━━━━━━━\n")
     lines.append("⚠️ Bukan financial advice. DYOR.")
@@ -220,13 +262,15 @@ def format_broadcast_signal(signal: dict) -> str:
     side_icon = "🟢" if side == "LONG" else "🔴"
     rr = round((target - entry) / max(entry - sl, 0.000001), 1)
 
+    pnl_10x = calculate_leverage_pnl(entry, target, sl, side)[10]
     return (
         f"🚨 *VIP SIGNAL — {pair}*\n\n"
-        f"{side_icon} Side: {side}\n"
+        f"{side_icon} Side: {side.upper()}\n"
         f"📍 Entry   : {_smart_price(entry)}\n"
         f"🎯 Target  : {_smart_price(target)}\n"
         f"🛑 Stop    : {_smart_price(sl)}\n"
-        f"📊 R:R     : 1:{rr}\n\n"
+        f"📊 R:R     : 1:{rr}\n"
+        f"💡 Est. PnL @10x: +{pnl_10x['profit']}% / -{pnl_10x['loss']}%\n\n"
         f"📝 {summary}\n\n"
         f"⚠️ Bukan financial advice. DYOR."
     )
