@@ -12,10 +12,10 @@ berdasarkan TIGA faktor sekaligus:
 3. LIKUIDITAS: Volume dan market cap untuk menilai keamanan
 
 ATURAN VERDICT:
-- LAYAK: minimal 2 dari 3 faktor positif, tidak ada faktor
+- SETUP_VALID: minimal 2 dari 3 faktor positif, tidak ada faktor
   sangat negatif (regulasi besar, dump >20%, volume rendah),
   DAN R:R minimal 1:1.5
-- TIDAK LAYAK: jika ada faktor yang bisa menyebabkan kerugian
+- NO_SETUP: jika ada faktor yang bisa menyebabkan kerugian
   besar, atau R:R di bawah 1:1.5
 
 ATURAN ENTRY/TARGET/STOP LOSS:

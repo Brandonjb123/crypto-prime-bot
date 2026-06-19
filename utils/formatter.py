@@ -75,8 +75,8 @@ def _smart_price(price):
 
 
 def format_analyze(data: dict, pair: str, price_data: dict) -> str:
-    verdict = data.get('verdict', 'TIDAK LAYAK')
-    is_layak = verdict == 'LAYAK'
+    verdict = data.get('verdict', 'NO_SETUP')
+    is_valid = verdict == 'SETUP_VALID'
 
     # Teknikal section
     change_24h = price_data.get('price_change_24h', 0) or 0
@@ -106,12 +106,12 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
     )
 
     # Verdict
-    if is_layak:
+    if is_valid:
         entry = data.get('entry_price')
         target = data.get('target_price')
         sl = data.get('stop_loss')
         rr = round((target - entry) / (entry - sl), 1) if sl and entry and target else '-'
-        verdict_box = "✅ *VERDICT: LAYAK TRADING*"
+        verdict_box = "✅ *SETUP VALID — TRADE READY*"
         trade_section = (
             f"📐 *Setup Trade (4H)*\n"
             f"   Side    : {data.get('side', '-')}\n"
@@ -130,7 +130,7 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
             f"⚠️ Leverage tinggi = risiko tinggi. Estimasi di atas untuk gambaran, bukan rekomendasi leverage."
         )
     else:
-        verdict_box = "⛔ *VERDICT: TIDAK LAYAK*"
+        verdict_box = "🚫 *NO SETUP — TIDAK ADA TRADE*"
         trade_section = (
             f"Alasan: {data.get('verdict_reason', '-')}\n"
             f"Rekomendasi: Wait & see dulu"
@@ -219,11 +219,11 @@ def format_scan_result(signals: list) -> str:
     if not signals:
         return (
             "🔍 *Scan Market Selesai*\n\n"
-            "Tidak ada pair dengan setup LAYAK saat ini.\n"
+            "Tidak ada pair dengan SETUP VALID saat ini.\n"
             "Coba lagi dalam beberapa jam."
         )
 
-    lines = [f"📡 *Scan Market — Top Signal ({len(signals)} LAYAK)*\n"]
+    lines = [f"📡 *Scan Market — Top Signal ({len(signals)} SETUP VALID)*\n"]
     lines.append("━━━━━━━━━━━━━━━━━━\n")
 
     for i, s in enumerate(signals, 1):

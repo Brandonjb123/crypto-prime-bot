@@ -10,7 +10,7 @@ def validate_signal_prices(data: dict, current_price: float) -> bool:
     2. R:R minimum 1:1.5
     3. Semua field ada dan bertipe angka
     """
-    if data.get("verdict") != "LAYAK":
+    if data.get("verdict") != "SETUP_VALID":
         return True
 
     entry = data.get("entry_price")

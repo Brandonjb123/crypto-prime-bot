@@ -129,12 +129,12 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # 4. Parse JSON
         try:
             data = json.loads(analysis)
-            verdict = data.get("verdict", "TIDAK LAYAK")
+            verdict = data.get("verdict", "NO_SETUP")
             msg = format_analyze(data, pair, price_data)
 
             is_valid = validate_signal_prices(data, price_data["current_price"])
 
-            if verdict == "LAYAK" and is_valid:
+            if verdict == "SETUP_VALID" and is_valid:
                 save_signal(
                     chat_id,
                     pair,
@@ -143,9 +143,9 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     float(data["target_price"]),
                     float(data["stop_loss"])
                 )
-            elif verdict == "LAYAK" and not is_valid:
+            elif verdict == "SETUP_VALID" and not is_valid:
                 # Override verdict jika validasi gagal
-                data["verdict"] = "TIDAK LAYAK"
+                data["verdict"] = "NO_SETUP"
                 data["verdict_reason"] = "Setup ditolak: entry price tidak realistis atau R:R di bawah minimum."
                 message = format_analyze(data, pair, price_data)
 

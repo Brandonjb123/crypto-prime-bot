@@ -54,7 +54,7 @@ INSTRUKSI WAJIB UNTUK ANGKA:
 JSON schema (gunakan angka sesuai skala harga {current_price}):
 {{
   "pair": "{pair}",
-  "verdict": "LAYAK atau TIDAK LAYAK",
+  "verdict": "SETUP_VALID atau NO_SETUP",
   "technical_bias": "Bullish atau Bearish atau Sideways",
   "sentiment": "Positif atau Negatif atau Neutral",
   "liquidity": "Tinggi atau Cukup atau Rendah",

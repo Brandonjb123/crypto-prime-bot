@@ -34,7 +34,7 @@ async def scan_market(limit: int = 100) -> list:
             raw = await ask_llm(SYSTEM_PROMPT, prompt)
 
             data = json.loads(raw)
-            if data.get("verdict") == "LAYAK":
+            if data.get("verdict") == "SETUP_VALID":
                 current_price = price_data.get("current_price", 0)
                 if validate_signal_prices(data, current_price):
                     data["pair"] = f"{symbol}/USDT"
