@@ -2,7 +2,7 @@
 import json
 from datetime import datetime
 
-from telegram import Update
+from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from loguru import logger
 
@@ -32,9 +32,6 @@ from bot.keyboards import (
 from services.scanner import scan_market
 from utils.formatter import format_scan_result
 from utils.validator import validate_signal_prices
-
-from telegram import Update, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
 
 
 # ==================== START ====================
@@ -130,7 +127,6 @@ async def run_analyze(pair: str, chat_id: int) -> tuple[str, InlineKeyboardMarku
         data["verdict"] = "NO_SETUP"
         data["verdict_reason"] = "Setup ditolak: entry tidak realistis atau R:R kurang."
 
-    # Simpan sinyal jika SETUP_VALID
     if data.get("verdict") == "SETUP_VALID" and is_valid:
         save_signal(
             chat_id,
@@ -138,7 +134,7 @@ async def run_analyze(pair: str, chat_id: int) -> tuple[str, InlineKeyboardMarku
             data["side"].lower(),
             float(data["entry_price"]),
             float(data["target_price"]),
-            float(data["stop_loss"])
+            float(data["stop_loss"]),
         )
 
     result_text = format_analyze(data, pair, price_data)
@@ -154,20 +150,19 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not check_and_increment(chat_id, "analyze", plan):
         plan_label = {"free": "Free (3x/hari)", "premium": "⭐ Premium", "elite": "👑 Elite", "admin": "👑 Admin"}.get(plan, "Free")
         await update.effective_message.reply_text(
-            f"⛔ Kuota /analyze kamu habis hari ini (plan {plan_label}).\nUpgrade ke Premium untuk kuota lebih banyak.\nReset: 00:00 UTC")
+            f"⛔ Kuota /analyze kamu habis hari ini (plan {plan_label}).\nUpgrade ke Premium untuk kuota lebih banyak.\nReset: 00:00 UTC"
+        )
         return
 
-    # Jika tanpa argumen, tampilkan keyboard pilihan pair
     if not context.args:
         await update.effective_message.reply_text(
             "📊 *Pilih pair untuk dianalisis:*\n\nTap salah satu di bawah, atau ketik pair lain.",
             parse_mode="Markdown",
-            reply_markup=pair_selection_keyboard()
+            reply_markup=pair_selection_keyboard(),
         )
         return
 
     pair = context.args[0].upper()
-
     await update.effective_message.reply_text("🔍 Menganalisis multi-factor... Mohon tunggu.")
 
     result_text, keyboard = await run_analyze(pair, chat_id)
@@ -176,7 +171,7 @@ async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         result_text,
         parse_mode="Markdown",
         reply_markup=keyboard,
-        disable_web_page_preview=True
+        disable_web_page_preview=True,
     )
 
 
@@ -186,22 +181,14 @@ async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     plan = get_user_plan(chat_id)
 
     if not check_and_increment(chat_id, "news", plan):
-        plan_label = {
-            "free": "Free (5x/hari)",
-            "premium": "⭐ Premium",
-            "elite": "👑 Elite",
-            "admin": "👑 Admin",
-        }.get(plan, "Free")
+        plan_label = {"free": "Free (5x/hari)", "premium": "⭐ Premium", "elite": "👑 Elite", "admin": "👑 Admin"}.get(plan, "Free")
         await update.effective_message.reply_text(
-            f"⛔ Kuota /news kamu habis hari ini (plan {plan_label}).\n"
-            "Upgrade ke Premium untuk kuota lebih banyak.\nReset: 00:00 UTC"
+            f"⛔ Kuota /news kamu habis hari ini (plan {plan_label}).\nUpgrade ke Premium untuk kuota lebih banyak.\nReset: 00:00 UTC"
         )
         return
 
     if not context.args:
-        await update.effective_message.reply_text(
-            "⚠️ Mohon masukkan pair.\nContoh: `/news BTC` atau `/news ETH`"
-        )
+        await update.effective_message.reply_text("⚠️ Mohon masukkan pair.\nContoh: `/news BTC` atau `/news ETH`")
         return
 
     pair = context.args[0].upper()
@@ -222,9 +209,7 @@ async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             summary += f"{i}. *{title}*\n   Sumber: {source}\n\n"
         await update.effective_message.reply_text(summary, parse_mode="Markdown")
 
-        articles_text = "\n".join(
-            [f"- {a.get('title', '')} ({a.get('source', '')})" for a in articles]
-        )
+        articles_text = "\n".join([f"- {a.get('title', '')} ({a.get('source', '')})" for a in articles])
         sentiment_prompt = (
             f"Analisis sentimen berita berikut untuk {pair}. "
             f"Klasifikasikan sebagai Bullish 🟢, Bearish 🔴, atau Neutral ⚪, "
@@ -243,8 +228,7 @@ async def mysignals_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     signals = get_open_signals(chat_id)
     if not signals:
         await update.effective_message.reply_text(
-            "📭 Kamu belum punya sinyal aktif.\n"
-            "Gunakan `/analyze` untuk dapat rekomendasi trading.",
+            "📭 Kamu belum punya sinyal aktif.\nGunakan `/analyze` untuk dapat rekomendasi trading.",
             reply_markup=signals_keyboard(),
         )
         return
@@ -260,8 +244,7 @@ async def mysignals_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             emoji_result = "🎯" if sig["status"] == "hit_target" else "🛑"
             notifications.append(
                 f"{emoji_result} *Sinyal #{sig['id']} {sig['pair']} {sig['side'].upper()}* "
-                f"telah {sig['status'].replace('_', ' ').title()}! "
-                f"P&L: {sig.get('result_pct', 0):+.2f}%"
+                f"telah {sig['status'].replace('_', ' ').title()}! P&L: {sig.get('result_pct', 0):+.2f}%"
             )
             continue
 
@@ -287,9 +270,7 @@ async def mysignals_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if updated_signals:
         msg = format_signals(updated_signals)
-        await update.effective_message.reply_text(
-            msg, parse_mode="Markdown", reply_markup=signals_keyboard()
-        )
+        await update.effective_message.reply_text(msg, parse_mode="Markdown", reply_markup=signals_keyboard())
     else:
         await update.effective_message.reply_text(
             "📭 Semua sinyal sudah closed. Gunakan `/analyze` untuk dapat sinyal baru.",
@@ -316,16 +297,13 @@ async def paperstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     stats = get_signal_stats(chat_id)
     if stats["total_closed"] == 0 and stats["open_count"] == 0:
         await update.effective_message.reply_text(
-            "📭 Belum ada sinyal tercatat.\n"
-            "Gunakan `/analyze` untuk dapat rekomendasi trading.",
+            "📭 Belum ada sinyal tercatat.\nGunakan `/analyze` untuk dapat rekomendasi trading.",
             reply_markup=paperstats_keyboard(),
         )
         return
 
     msg = format_paperstats(stats)
-    await update.effective_message.reply_text(
-        msg, parse_mode="Markdown", reply_markup=paperstats_keyboard()
-    )
+    await update.effective_message.reply_text(msg, parse_mode="Markdown", reply_markup=paperstats_keyboard())
 
 
 # ==================== PLAN & UPGRADE ====================
@@ -334,18 +312,9 @@ async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     plan = get_user_plan(chat_id)
     remaining = get_remaining(chat_id, plan)
 
-    plan_label = {
-        "free": "🆓 Free",
-        "premium": "⭐ Premium",
-        "elite": "👑 Elite",
-        "admin": "👑 Admin",
-    }.get(plan, "Free")
-    analyze_display = (
-        "Unlimited" if plan in ("elite", "admin") else f"{remaining['analyze_remaining']}x"
-    )
-    news_display = (
-        "Unlimited" if plan in ("elite", "admin") else f"{remaining['news_remaining']}x"
-    )
+    plan_label = {"free": "🆓 Free", "premium": "⭐ Premium", "elite": "👑 Elite", "admin": "👑 Admin"}.get(plan, "Free")
+    analyze_display = "Unlimited" if plan in ("elite", "admin") else f"{remaining['analyze_remaining']}x"
+    news_display = "Unlimited" if plan in ("elite", "admin") else f"{remaining['news_remaining']}x"
 
     expiry_info = ""
     if plan not in ("free", "admin"):
@@ -370,9 +339,7 @@ async def usage_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📰 /news    : {news_display} tersisa\n\n"
         "Kuota di-reset setiap hari pukul 00:00 UTC."
     )
-    await update.effective_message.reply_text(
-        message, parse_mode="Markdown", reply_markup=back_to_menu_keyboard()
-    )
+    await update.effective_message.reply_text(message, parse_mode="Markdown", reply_markup=back_to_menu_keyboard())
 
 
 async def upgrade_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -382,36 +349,28 @@ async def upgrade_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "━━━━━━━━━━━━━━━━━━\n"
         "⭐ *PRO-TRADER*\n"
         "💰 Rp 250.000 / bulan\n\n"
-        "✅ 30x /analyze per hari\n"
-        "✅ 50x /news per hari\n"
+        "✅ 30x /analyze per hari\n✅ 50x /news per hari\n"
         "✅ Analisis multi-factor (Teknikal, Sentimen, Likuiditas)\n"
         "✅ Scan Market (/scan) — cari setup LAYAK dari 100 pair\n"
-        "✅ Sinyal otomatis tersimpan\n"
-        "✅ Support prioritas\n\n"
+        "✅ Sinyal otomatis tersimpan\n✅ Support prioritas\n\n"
         "━━━━━━━━━━━━━━━━━━\n"
         "👑 *ELITE (Most Powerful)*\n"
         "💰 Rp 500.000 / bulan\n\n"
         "✅ Unlimited /analyze & /news\n"
         "✅ Analisis AI paling akurat & mendalam\n"
         "✅ Scan Market + Auto Broadcast Signal tiap 4 jam\n"
-        "✅ Notifikasi real-time\n"
-        "✅ Paper trading stats + Sinyal tracker\n"
+        "✅ Notifikasi real-time\n✅ Paper trading stats + Sinyal tracker\n"
         "✅ Support VIP 1-on-1\n\n"
         "━━━━━━━━━━━━━━━━━━\n"
-        "📞 *Cara Upgrade:*\n"
-        "Hubungi admin: @BenzAckerman\n"
+        "📞 *Cara Upgrade:*\nHubungi admin: @BenzAckerman\n"
         "Pembayaran via QRIS / Transfer Bank\n\n"
-        "💡 *Kenapa upgrade?*\n"
-        "• Akurasi sinyal lebih tinggi\n"
+        "💡 *Kenapa upgrade?*\n• Akurasi sinyal lebih tinggi\n"
         "• Akses fitur eksklusif (Scan Market, Auto Broadcast)\n"
-        "• Kuota unlimited untuk analisis harian\n"
-        "• Dukung pengembangan bot ini\n\n"
+        "• Kuota unlimited untuk analisis harian\n• Dukung pengembangan bot ini\n\n"
         "⚠️ *Catatan:* Hasil trading bergantung pada kondisi pasar. "
         "Bot ini alat bantu analisis, bukan jaminan profit."
     )
-    await update.effective_message.reply_text(
-        message, parse_mode="Markdown", reply_markup=back_to_menu_keyboard()
-    )
+    await update.effective_message.reply_text(message, parse_mode="Markdown", reply_markup=back_to_menu_keyboard())
 
 
 async def setplan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -424,8 +383,7 @@ async def setplan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.effective_message.reply_text(
             "⚠️ Format: `/setplan <chat_id> <plan> [days]`\n"
             "Plan: free, premium, elite, admin\n"
-            "Contoh: `/setplan 123456789 premium 30` (30 hari)\n"
-            "Kosongkan days untuk permanen."
+            "Contoh: `/setplan 123456789 premium 30` (30 hari)\nKosongkan days untuk permanen."
         )
         return
 
@@ -448,13 +406,11 @@ async def setplan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if success:
         if days:
             await update.effective_message.reply_text(
-                f"✅ User `{target_id}` berhasil diset ke plan: *{plan}* selama {days} hari.",
-                parse_mode="Markdown",
+                f"✅ User `{target_id}` berhasil diset ke plan: *{plan}* selama {days} hari.", parse_mode="Markdown"
             )
         else:
             await update.effective_message.reply_text(
-                f"✅ User `{target_id}` berhasil diset ke plan: *{plan}* (permanen).",
-                parse_mode="Markdown",
+                f"✅ User `{target_id}` berhasil diset ke plan: *{plan}* (permanen).", parse_mode="Markdown"
             )
     else:
         await update.effective_message.reply_text("❌ Gagal. Plan tidak valid.")
@@ -489,11 +445,8 @@ async def userinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     expiry_str = expiry if expiry else "Permanen"
     msg = (
         f"👤 *User Info*\n\n"
-        f"🔹 Nama: {first_name}\n"
-        f"🔹 Username: @{username}\n"
-        f"🔹 Chat ID: `{target_id}`\n"
-        f"🔹 Plan: {plan}\n"
-        f"🔹 Expiry: {expiry_str}"
+        f"🔹 Nama: {first_name}\n🔹 Username: @{username}\n"
+        f"🔹 Chat ID: `{target_id}`\n🔹 Plan: {plan}\n🔹 Expiry: {expiry_str}"
     )
     await update.effective_message.reply_text(msg, parse_mode="Markdown")
 
@@ -504,14 +457,11 @@ async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if plan == "free":
         await update.effective_message.reply_text(
-            "⛔ Fitur Scan Market hanya tersedia untuk plan Premium & Elite.\n"
-            "Ketik /upgrade untuk info paket."
+            "⛔ Fitur Scan Market hanya tersedia untuk plan Premium & Elite.\nKetik /upgrade untuk info paket."
         )
         return
 
-    msg = await update.effective_message.reply_text(
-        "📡 Scanning top 100 pair...\nIni butuh 1-2 menit, mohon tunggu ⏳"
-    )
+    msg = await update.effective_message.reply_text("📡 Scanning top 100 pair...\nIni butuh 1-2 menit, mohon tunggu ⏳")
 
     try:
         signals = await scan_market(limit=100)
@@ -565,9 +515,7 @@ Bot ini hanya alat bantu analisis, bukan saran keuangan. Selalu lakukan riset se
 
 📞 *Admin:* @BenzAckerman
 """
-    await update.effective_message.reply_text(
-        help_text, parse_mode="Markdown", reply_markup=back_to_menu_keyboard()
-    )
+    await update.effective_message.reply_text(help_text, parse_mode="Markdown", reply_markup=back_to_menu_keyboard())
 
 
 # ==================== CALLBACKS ====================
@@ -615,9 +563,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try:
                 price_data = await get_price(coin_id)
                 msg = format_price(price_data)
-                await query.edit_message_text(
-                    msg, parse_mode="Markdown", reply_markup=price_keyboard(symbol)
-                )
+                await query.edit_message_text(msg, parse_mode="Markdown", reply_markup=price_keyboard(symbol))
             except Exception as e:
                 await query.answer("❌ Gagal memperbarui harga.")
                 logger.error(f"Error refresh price: {e}")
@@ -650,36 +596,19 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             if updated:
                 msg = format_signals(updated)
-                await query.edit_message_text(
-                    msg, parse_mode="Markdown", reply_markup=signals_keyboard()
-                )
+                await query.edit_message_text(msg, parse_mode="Markdown", reply_markup=signals_keyboard())
             else:
-                await query.edit_message_text(
-                    "📭 Semua sinyal sudah closed.", reply_markup=signals_keyboard()
-                )
+                await query.edit_message_text("📭 Semua sinyal sudah closed.", reply_markup=signals_keyboard())
         else:
-            await query.edit_message_text(
-                "📭 Tidak ada sinyal aktif.", reply_markup=signals_keyboard()
-            )
+            await query.edit_message_text("📭 Tidak ada sinyal aktif.", reply_markup=signals_keyboard())
 
-    # --- ANALYZE DARI PRICE ---
-    elif data.startswith("analyze_"):
-        symbol = data.replace("analyze_", "")
-        await query.message.reply_text(
-            f"Silakan gunakan `/analyze {symbol}` untuk analisis {symbol}."
-        )
-
-    # --- REFRESH ANALYZE ---
     # --- REFRESH ANALYZE ---
     elif data.startswith("refresh_analyze_"):
         pair = data.replace("refresh_analyze_", "")
         await query.answer("🔄 Menganalisis ulang...")
         result_text, keyboard = await run_analyze(pair, query.message.chat_id)
         await query.edit_message_text(
-            result_text,
-            parse_mode="Markdown",
-            reply_markup=keyboard,
-            disable_web_page_preview=True
+            result_text, parse_mode="Markdown", reply_markup=keyboard, disable_web_page_preview=True
         )
 
     # --- PILIH PAIR DARI KEYBOARD ---
@@ -688,19 +617,20 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.answer(f"🔍 Menganalisis {pair}...")
         result_text, keyboard = await run_analyze(pair, query.message.chat_id)
         await query.edit_message_text(
-            result_text,
-            parse_mode="Markdown",
-            reply_markup=keyboard,
-            disable_web_page_preview=True
+            result_text, parse_mode="Markdown", reply_markup=keyboard, disable_web_page_preview=True
         )
 
     # --- KETIK PAIR LAIN ---
     elif data == "analyze_custom":
         await query.answer()
         await query.edit_message_text(
-            "✏️ Ketik command manual:\n`/analyze <PAIR>`\n\nContoh: `/analyze SHIB`",
-            parse_mode="Markdown"
-        )    
+            "✏️ Ketik command manual:\n`/analyze <PAIR>`\n\nContoh: `/analyze SHIB`", parse_mode="Markdown"
+        )
+
+    # --- ANALYZE DARI PRICE --- (dipindah ke paling akhir agar tidak menangkap analyze_pair_)
+    elif data.startswith("analyze_"):
+        symbol = data.replace("analyze_", "")
+        await query.message.reply_text(f"Silakan gunakan `/analyze {symbol}` untuk analisis {symbol}.")
 
     else:
         await query.message.reply_text("❌ Tombol tidak dikenali.")
