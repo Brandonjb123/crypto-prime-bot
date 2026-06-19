@@ -76,6 +76,13 @@ async def get_market_data(coin_id: str) -> dict:
     return result
 
 
+STABLECOIN_SYMBOLS = {
+    "USDT", "USDC", "DAI", "BUSD", "TUSD", "FDUSD",
+    "USDD", "GUSD", "USDP", "PYUSD", "FRAX", "USDE",
+    "EURT", "EURS"
+}
+
+
 async def get_top_pairs(limit: int = 100) -> list:
     """Return list top {limit} crypto by market cap."""
     from utils.cache import price_cache
@@ -99,8 +106,11 @@ async def get_top_pairs(limit: int = 100) -> list:
 
     pairs = []
     for item in data:
+        symbol = item["symbol"].upper()
+        if symbol in STABLECOIN_SYMBOLS:
+            continue  # Skip stablecoin
         pairs.append({
-            "symbol": item["symbol"].upper(),
+            "symbol": symbol,
             "coin_id": item["id"],
             "name": item["name"],
         })
