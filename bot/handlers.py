@@ -88,106 +88,92 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+async def run_analyze(pair: str, chat_id: int) -> tuple[str, InlineKeyboardMarkup]:
+    """
+    Logic inti analisa, reusable.
+    Return (result_text, keyboard) siap dikirim/edit.
+    """
+    coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
+    if not coin_id:
+        return (f"❌ Pair {pair} tidak ditemukan.", back_to_menu_keyboard())
+
+    try:
+        price_data = await get_market_data(coin_id)
+    except Exception:
+        basic = await get_price(coin_id)
+        price_data = {
+            "current_price": basic.get("current_price"),
+            "price_change_24h": basic.get("price_change_percentage_24h", 0) or 0,
+            "price_change_7d": 0,
+            "total_volume": basic.get("total_volume"),
+            "market_cap": basic.get("market_cap"),
+            "high_24h": None,
+            "low_24h": None,
+        }
+
+    articles = await get_news(pair)
+    headlines = [a["title"] for a in articles[:5]]
+    prompt = build_analyze_prompt(pair, price_data, headlines)
+    raw = await ask_llm(SYSTEM_PROMPT, prompt)
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return (raw, back_to_menu_keyboard())
+
+    is_valid = validate_signal_prices(data, price_data["current_price"])
+    if data.get("verdict") == "SETUP_VALID" and not is_valid:
+        data["verdict"] = "NO_SETUP"
+        data["verdict_reason"] = "Setup ditolak: entry tidak realistis atau R:R kurang."
+
+    # Simpan sinyal jika SETUP_VALID
+    if data.get("verdict") == "SETUP_VALID" and is_valid:
+        save_signal(
+            chat_id,
+            pair,
+            data["side"].lower(),
+            float(data["entry_price"]),
+            float(data["target_price"]),
+            float(data["stop_loss"])
+        )
+
+    result_text = format_analyze(data, pair, price_data)
+    keyboard = analyze_result_keyboard(pair)
+    return (result_text, keyboard)
+
+
 # ==================== ANALYZE ====================
 async def analyze_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     plan = get_user_plan(chat_id)
 
     if not check_and_increment(chat_id, "analyze", plan):
-        plan_label = {
-            "free": "Free (3x/hari)",
-            "premium": "⭐ Premium",
-            "elite": "👑 Elite",
-            "admin": "👑 Admin",
-        }.get(plan, "Free")
+        plan_label = {"free": "Free (3x/hari)", "premium": "⭐ Premium", "elite": "👑 Elite", "admin": "👑 Admin"}.get(plan, "Free")
         await update.effective_message.reply_text(
-            f"⛔ Kuota /analyze kamu habis hari ini (plan {plan_label}).\n"
-            "Upgrade ke Premium untuk kuota lebih banyak.\nReset: 00:00 UTC"
-        )
+            f"⛔ Kuota /analyze kamu habis hari ini (plan {plan_label}).\nUpgrade ke Premium untuk kuota lebih banyak.\nReset: 00:00 UTC")
         return
 
+    # Jika tanpa argumen, tampilkan keyboard pilihan pair
     if not context.args:
         await update.effective_message.reply_text(
-            "⚠️ Format: `/analyze <PAIR>`\nContoh: `/analyze BTC`"
+            "📊 *Pilih pair untuk dianalisis:*\n\nTap salah satu di bawah, atau ketik pair lain.",
+            parse_mode="Markdown",
+            reply_markup=pair_selection_keyboard()
         )
         return
 
     pair = context.args[0].upper()
-    coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
-    if not coin_id:
-        await update.effective_message.reply_text(
-            f"❌ Pair *{pair}* tidak dikenali. Gunakan simbol seperti BTC, ETH, SOL."
-        )
-        return
 
     await update.effective_message.reply_text("🔍 Menganalisis multi-factor... Mohon tunggu.")
 
-    try:
-        # 1. Market data (fallback kalau rate limit)
-        try:
-            price_data = await get_market_data(coin_id)
-        except Exception as market_error:
-            logger.warning(f"Gagal get_market_data, fallback ke get_price: {market_error}")
-            basic = await get_price(coin_id)
-            price_data = {
-                "current_price": basic.get("current_price"),
-                "price_change_24h": basic.get("price_change_percentage_24h", 0) or 0,
-                "price_change_7d": 0,
-                "total_volume": basic.get("total_volume"),
-                "market_cap": basic.get("market_cap"),
-                "high_24h": None,
-                "low_24h": None,
-            }
+    result_text, keyboard = await run_analyze(pair, chat_id)
 
-        # 2. News headlines
-        articles = await get_news(pair)
-        headlines = [a["title"] for a in articles[:5]]
-
-        # 3. Prompt & LLM
-        prompt = build_analyze_prompt(pair, price_data, headlines)
-        analysis = await ask_llm(SYSTEM_PROMPT, prompt)
-
-        # 4. Parse JSON
-        try:
-            data = json.loads(analysis)
-            verdict = data.get("verdict", "NO_SETUP")
-
-            # Validasi dulu SEBELUM buat message
-            is_valid = validate_signal_prices(data, price_data["current_price"])
-
-            if verdict == "SETUP_VALID" and is_valid:
-                save_signal(
-                    chat_id,
-                    pair,
-                    data["side"].lower(),
-                    float(data["entry_price"]),
-                    float(data["target_price"]),
-                    float(data["stop_loss"]),
-                )
-            elif verdict == "SETUP_VALID" and not is_valid:
-                # Override verdict jika validasi gagal
-                data["verdict"] = "NO_SETUP"
-                data["verdict_reason"] = (
-                    "Setup ditolak: entry price tidak realistis atau R:R di bawah minimum."
-                )
-
-            # Buat message SETELAH validasi (biar verdict yang dikirim sesuai)
-            msg = format_analyze(data, pair, price_data)
-
-            await update.effective_message.reply_text(
-                msg,
-                parse_mode="Markdown",
-                reply_markup=analyze_result_keyboard(pair),
-                disable_web_page_preview=True
-            )
-
-        except (json.JSONDecodeError, ValueError, KeyError) as parse_error:
-            logger.warning(f"Gagal parse JSON dari LLM: {parse_error}")
-            await update.effective_message.reply_text(analysis)
-
-    except Exception as e:
-        await update.effective_message.reply_text("😔 Gagal melakukan analisis. Coba lagi nanti.")
-        logger.error(f"Error /analyze: {e}")
+    await update.effective_message.reply_text(
+        result_text,
+        parse_mode="Markdown",
+        reply_markup=keyboard,
+        disable_web_page_preview=True
+    )
 
 
 # ==================== NEWS ====================
@@ -680,51 +666,36 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     # --- REFRESH ANALYZE ---
+    # --- REFRESH ANALYZE ---
     elif data.startswith("refresh_analyze_"):
         pair = data.replace("refresh_analyze_", "")
         await query.answer("🔄 Menganalisis ulang...")
-
-        coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
-        if not coin_id:
-            await query.edit_message_text(f"❌ Pair {pair} tidak ditemukan.")
-            return
-
-        try:
-            price_data = await get_market_data(coin_id)
-        except Exception:
-            basic = await get_price(coin_id)
-            price_data = {
-                "current_price": basic.get("current_price"),
-                "price_change_24h": basic.get("price_change_percentage_24h", 0) or 0,
-                "price_change_7d": 0,
-                "total_volume": basic.get("total_volume"),
-                "market_cap": basic.get("market_cap"),
-                "high_24h": None,
-                "low_24h": None,
-            }
-
-        articles = await get_news(pair)
-        headlines = [a["title"] for a in articles[:5]]
-        prompt = build_analyze_prompt(pair, price_data, headlines)
-        raw = await ask_llm(SYSTEM_PROMPT, prompt)
-
-        try:
-            data = json.loads(raw)
-        except json.JSONDecodeError:
-            await query.edit_message_text(raw)
-            return
-
-        is_valid = validate_signal_prices(data, price_data["current_price"])
-        if data.get("verdict") == "SETUP_VALID" and not is_valid:
-            data["verdict"] = "NO_SETUP"
-            data["verdict_reason"] = "Setup ditolak: entry tidak realistis atau R:R kurang."
-
-        msg = format_analyze(data, pair, price_data)
+        result_text, keyboard = await run_analyze(pair, query.message.chat_id)
         await query.edit_message_text(
-            msg,
+            result_text,
             parse_mode="Markdown",
-            reply_markup=analyze_result_keyboard(pair),
+            reply_markup=keyboard,
             disable_web_page_preview=True
+        )
+
+    # --- PILIH PAIR DARI KEYBOARD ---
+    elif data.startswith("analyze_pair_"):
+        pair = data.replace("analyze_pair_", "")
+        await query.answer(f"🔍 Menganalisis {pair}...")
+        result_text, keyboard = await run_analyze(pair, query.message.chat_id)
+        await query.edit_message_text(
+            result_text,
+            parse_mode="Markdown",
+            reply_markup=keyboard,
+            disable_web_page_preview=True
+        )
+
+    # --- KETIK PAIR LAIN ---
+    elif data == "analyze_custom":
+        await query.answer()
+        await query.edit_message_text(
+            "✏️ Ketik command manual:\n`/analyze <PAIR>`\n\nContoh: `/analyze SHIB`",
+            parse_mode="Markdown"
         )    
 
     else:

@@ -1,7 +1,6 @@
 # bot/keyboards.py
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-
 def main_menu_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
         [InlineKeyboardButton("📡 Scan Market", callback_data="menu_scan"),
@@ -15,15 +14,12 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     ]
     return InlineKeyboardMarkup(keyboard)
 
-
 def price_keyboard(symbol: str) -> InlineKeyboardMarkup:
-    """Keyboard untuk /price — Refresh + Analyze"""
     keyboard = [
         [InlineKeyboardButton("🔄 Refresh", callback_data=f"refresh_price_{symbol}"),
          InlineKeyboardButton(f"📈 Analyze {symbol}", callback_data=f"analyze_{symbol}")],
     ]
     return InlineKeyboardMarkup(keyboard)
-
 
 def analyze_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
@@ -32,44 +28,7 @@ def analyze_keyboard() -> InlineKeyboardMarkup:
     ]
     return InlineKeyboardMarkup(keyboard)
 
-
-def signals_keyboard() -> InlineKeyboardMarkup:
-    """Keyboard untuk /mysignals"""
-    keyboard = [
-        [InlineKeyboardButton("🔄 Refresh Signals", callback_data="refresh_signals")],
-        [InlineKeyboardButton("📊 Menu Utama", callback_data="menu_start")],
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
-
-def portfolio_keyboard() -> InlineKeyboardMarkup:
-    """Keyboard untuk /myportfolio"""
-    keyboard = [
-        [InlineKeyboardButton("🔄 Refresh", callback_data="refresh_portfolio"),
-         InlineKeyboardButton("➕ Tambah Posisi", callback_data="add_position")],
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
-
-def paperstats_keyboard() -> InlineKeyboardMarkup:
-    """Keyboard untuk /paperstats"""
-    keyboard = [
-        [InlineKeyboardButton("📡 Lihat Signals", callback_data="menu_signals")],
-        [InlineKeyboardButton("📊 Menu Utama", callback_data="menu_start")],
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
-
-def back_to_menu_keyboard() -> InlineKeyboardMarkup:
-    """Tombol kembali ke menu utama (untuk error/empty state)"""
-    keyboard = [
-        [InlineKeyboardButton("📊 Menu Utama", callback_data="menu_start")],
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
-
 def analyze_result_keyboard(pair: str) -> InlineKeyboardMarkup:
-    """Tombol di bawah hasil /analyze."""
     tv_symbol = pair.replace("/USDT", "USD").replace("USDT", "USD")
     keyboard = [
         [
@@ -81,4 +40,52 @@ def analyze_result_keyboard(pair: str) -> InlineKeyboardMarkup:
             InlineKeyboardButton("🏠 Menu Utama", callback_data="menu_start")
         ]
     ]
+    return InlineKeyboardMarkup(keyboard)
+
+def signals_keyboard() -> InlineKeyboardMarkup:
+    keyboard = [
+        [InlineKeyboardButton("🔄 Refresh Signals", callback_data="refresh_signals")],
+        [InlineKeyboardButton("📊 Menu Utama", callback_data="menu_start")],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+def portfolio_keyboard() -> InlineKeyboardMarkup:
+    keyboard = [
+        [InlineKeyboardButton("🔄 Refresh", callback_data="refresh_portfolio"),
+         InlineKeyboardButton("➕ Tambah Posisi", callback_data="add_position")],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+def paperstats_keyboard() -> InlineKeyboardMarkup:
+    keyboard = [
+        [InlineKeyboardButton("📡 Lihat Signals", callback_data="menu_signals")],
+        [InlineKeyboardButton("📊 Menu Utama", callback_data="menu_start")],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+def back_to_menu_keyboard() -> InlineKeyboardMarkup:
+    keyboard = [
+        [InlineKeyboardButton("📊 Menu Utama", callback_data="menu_start")],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+POPULAR_PAIRS = ["BTC", "ETH", "SOL", "BNB", "XRP", "DOGE", "ADA", "AVAX"]
+
+def pair_selection_keyboard() -> InlineKeyboardMarkup:
+    keyboard = []
+    row = []
+    for i, pair in enumerate(POPULAR_PAIRS):
+        row.append(InlineKeyboardButton(pair, callback_data=f"analyze_pair_{pair}"))
+        if len(row) == 4:
+            keyboard.append(row)
+            row = []
+    if row:
+        keyboard.append(row)
+
+    keyboard.append([
+        InlineKeyboardButton("✏️ Ketik Pair Lain", callback_data="analyze_custom")
+    ])
+    keyboard.append([
+        InlineKeyboardButton("🏠 Menu Utama", callback_data="menu_start")
+    ])
     return InlineKeyboardMarkup(keyboard)
