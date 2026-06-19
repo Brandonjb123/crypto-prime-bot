@@ -28,6 +28,15 @@ ATURAN ENTRY/TARGET/STOP LOSS:
 - JANGAN pernah kalikan atau bagi harga dengan 10, 100, atau 1000
 - Format angka HARUS sama persis dengan skala harga aslinya
 
+PENENTUAN SIDE (LONG vs SHORT):
+- Jika technical_bias Bullish DAN sentiment tidak negatif → side: LONG
+- Jika technical_bias Bearish DAN sentiment tidak positif → side: SHORT
+- Jika ada berita negatif besar (regulasi, hack, dump) meskipun
+  teknikal terlihat netral → pertimbangkan side: SHORT
+- JANGAN selalu pilih LONG. Evaluasi data secara objektif.
+  Market yang sedang downtrend dengan sentimen negatif HARUS
+  menghasilkan side: SHORT jika SETUP_VALID.
+
 ATURAN FORMAT HARGA (WAJIB DIIKUTI):
 - Harga $10,000+ (BTC): gunakan integer, contoh: 67200
 - Harga $100-$9,999 (ETH, BNB): gunakan 2 desimal, contoh: 3420.50
