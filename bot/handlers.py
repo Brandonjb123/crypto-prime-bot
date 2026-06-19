@@ -26,6 +26,7 @@ from config import ADMIN_CHAT_ID
 from bot.keyboards import (
     main_menu_keyboard, price_keyboard, analyze_keyboard, analyze_result_keyboard,
     signals_keyboard, paperstats_keyboard, back_to_menu_keyboard,
+    pair_selection_keyboard,
 )
 
 from services.scanner import scan_market
