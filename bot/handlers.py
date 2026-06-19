@@ -32,6 +32,9 @@ from services.scanner import scan_market
 from utils.formatter import format_scan_result
 from utils.validator import validate_signal_prices
 
+from telegram import Update, InlineKeyboardMarkup
+from telegram.ext import ContextTypes
+
 
 # ==================== START ====================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
