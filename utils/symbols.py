@@ -24,4 +24,5 @@ SYMBOL_TO_COINGECKO_ID = {
     "INJ": "injective-protocol",
     "SUI": "sui",
     "PEPE": "pepe",
+    "SHIB": "shiba-inu",
 }
