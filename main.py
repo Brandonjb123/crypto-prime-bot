@@ -41,6 +41,8 @@ async def scheduled_broadcast(context):
 
 async def check_signal_warnings(context):
     """Job tiap 20 menit — cek signal yang mendekati TP/SL."""
+    from utils.formatter import _smart_price, calculate_leverage_pnl
+
     near_signals = await check_near_target_signals()
 
     for item in near_signals:
@@ -50,17 +52,34 @@ async def check_signal_warnings(context):
         signal_type = item["type"]
         current_price = item["current_price"]
 
+        entry = sig["entry_price"]
+        target = sig["target_price"]
+        sl = sig["stop_loss"]
+        side = sig["side"]
+
         if signal_type == "near_tp":
+            distance_pct = abs(target - current_price) / current_price * 100
+            pnl_10x = calculate_leverage_pnl(entry, target, sl, side)[10]
+
             message = (
-                f"🎯 *{pair}* mendekati Target!\n"
-                f"Harga sekarang: {current_price}\n"
-                f"Target: {sig['target_price']}"
+                f"🎯 *{pair}/USDT mendekati Target!*\n\n"
+                f"💰 Harga sekarang : {_smart_price(current_price)}\n"
+                f"🎯 Target          : {_smart_price(target)}\n"
+                f"📏 Jarak           : {distance_pct:.1f}% lagi\n\n"
+                f"💡 Estimasi profit @10x: +{pnl_10x['profit']}%\n\n"
+                f"Pantau terus di /mysignals"
             )
-        else:
+        else:  # near_sl
+            distance_pct = abs(sl - current_price) / current_price * 100
+            pnl_10x = calculate_leverage_pnl(entry, target, sl, side)[10]
+
             message = (
-                f"⚠️ *{pair}* mendekati Stop Loss!\n"
-                f"Harga sekarang: {current_price}\n"
-                f"Stop Loss: {sig['stop_loss']}"
+                f"⚠️ *{pair}/USDT mendekati Stop Loss!*\n\n"
+                f"💰 Harga sekarang : {_smart_price(current_price)}\n"
+                f"🛑 Stop Loss       : {_smart_price(sl)}\n"
+                f"📏 Jarak           : {distance_pct:.1f}% lagi\n\n"
+                f"💡 Estimasi loss @10x: -{pnl_10x['loss']}%\n\n"
+                f"Pantau terus di /mysignals"
             )
 
         try:
