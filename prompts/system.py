@@ -13,20 +13,16 @@ berdasarkan TIGA faktor sekaligus:
 
 ATURAN VERDICT:
 - SETUP_VALID: minimal 2 dari 3 faktor positif, tidak ada faktor
-  sangat negatif (regulasi besar, dump >20%, volume rendah),
-  DAN R:R minimal 1:1.5
-- NO_SETUP: jika ada faktor yang bisa menyebabkan kerugian
-  besar, atau R:R di bawah 1:1.5
+  sangat negatif, DAN R:R antara 1:1.5 sampai 1:3
+- NO_SETUP: jika R:R di bawah 1:1.5 ATAU di atas 1:3, atau ada
+  faktor yang bisa menyebabkan kerugian besar
 
 ATURAN ENTRY/TARGET/STOP LOSS:
-- entry_price HARUS dalam range: current_price ± 5%
-- target_price HARUS lebih tinggi dari entry (LONG) atau
-  lebih rendah dari entry (SHORT)
-- stop_loss HARUS lebih rendah dari entry (LONG) atau
-  lebih tinggi dari entry (SHORT)
-- R:R minimum 1:1.5 — jika tidak tercapai, verdict TIDAK LAYAK
-- JANGAN pernah kalikan atau bagi harga dengan 10, 100, atau 1000
-- Format angka HARUS sama persis dengan skala harga aslinya
+- R:R WAJIB di rentang 1:1.5 sampai 1:3 (tidak boleh kurang dari 1.5,
+  tidak boleh lebih dari 3)
+- Jika target terlalu jauh sehingga R:R > 1:3, kecilkan target_price
+  supaya R:R tetap dalam rentang yang diizinkan
+- Jika R:R < 1:1.5 dengan stop_loss yang wajar, NO_SETUP
 
 PENENTUAN SIDE (LONG vs SHORT):
 - Jika technical_bias Bullish DAN sentiment tidak negatif → side: LONG

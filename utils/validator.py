@@ -7,7 +7,7 @@ def validate_signal_prices(data: dict, current_price: float) -> bool:
 
     Kriteria:
     1. entry_price tidak menyimpang >50% dari current_price
-    2. R:R harus dalam rentang 1:2 sampai 1:3
+    2. R:R harus dalam rentang 1:1.5 sampai 1:3
     3. Semua field ada dan bertipe angka
     """
     if data.get("verdict") != "SETUP_VALID":
@@ -48,7 +48,7 @@ def validate_signal_prices(data: dict, current_price: float) -> bool:
     except ZeroDivisionError:
         return False
 
-    if rr < 2.0 or rr > 3.0:
+    if rr < 1.5 or rr > 3.0:
         return False
 
     return True
