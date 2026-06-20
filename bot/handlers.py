@@ -518,6 +518,30 @@ Bot ini hanya alat bantu analisis, bukan saran keuangan. Selalu lakukan riset se
     await update.effective_message.reply_text(help_text, parse_mode="Markdown", reply_markup=back_to_menu_keyboard())
 
 
+async def handle_pair_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Tangkap pesan teks setelah user klik Ketik Pair Lain."""
+    if not context.user_data.get("awaiting_pair_input"):
+        return  # Bukan dalam mode tunggu pair
+
+    pair = update.message.text.strip().upper()
+    context.user_data["awaiting_pair_input"] = False  # Reset flag
+
+    if not pair:
+        await update.effective_message.reply_text("❌ Pair tidak boleh kosong.")
+        return
+
+    await update.effective_message.reply_text(f"🔍 Menganalisis {pair}... Mohon tunggu.")
+
+    result_text, keyboard = await run_analyze(pair, update.effective_chat.id)
+
+    await update.effective_message.reply_text(
+        result_text,
+        parse_mode="Markdown",
+        reply_markup=keyboard,
+        disable_web_page_preview=True
+    )
+
+
 # ==================== CALLBACKS ====================
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -624,8 +648,16 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "analyze_custom":
         await query.answer()
         await query.edit_message_text(
-            "✏️ Ketik command manual:\n`/analyze <PAIR>`\n\nContoh: `/analyze SHIB`", parse_mode="Markdown"
+            "✏️ Ketik nama coin yang mau dianalisis:\n"
+            "Contoh: SUI, ATOM, INJ, TIA",
         )
+        from telegram import ForceReply
+        await context.bot.send_message(
+            chat_id=query.message.chat_id,
+            text="👇 Ketik di sini:",
+            reply_markup=ForceReply(selective=True, input_field_placeholder="Contoh: SUI")
+        )
+        context.user_data["awaiting_pair_input"] = True
 
     # --- ANALYZE DARI PRICE --- (dipindah ke paling akhir agar tidak menangkap analyze_pair_)
     elif data.startswith("analyze_"):
