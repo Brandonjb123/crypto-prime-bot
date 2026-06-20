@@ -225,7 +225,11 @@ async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if not context.args:
-        await update.effective_message.reply_text("⚠️ Mohon masukkan pair.\nContoh: `/news BTC` atau `/news ETH`")
+        await update.effective_message.reply_text(
+            "📰 *Pilih pair untuk cek berita:*\n\nTap salah satu di bawah, atau ketik pair lain.",
+            parse_mode="Markdown",
+            reply_markup=news_pair_selection_keyboard()
+        )
         return
 
     pair = context.args[0].upper()
@@ -234,9 +238,7 @@ async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         articles = await get_news(pair)
         if not articles:
-            await update.effective_message.reply_text(
-                f"😔 Tidak ada berita terkini untuk *{pair}*.", reply_markup=back_to_menu_keyboard()
-            )
+            await update.effective_message.reply_text(f"😔 Tidak ada berita terkini untuk *{pair}*.", reply_markup=back_to_menu_keyboard())
             return
 
         summary = f"📰 *Berita Terkini — {pair}*\n\n"
@@ -585,7 +587,28 @@ async def handle_pair_text_input(update: Update, context: ContextTypes.DEFAULT_T
             reply_markup=keyboard,
             disable_web_page_preview=True
         )
-        return
+        if context.user_data.get("awaiting_news_input"):
+            pair = update.message.text.strip().upper()
+            context.user_data["awaiting_news_input"] = False
+            try:
+                articles = await get_news(pair)
+                if not articles:
+                    await update.effective_message.reply_text(f"❌ Tidak ada berita untuk {pair}.", reply_markup=back_to_menu_keyboard())
+                    return
+                summary = f"📰 *Berita Terkini — {pair}*\n\n"
+                for i, article in enumerate(articles, 1):
+                    title = article.get("title", "No title")
+                    source = article.get("source", "Unknown")
+                    summary += f"{i}. *{title}*\n   Sumber: {source}\n\n"
+                articles_text = "\n".join([f"- {a.get('title', '')}" for a in articles])
+                sentiment_prompt = f"Analisis sentimen berita berikut untuk {pair}. Klasifikasikan sebagai Bullish 🟢, Bearish 🔴, atau Neutral ⚪, dan beri penjelasan singkat (2-3 kalimat):\n\n{articles_text}"
+                sentiment = await ask_llm(SYSTEM_PROMPT, sentiment_prompt)
+                summary += f"\n📊 *Sentimen:* {sentiment}"
+                await update.effective_message.reply_text(summary, parse_mode="Markdown", reply_markup=back_to_menu_keyboard())
+            except Exception as e:
+                logger.error(f"Error awaiting_news_input: {e}")
+                await update.effective_message.reply_text("❌ Gagal mengambil berita.", reply_markup=back_to_menu_keyboard())
+            return
 
     # --- Untuk Price ---
     if context.user_data.get("awaiting_price_input"):
@@ -763,6 +786,35 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=ForceReply(selective=True, input_field_placeholder="Contoh: SUI")
         )
         context.user_data["awaiting_price_input"] = True    
+
+    elif query.data.startswith("news_pair_"):
+        pair = query.data.replace("news_pair_", "")
+        await query.answer(f"📰 Mengambil berita {pair}...")
+        try:
+            articles = await get_news(pair)
+            if not articles:
+                await query.edit_message_text(f"❌ Tidak ada berita untuk {pair}.", reply_markup=back_to_menu_keyboard())
+                return
+            summary = f"📰 *Berita Terkini — {pair}*\n\n"
+            for i, article in enumerate(articles, 1):
+                title = article.get("title", "No title")
+                source = article.get("source", "Unknown")
+                summary += f"{i}. *{title}*\n   Sumber: {source}\n\n"
+            articles_text = "\n".join([f"- {a.get('title', '')}" for a in articles])
+            sentiment_prompt = f"Analisis sentimen berita berikut untuk {pair}. Klasifikasikan sebagai Bullish 🟢, Bearish 🔴, atau Neutral ⚪, dan beri penjelasan singkat (2-3 kalimat):\n\n{articles_text}"
+            sentiment = await ask_llm(SYSTEM_PROMPT, sentiment_prompt)
+            summary += f"\n📊 *Sentimen:* {sentiment}"
+            await query.edit_message_text(summary, parse_mode="Markdown", reply_markup=back_to_menu_keyboard())
+        except Exception as e:
+            logger.error(f"Error news_pair_: {e}")
+            await query.edit_message_text("❌ Gagal mengambil berita.", reply_markup=back_to_menu_keyboard())
+
+    elif query.data == "news_custom":
+        await query.answer()
+        await query.edit_message_text("✏️ Ketik nama coin untuk cek berita:\nContoh: SUI, ATOM, INJ")
+        from telegram import ForceReply
+        await context.bot.send_message(chat_id=query.message.chat_id, text="👇 Ketik di sini:", reply_markup=ForceReply(selective=True, input_field_placeholder="Contoh: SUI"))
+        context.user_data["awaiting_news_input"] = True    
 
     else:
         await query.message.reply_text("❌ Tombol tidak dikenali.")

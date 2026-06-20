@@ -109,3 +109,18 @@ def price_pair_selection_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton("🏠 Menu Utama", callback_data="menu_start")
     ])
     return InlineKeyboardMarkup(keyboard)
+
+
+def news_pair_selection_keyboard() -> InlineKeyboardMarkup:
+    keyboard = []
+    row = []
+    for i, pair in enumerate(POPULAR_PAIRS):
+        row.append(InlineKeyboardButton(pair, callback_data=f"news_pair_{pair}"))
+        if len(row) == 4:
+            keyboard.append(row)
+            row = []
+    if row:
+        keyboard.append(row)
+    keyboard.append([InlineKeyboardButton("✏️ Ketik Pair Lain", callback_data="news_custom")])
+    keyboard.append([InlineKeyboardButton("🏠 Menu Utama", callback_data="menu_start")])
+    return InlineKeyboardMarkup(keyboard)
