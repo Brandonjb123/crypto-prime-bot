@@ -26,7 +26,8 @@ from config import ADMIN_CHAT_ID
 from bot.keyboards import (
     main_menu_keyboard, price_keyboard, analyze_keyboard, analyze_result_keyboard,
     signals_keyboard, paperstats_keyboard, back_to_menu_keyboard,
-    pair_selection_keyboard, price_pair_selection_keyboard, 
+    pair_selection_keyboard, price_pair_selection_keyboard,
+    news_pair_selection_keyboard, 
 )
 
 from services.scanner import scan_market
@@ -568,64 +569,70 @@ Bot ini hanya alat bantu analisis, bukan saran keuangan. Selalu lakukan riset se
 
 
 async def handle_pair_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Tangkap pesan teks setelah user klik Ketik Pair Lain (analyze ATAU price)."""
+    """Tangkap pesan teks setelah user klik Ketik Pair Lain (analyze / price / news)."""
 
-    # --- Untuk Analyze ---
+    # --- Analyze ---
     if context.user_data.get("awaiting_pair_input"):
         pair = update.message.text.strip().upper()
         context.user_data["awaiting_pair_input"] = False
-
         if not pair:
             await update.effective_message.reply_text("❌ Pair tidak boleh kosong.")
             return
-
         await update.effective_message.reply_text(f"🔍 Menganalisis {pair}... Mohon tunggu.")
         result_text, keyboard = await run_analyze(pair, update.effective_chat.id)
         await update.effective_message.reply_text(
-            result_text,
-            parse_mode="Markdown",
-            reply_markup=keyboard,
-            disable_web_page_preview=True
+            result_text, parse_mode="Markdown", reply_markup=keyboard, disable_web_page_preview=True
         )
-        if context.user_data.get("awaiting_news_input"):
-            pair = update.message.text.strip().upper()
-            context.user_data["awaiting_news_input"] = False
-            try:
-                articles = await get_news(pair)
-                if not articles:
-                    await update.effective_message.reply_text(f"❌ Tidak ada berita untuk {pair}.", reply_markup=back_to_menu_keyboard())
-                    return
-                summary = f"📰 *Berita Terkini — {pair}*\n\n"
-                for i, article in enumerate(articles, 1):
-                    title = article.get("title", "No title")
-                    source = article.get("source", "Unknown")
-                    summary += f"{i}. *{title}*\n   Sumber: {source}\n\n"
-                articles_text = "\n".join([f"- {a.get('title', '')}" for a in articles])
-                sentiment_prompt = f"Analisis sentimen berita berikut untuk {pair}. Klasifikasikan sebagai Bullish 🟢, Bearish 🔴, atau Neutral ⚪, dan beri penjelasan singkat (2-3 kalimat):\n\n{articles_text}"
-                sentiment = await ask_llm(SYSTEM_PROMPT, sentiment_prompt)
-                summary += f"\n📊 *Sentimen:* {sentiment}"
-                await update.effective_message.reply_text(summary, parse_mode="Markdown", reply_markup=back_to_menu_keyboard())
-            except Exception as e:
-                logger.error(f"Error awaiting_news_input: {e}")
-                await update.effective_message.reply_text("❌ Gagal mengambil berita.", reply_markup=back_to_menu_keyboard())
-            return
+        return
 
-    # --- Untuk Price ---
+    # --- Price ---
     if context.user_data.get("awaiting_price_input"):
         pair = update.message.text.strip().upper()
         context.user_data["awaiting_price_input"] = False
-
         if not pair:
             await update.effective_message.reply_text("❌ Pair tidak boleh kosong.")
             return
-
         result_text, keyboard = await run_price(pair)
         await update.effective_message.reply_text(
-            result_text,
-            parse_mode="Markdown",
-            reply_markup=keyboard,
-            disable_web_page_preview=True
+            result_text, parse_mode="Markdown", reply_markup=keyboard, disable_web_page_preview=True
         )
+        return
+
+    # --- News ---
+    if context.user_data.get("awaiting_news_input"):
+        pair = update.message.text.strip().upper()
+        context.user_data["awaiting_news_input"] = False
+        if not pair:
+            await update.effective_message.reply_text("❌ Pair tidak boleh kosong.")
+            return
+        try:
+            articles = await get_news(pair)
+            if not articles:
+                await update.effective_message.reply_text(
+                    f"❌ Tidak ada berita untuk {pair}.", reply_markup=back_to_menu_keyboard()
+                )
+                return
+            summary = f"📰 *Berita Terkini — {pair}*\n\n"
+            for i, article in enumerate(articles, 1):
+                title = article.get("title", "No title")
+                source = article.get("source", "Unknown")
+                summary += f"{i}. *{title}*\n   Sumber: {source}\n\n"
+            articles_text = "\n".join([f"- {a.get('title', '')}" for a in articles])
+            sentiment_prompt = (
+                f"Analisis sentimen berita berikut untuk {pair}. "
+                f"Klasifikasikan sebagai Bullish 🟢, Bearish 🔴, atau Neutral ⚪, "
+                f"dan beri penjelasan singkat (2-3 kalimat):\n\n{articles_text}"
+            )
+            sentiment = await ask_llm(SYSTEM_PROMPT, sentiment_prompt)
+            summary += f"\n📊 *Sentimen:* {sentiment}"
+            await update.effective_message.reply_text(
+                summary, parse_mode="Markdown", reply_markup=back_to_menu_keyboard()
+            )
+        except Exception as e:
+            logger.error(f"Error awaiting_news_input: {e}")
+            await update.effective_message.reply_text(
+                "❌ Gagal mengambil berita.", reply_markup=back_to_menu_keyboard()
+            )
         return
 
     # Tidak ada flag aktif → abaikan
