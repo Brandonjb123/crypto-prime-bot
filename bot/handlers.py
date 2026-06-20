@@ -34,7 +34,6 @@ from utils.formatter import format_scan_result
 from utils.validator import inject_calculated_prices, validate_signal_prices
 from services.signals import has_open_signal
 from services.signals import count_open_signals
-from utils.rate_limiter import MAX_OPEN_SIGNALS
 
 # ==================== START ====================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -512,6 +511,8 @@ async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ==================== HELP ====================
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    from utils.rate_limiter import PLAN_LIMITS, MAX_OPEN_SIGNALS
+
     help_text = f"""
 🤖 *Crypto Prime — AI Trading Assistant*
 
