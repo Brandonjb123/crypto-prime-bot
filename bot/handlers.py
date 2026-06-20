@@ -161,7 +161,7 @@ async def run_analyze(pair: str, chat_id: int) -> tuple[str, InlineKeyboardMarku
         else:
             save_signal(
                 chat_id,
-                pair,
+                pair + "/USDT",
                 data["side"].lower(),
                 float(data["entry_price"]),
                 float(data["target_price"]),

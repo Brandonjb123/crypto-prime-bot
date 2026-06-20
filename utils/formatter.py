@@ -1,5 +1,6 @@
 # utils/formatter.py
 from datetime import datetime, timezone, timedelta
+from utils.validator import REWARD_PERCENT, RISK_PERCENT
 
 def _wib_now():
     """Return current time in WIB (UTC+7)."""
@@ -22,7 +23,6 @@ def calculate_leverage_pnl(entry: float, target: float, stop: float, side: str) 
         }
     return result
 
-
 def format_leverage_estimate(entry: float, target: float, stop: float, side: str) -> str:
     """Format estimasi PnL leverage jadi teks."""
     pnl_data = calculate_leverage_pnl(entry, target, stop, side)
@@ -32,7 +32,6 @@ def format_leverage_estimate(entry: float, target: float, stop: float, side: str
         loss = pnl_data[lev]["loss"]
         lines.append(f"   {lev}x  →  Profit +{profit}% / Loss -{loss}%")
     return "\n".join(lines)
-
 
 def format_price(data: dict) -> str:
     name = data.get("name", "Unknown")
@@ -57,7 +56,6 @@ def format_price(data: dict) -> str:
     message += f"\n🕐 *Diperbarui: {_wib_now().strftime('%H:%M:%S')} WIB*"
     return message
 
-
 def _smart_price(price):
     """Format harga dengan desimal yang sesuai untuk pair apapun."""
     if price is None:
@@ -71,10 +69,16 @@ def _smart_price(price):
     else:
         return f"${price:,.8f}"
 
+def _format_pair_display(pair: str) -> str:
+    """Pastikan pair selalu ditampilkan sebagai SYMBOL/USDT."""
+    if "/" in pair:
+        return pair
+    return f"{pair}/USDT"
 
 def format_analyze(data: dict, pair: str, price_data: dict) -> str:
     verdict = data.get('verdict', 'NO_SETUP')
     is_valid = verdict == 'SETUP_VALID'
+    display_pair = _format_pair_display(pair)
 
     # Teknikal section
     change_24h = price_data.get('price_change_24h', 0) or 0
@@ -108,7 +112,8 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
         entry = data.get('entry_price')
         target = data.get('target_price')
         sl = data.get('stop_loss')
-        rr = round((target - entry) / (entry - sl), 1) if sl and entry and target else '-'
+        # R:R selalu 2.0, tampilkan langsung
+        rr_display = round(REWARD_PERCENT / RISK_PERCENT, 1)
         verdict_box = "✅ *SETUP VALID — TRADE READY*"
         trade_section = (
             f"📐 *Setup Trade (4H)*\n"
@@ -116,7 +121,7 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
             f"   Entry   : {_smart_price(entry)}\n"
             f"   Target  : {_smart_price(target)}\n"
             f"   Stop    : {_smart_price(sl)}\n"
-            f"   R:R     : 1:{rr}\n\n"
+            f"   R:R     : 1:{rr_display}\n\n"
             f"📝 {data.get('summary', '')}\n"
             f"⚠️ {data.get('risk_notes', 'DYOR, bukan financial advice')}"
         )
@@ -135,11 +140,12 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
         )
 
     # TradingView link
-    tv_pair = pair.replace("/USDT", "USD").replace("USDT", "USD")
+    tv_pair = display_pair.replace("/USDT", "USD").replace("USDT", "USD")
     tv_link = f"https://www.tradingview.com/chart/?symbol={tv_pair}"
 
+    display_pair = _format_pair_display(pair)
     result = (
-        f"🔍 *Analisa: {pair}*\n\n"
+        f"🔍 *Analisa: {display_pair}*\n\n"
         f"{teknikal}\n\n"
         f"{sentimen}\n\n"
         f"{likuiditas}\n\n"
@@ -166,9 +172,10 @@ def format_signals(signals: list) -> str:
         current = sig.get("current_price", entry)
         pnl = ((current - entry) / entry * 100) if sig["side"] == "long" else ((entry - current) / entry * 100)
         pnl_emoji = "🟢" if pnl >= 0 else "🔴"
+        display_pair = _format_pair_display(sig['pair'])
 
         message += (
-            f"#{sig['id']} {side_emoji} *{sig['pair']}* {sig['side'].upper()}\n"
+            f"#{sig['id']} {side_emoji} *{display_pair}* {sig['side'].upper()}\n"
             f"Entry: {_smart_price(entry)} → Now: {_smart_price(current)} ({pnl_emoji} {pnl:+.2f}%)\n"
             f"Target: {_smart_price(sig['target_price'])} | Stop: {_smart_price(sig['stop_loss'])}\n"
             f"Umur: {sig.get('age', 'N/A')}\n\n"
@@ -187,8 +194,9 @@ def format_portfolio(positions: list) -> str:
     
     for pos in positions:
         emoji = "🟢" if pos["pnl_pct"] >= 0 else "🔴"
+        display_pair = _format_pair_display(pos['pair'])
         message += (
-            f"#{pos['id']} {emoji} *{pos['pair']}* {pos['side'].upper()}\n"
+            f"#{pos['id']} {emoji} *{display_pair}* {pos['side'].upper()}\n"
             f"Entry: ${pos['entry_price']:,.2f} → Now: ${pos['current_price']:,.2f}\n"
             f"P&L: {emoji} {pos['pnl_pct']:+.2f}% | Amount: {pos['amount']}\n\n"
         )
@@ -224,6 +232,7 @@ def format_scan_result(signals: list) -> str:
             "Coba lagi dalam beberapa jam."
         )
 
+    rr_display = round(REWARD_PERCENT / RISK_PERCENT, 1)  # selalu 2.0
     lines = [f"📡 *Scan Market — Top Signal ({len(signals)} SETUP VALID)*\n"]
     lines.append("━━━━━━━━━━━━━━━━━━\n")
 
@@ -233,20 +242,19 @@ def format_scan_result(signals: list) -> str:
         sl = s.get("stop_loss", 0)
         side = s.get("side", "-").upper()
         pair = s.get("pair", "-")
-        rr = round((target - entry) / max(entry - sl, 0.000001), 1)
+        display_pair = _format_pair_display(pair)
         side_icon = "🟢" if side == "LONG" else "🔴"
 
         lines.append(
-            f"{i}. *{pair}* {side_icon} {side}\n"
+            f"{i}. *{display_pair}* {side_icon} {side}\n"
             f"   Entry: {_smart_price(entry)} | Target: {_smart_price(target)}\n"
-            f"   SL: {_smart_price(sl)} | R:R 1:{rr}\n\n"   
+            f"   SL: {_smart_price(sl)} | R:R 1:{rr_display}\n\n"
         )
         pnl_10x = calculate_leverage_pnl(entry, target, sl, side)[10]
 
         lines.append(
             f"   💡 Est. PnL @10x: +{pnl_10x['profit']}% / -{pnl_10x['loss']}%\n\n"
         )
-        
 
     lines.append("━━━━━━━━━━━━━━━━━━\n")
     lines.append("⚠️ Bukan financial advice. DYOR.")
@@ -255,22 +263,23 @@ def format_scan_result(signals: list) -> str:
 
 def format_broadcast_signal(signal: dict) -> str:
     pair = signal.get("pair", "-")
+    display_pair = _format_pair_display(pair)
     side = signal.get("side", "-").upper()
     entry = signal.get("entry_price", 0)
     target = signal.get("target_price", 0)
     sl = signal.get("stop_loss", 0)
     summary = signal.get("summary", "")
     side_icon = "🟢" if side == "LONG" else "🔴"
-    rr = round((target - entry) / max(entry - sl, 0.000001), 1)
+    rr_display = round(REWARD_PERCENT / RISK_PERCENT, 1)  # selalu 2.0
 
     pnl_10x = calculate_leverage_pnl(entry, target, sl, side)[10]
     return (
-        f"🚨 *VIP SIGNAL — {pair}*\n\n"
+        f"🚨 *VIP SIGNAL — {display_pair}*\n\n"
         f"{side_icon} Side: {side.upper()}\n"
         f"📍 Entry   : {_smart_price(entry)}\n"
         f"🎯 Target  : {_smart_price(target)}\n"
         f"🛑 Stop    : {_smart_price(sl)}\n"
-        f"📊 R:R     : 1:{rr}\n"
+        f"📊 R:R     : 1:{rr_display}\n"
         f"💡 Est. PnL @10x: +{pnl_10x['profit']}% / -{pnl_10x['loss']}%\n\n"
         f"📝 {summary}\n\n"
         f"⚠️ Bukan financial advice. DYOR."
