@@ -109,12 +109,12 @@ def main():
     app.add_handler(CommandHandler("scan", scan_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_pair_text_input))
 
-    # Auto broadcast tiap 4 jam
-    app.job_queue.run_repeating(
-        scheduled_broadcast,
-        interval=14400,  # 4 jam
-        first=60
-    )
+    # # Auto broadcast tiap 4 jam
+    # app.job_queue.run_repeating(
+    #     scheduled_broadcast,
+    #     interval=14400,  # 4 jam
+    #     first=60
+    # )
 
     # Early warning TP/SL tiap 20 menit
     app.job_queue.run_repeating(
