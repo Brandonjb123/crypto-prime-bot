@@ -138,7 +138,7 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
     tv_pair = pair.replace("/USDT", "USD").replace("USDT", "USD")
     tv_link = f"https://www.tradingview.com/chart/?symbol={tv_pair}"
 
-    return (
+    result = (
         f"🔍 *Analisa: {pair}*\n\n"
         f"{teknikal}\n\n"
         f"{sentimen}\n\n"
@@ -149,6 +149,9 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
         f"{trade_section}\n\n"
         f"📈 Chart: {tv_link}"
     )
+    if data.get("duplicate_note"):
+        result += f"\n\n{data['duplicate_note']}"
+    return result
 
 
 def format_signals(signals: list) -> str:
