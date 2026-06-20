@@ -72,35 +72,41 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text(msg, reply_markup=main_menu_keyboard())
 
 
+async def run_price(pair: str) -> tuple[str, InlineKeyboardMarkup]:
+    """Logic inti /price, reusable."""
+    coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
+    if not coin_id:
+        return (f"❌ Pair {pair} tidak ditemukan.", back_to_menu_keyboard())
+
+    try:
+        price_data = await get_price(coin_id)
+        result_text = format_price(price_data)
+        keyboard = price_keyboard(pair)
+        return (result_text, keyboard)
+    except Exception as e:
+        logger.error(f"Error run_price: {e}")
+        return (f"❌ Gagal mengambil data untuk {pair}. Coba lagi.", back_to_menu_keyboard())
+
+
 # ==================== PRICE ====================
 async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.effective_message.reply_text(
-            "⚠️ Mohon masukkan simbol coin.\nContoh: `/price BTC` atau `/price ETH`",
-            reply_markup=back_to_menu_keyboard(),
+            "💰 *Pilih pair untuk cek harga:*\n\n"
+            "Tap salah satu di bawah, atau ketik pair lain.",
+            parse_mode="Markdown",
+            reply_markup=price_pair_selection_keyboard()
         )
         return
 
-    symbol = context.args[0].upper()
-    coin_id = SYMBOL_TO_COINGECKO_ID.get(symbol)
-    if not coin_id:
-        await update.effective_message.reply_text(
-            f"❌ Simbol *{symbol}* tidak dikenali.\nCoba simbol seperti: BTC, ETH, SOL, DOGE, dll.",
-            reply_markup=back_to_menu_keyboard(),
-        )
-        return
-
-    try:
-        data = await get_price(coin_id)
-        msg = format_price(data)
-        await update.effective_message.reply_text(
-            msg, parse_mode="Markdown", reply_markup=price_keyboard(symbol)
-        )
-    except Exception as e:
-        logger.error(f"Error /price: {e}")
-        await update.effective_message.reply_text(
-            f"😔 Gagal mengambil data harga. ({str(e)})", reply_markup=back_to_menu_keyboard()
-        )
+    pair = context.args[0].upper()
+    result_text, keyboard = await run_price(pair)
+    await update.effective_message.reply_text(
+        result_text,
+        parse_mode="Markdown",
+        reply_markup=keyboard,
+        disable_web_page_preview=True
+    )
 
 
 async def run_analyze(pair: str, chat_id: int) -> tuple[str, InlineKeyboardMarkup]:
@@ -551,27 +557,46 @@ Bot ini hanya alat bantu analisis, bukan saran keuangan. Selalu lakukan riset se
 
 
 async def handle_pair_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Tangkap pesan teks setelah user klik Ketik Pair Lain."""
-    if not context.user_data.get("awaiting_pair_input"):
-        return  # Bukan dalam mode tunggu pair
+    """Tangkap pesan teks setelah user klik Ketik Pair Lain (analyze ATAU price)."""
 
-    pair = update.message.text.strip().upper()
-    context.user_data["awaiting_pair_input"] = False  # Reset flag
+    # --- Untuk Analyze ---
+    if context.user_data.get("awaiting_pair_input"):
+        pair = update.message.text.strip().upper()
+        context.user_data["awaiting_pair_input"] = False
 
-    if not pair:
-        await update.effective_message.reply_text("❌ Pair tidak boleh kosong.")
+        if not pair:
+            await update.effective_message.reply_text("❌ Pair tidak boleh kosong.")
+            return
+
+        await update.effective_message.reply_text(f"🔍 Menganalisis {pair}... Mohon tunggu.")
+        result_text, keyboard = await run_analyze(pair, update.effective_chat.id)
+        await update.effective_message.reply_text(
+            result_text,
+            parse_mode="Markdown",
+            reply_markup=keyboard,
+            disable_web_page_preview=True
+        )
         return
 
-    await update.effective_message.reply_text(f"🔍 Menganalisis {pair}... Mohon tunggu.")
+    # --- Untuk Price ---
+    if context.user_data.get("awaiting_price_input"):
+        pair = update.message.text.strip().upper()
+        context.user_data["awaiting_price_input"] = False
 
-    result_text, keyboard = await run_analyze(pair, update.effective_chat.id)
+        if not pair:
+            await update.effective_message.reply_text("❌ Pair tidak boleh kosong.")
+            return
 
-    await update.effective_message.reply_text(
-        result_text,
-        parse_mode="Markdown",
-        reply_markup=keyboard,
-        disable_web_page_preview=True
-    )
+        result_text, keyboard = await run_price(pair)
+        await update.effective_message.reply_text(
+            result_text,
+            parse_mode="Markdown",
+            reply_markup=keyboard,
+            disable_web_page_preview=True
+        )
+        return
+
+    # Tidak ada flag aktif → abaikan
 
 
 # ==================== CALLBACKS ====================
@@ -695,6 +720,30 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith("analyze_"):
         symbol = data.replace("analyze_", "")
         await query.message.reply_text(f"Silakan gunakan `/analyze {symbol}` untuk analisis {symbol}.")
+
+    elif query.data.startswith("price_pair_"):
+        pair = query.data.replace("price_pair_", "")
+        await query.answer(f"💰 Cek harga {pair}...")
+        result_text, keyboard = await run_price(pair)
+        await query.edit_message_text(
+            result_text,
+            parse_mode="Markdown",
+            reply_markup=keyboard,
+            disable_web_page_preview=True
+        )
+
+    elif query.data == "price_custom":
+        await query.answer()
+        await query.edit_message_text(
+            "✏️ Ketik nama coin yang mau dicek harganya:\nContoh: SUI, ATOM, INJ",
+        )
+        from telegram import ForceReply
+        await context.bot.send_message(
+            chat_id=query.message.chat_id,
+            text="👇 Ketik di sini:",
+            reply_markup=ForceReply(selective=True, input_field_placeholder="Contoh: SUI")
+        )
+        context.user_data["awaiting_price_input"] = True    
 
     else:
         await query.message.reply_text("❌ Tombol tidak dikenali.")

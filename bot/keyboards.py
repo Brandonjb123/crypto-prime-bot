@@ -89,3 +89,23 @@ def pair_selection_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton("🏠 Menu Utama", callback_data="menu_start")
     ])
     return InlineKeyboardMarkup(keyboard)
+
+def price_pair_selection_keyboard() -> InlineKeyboardMarkup:
+    """Tombol pilihan pair untuk /price tanpa argumen."""
+    keyboard = []
+    row = []
+    for i, pair in enumerate(POPULAR_PAIRS):
+        row.append(InlineKeyboardButton(pair, callback_data=f"price_pair_{pair}"))
+        if len(row) == 4:
+            keyboard.append(row)
+            row = []
+    if row:
+        keyboard.append(row)
+
+    keyboard.append([
+        InlineKeyboardButton("✏️ Ketik Pair Lain", callback_data="price_custom")
+    ])
+    keyboard.append([
+        InlineKeyboardButton("🏠 Menu Utama", callback_data="menu_start")
+    ])
+    return InlineKeyboardMarkup(keyboard)
