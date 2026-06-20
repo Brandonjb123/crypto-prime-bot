@@ -512,13 +512,13 @@ async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ==================== HELP ====================
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    help_text = """
+    help_text = f"""
 🤖 *Crypto Prime — AI Trading Assistant*
 
 ━━━━━━━━━━━━━━━━━━━━
 
 📡 *Scan Market (Premium+)*
-/scan — Scan top 100 pair, cari setup LAYAK
+/scan — Scan top 100 pair, cari SETUP VALID
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -539,6 +539,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 📡 *Paper Trading*
 /mysignals — Sinyal aktif & status
 /paperstats — Statistik performa sinyal
+
+━━━━━━━━━━━━━━━━━━━━
+
+📋 *Plan & Limit*
+Free    : {PLAN_LIMITS['free']['analyze']}x analyze/hari, {MAX_OPEN_SIGNALS['free']} open signal
+Premium : {PLAN_LIMITS['premium']['analyze']}x analyze/hari, {MAX_OPEN_SIGNALS['premium']} open signal, akses Scan
+Elite   : Unlimited, {MAX_OPEN_SIGNALS['elite']} open signal, akses Scan
+Cek plan kamu: /usage
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -722,7 +730,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # --- ANALYZE DARI PRICE --- (dipindah ke paling akhir agar tidak menangkap analyze_pair_)
     elif data.startswith("analyze_"):
         symbol = data.replace("analyze_", "")
-        await query.message.reply_text(f"Silakan gunakan `/analyze {symbol}` untuk analisis {symbol}.")
+        await query.answer(f"🔍 Menganalisis {symbol}...")
+        result_text, keyboard = await run_analyze(symbol, query.message.chat_id)
+        await query.edit_message_text(
+            result_text,
+            parse_mode="Markdown",
+            reply_markup=keyboard,
+            disable_web_page_preview=True
+        )
 
     elif query.data.startswith("price_pair_"):
         pair = query.data.replace("price_pair_", "")
