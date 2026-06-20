@@ -46,14 +46,12 @@ def format_price(data: dict) -> str:
     else:
         change_str = "N/A"
 
-    usd = lambda val: f"${val:,.2f}" if val is not None else "N/A"
-    
     message = (
         f"💰 *{name} ({symbol})*\n\n"
-        f"Harga: `{usd(price)}`\n"
+        f"Harga: `{_smart_price(price)}`\n"
         f"24j: {change_str}\n"
-        f"Volume: `{usd(data.get('total_volume'))}`\n"
-        f"Market Cap: `{usd(data.get('market_cap'))}`\n\n"
+        f"Volume: `{_smart_price(data.get('total_volume'))}`\n"
+        f"Market Cap: `{_smart_price(data.get('market_cap'))}`\n\n"
         f"_Data: CoinGecko_"
     )
     message += f"\n🕐 *Diperbarui: {_wib_now().strftime('%H:%M:%S')} WIB*"
