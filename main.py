@@ -18,9 +18,25 @@ logger.info("Starting bot...")
 
 
 async def scheduled_broadcast(context):
-    signals = await scan_market(limit=100)
-    if signals:
-        await broadcast_signals(context.bot, signals)
+    from config import ADMIN_CHAT_ID
+    try:
+        signals = await scan_market(limit=100)
+        if signals:
+            await broadcast_signals(context.bot, signals)
+        else:
+            await context.bot.send_message(
+                chat_id=ADMIN_CHAT_ID,
+                text="ℹ️ Auto-scan selesai, tidak ada SETUP_VALID ditemukan."
+            )
+    except Exception as e:
+        logger.error(f"Scheduled broadcast gagal total: {e}")
+        try:
+            await context.bot.send_message(
+                chat_id=ADMIN_CHAT_ID,
+                text=f"⚠️ Auto-broadcast error: {str(e)[:200]}"
+            )
+        except Exception:
+            pass
 
 
 async def check_signal_warnings(context):

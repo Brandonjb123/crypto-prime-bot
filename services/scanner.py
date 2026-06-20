@@ -31,9 +31,15 @@ async def scan_market(limit: int = 100) -> list:
 
             # Build prompt & call LLM
             prompt = build_analyze_prompt(symbol, price_data, headlines)
-            raw = await ask_llm(SYSTEM_PROMPT, prompt)
-
-            data = json.loads(raw)
+            try:
+                raw = await ask_llm(SYSTEM_PROMPT, prompt)
+                data = json.loads(raw)
+            except json.JSONDecodeError:
+                logger.warning(f"JSON parse error untuk {symbol}")
+                continue
+            except Exception as e:
+                logger.warning(f"Groq/API error untuk {symbol}: {e}")
+                continue
             if data.get("verdict") == "SETUP_VALID":
                 current_price = price_data.get("current_price", 0)
                 if validate_signal_prices(data, current_price):

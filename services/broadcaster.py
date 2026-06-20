@@ -17,6 +17,7 @@ def get_premium_users() -> list:
 async def broadcast_signals(bot, signals: list):
     """Kirim signal ke semua user premium/elite/admin."""
     if not signals:
+        logger.info("Tidak ada signal untuk broadcast (list kosong)")
         return
 
     users = get_premium_users()
