@@ -108,10 +108,20 @@ async def check_and_update_signal(signal: dict) -> dict:
 
     return signal
 
+def normalize_pair(pair: str) -> str:
+    """
+    Pastikan format pair selalu SYMBOL/USDT sebelum disimpan
+    ke database.
+    """
+    pair = pair.upper().strip()
+    if "/" in pair:
+        return pair
+    return f"{pair}/USDT"
 
 def save_signal(chat_id: int, pair: str, side: str, entry_price: float,
                 target_price: float, stop_loss: float) -> int:
     """Simpan sinyal baru ke tabel signals, return ID sinyal."""
+    pair = normalize_pair(pair)
     conn = get_connection()
     cursor = conn.cursor()
     now = datetime.utcnow().isoformat()
@@ -163,6 +173,7 @@ def count_open_signals(chat_id: int) -> int:
 
 def has_open_signal(chat_id: int, pair: str) -> bool:
     """Cek apakah user sudah punya open signal untuk pair ini."""
+    pair = normalize_pair(pair)
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
