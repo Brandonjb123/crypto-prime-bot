@@ -511,52 +511,39 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     help_text = f"""
 🤖 *Crypto Prime — AI Trading Assistant*
+_Futures crypto, dianalisa AI 24/7_
 
 ━━━━━━━━━━━━━━━━━━━━
 
-📡 *Scan Market (Premium+)*
-/scan — Scan top 100 pair, cari SETUP VALID
+🎯 *MULAI DI SINI*
+/analyze — Analisa lengkap satu pair
+/scan — Cari sinyal terbaik dari 100 pair _(Premium+)_
 
-━━━━━━━━━━━━━━━━━━━━
+📊 *DATA & RISET*
+/price — Harga real-time
+/news — Berita & sentimen
 
-📊 *Market Data*
-/price <SYMBOL> — Cek harga real-time
-  Contoh: `/price BTC`
+📡 *PORTOFOLIO SINYAL*
+/mysignals — Sinyal aktifmu sekarang
+/paperstats — Performa & win rate
 
-━━━━━━━━━━━━━━━━━━━━
-
-🔍 *Analisis AI*
-/analyze <PAIR> — Analisis multi-factor
-  Contoh: `/analyze BTC`
-/news <PAIR> — Berita terkini & sentimen
-  Contoh: `/news ETH`
-
-━━━━━━━━━━━━━━━━━━━━
-
-📡 *Paper Trading*
-/mysignals — Sinyal aktif & status
-/paperstats — Statistik performa sinyal
+⭐ *AKUN KAMU*
+/usage — Sisa kuota & plan kamu
+/upgrade — Lihat paket Premium & Elite
 
 ━━━━━━━━━━━━━━━━━━━━
 
 📋 *Plan & Limit*
-Free    : {PLAN_LIMITS['free']['analyze']}x analyze/hari, {MAX_OPEN_SIGNALS['free']} open signal
-Premium : {PLAN_LIMITS['premium']['analyze']}x analyze/hari, {MAX_OPEN_SIGNALS['premium']} open signal, akses Scan
-Elite   : Unlimited, {MAX_OPEN_SIGNALS['elite']} open signal, akses Scan
-Cek plan kamu: /usage
+🆓 Free     — {PLAN_LIMITS['free']['analyze']}x analisa/hari, {MAX_OPEN_SIGNALS['free']} sinyal aktif
+⭐ Premium  — {PLAN_LIMITS['premium']['analyze']}x analisa/hari, {MAX_OPEN_SIGNALS['premium']} sinyal aktif, Scan Market
+👑 Elite    — Unlimited, {MAX_OPEN_SIGNALS['elite']} sinyal aktif, Scan Market
 
 ━━━━━━━━━━━━━━━━━━━━
 
-⭐ *Upgrade*
-/upgrade — Lihat paket premium
-/usage — Cek sisa kuota harian
+⚠️ _Bot ini alat bantu analisa, bukan saran keuangan._
+_Selalu DYOR sebelum trading._
 
-━━━━━━━━━━━━━━━━━━━━
-
-⚠️ *Disclaimer:*
-Bot ini hanya alat bantu analisis, bukan saran keuangan. Selalu lakukan riset sendiri sebelum trading.
-
-📞 *Admin:* @BenzAckerman
+📞 Admin: @BenzAckerman
 """
     await update.effective_message.reply_text(help_text, parse_mode="Markdown", reply_markup=back_to_menu_keyboard())
 
