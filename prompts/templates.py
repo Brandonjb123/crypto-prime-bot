@@ -1,7 +1,9 @@
 # prompts/templates.py
 
 def build_analyze_prompt(pair: str, price_data: dict, news_headlines: list) -> str:
-    current_price = price_data['current_price']
+    current_price = price_data.get('current_price')
+    if current_price is None:
+        current_price = 0
     headlines_str = "\n".join(f"- {h}" for h in news_headlines[:5])
 
     # Tentukan format contoh angka berdasarkan harga asli
