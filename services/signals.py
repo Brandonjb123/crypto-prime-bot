@@ -10,7 +10,6 @@ def get_signal_stats(chat_id: int) -> dict:
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Ambil semua sinyal yang sudah closed
     cursor.execute(
         "SELECT id, pair, side, entry_price, target_price, stop_loss, status, result_pct, created_at, closed_at "
         "FROM signals WHERE chat_id = ? AND status != 'open' ORDER BY closed_at DESC",
@@ -18,7 +17,6 @@ def get_signal_stats(chat_id: int) -> dict:
     )
     closed_rows = cursor.fetchall()
 
-    # Hitung sinyal yang masih open
     cursor.execute(
         "SELECT COUNT(*) as open_count FROM signals WHERE chat_id = ? AND status = 'open'",
         (chat_id,),
@@ -55,20 +53,16 @@ def get_signal_stats(chat_id: int) -> dict:
     }
 
 async def check_and_update_signal(signal: dict) -> dict:
-    """
-    Cek apakah sinyal sudah kena target atau stop loss berdasarkan harga terkini.
-    Return dict dengan status terbaru.
-    """
+    """Cek apakah sinyal sudah kena target atau stop loss."""
     pair = signal["pair"]
     side = signal["side"]
     entry = signal["entry_price"]
     target = signal["target_price"]
     stop = signal["stop_loss"]
 
-    # Ambil harga terkini
     coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
     if not coin_id:
-        return signal  # tidak bisa cek, kembalikan apa adanya
+        return signal
 
     try:
         price_data = await get_price(coin_id)
@@ -78,7 +72,6 @@ async def check_and_update_signal(signal: dict) -> dict:
     except Exception:
         return signal
 
-    # Cek status
     new_status = None
     result_pct = 0.0
 
@@ -98,7 +91,6 @@ async def check_and_update_signal(signal: dict) -> dict:
             result_pct = ((entry - stop) / entry) * 100
 
     if new_status:
-        # Update database
         now = datetime.utcnow().isoformat()
         conn = get_connection()
         cursor = conn.cursor()
@@ -152,3 +144,51 @@ def get_open_signals(chat_id: int) -> list:
     rows = cursor.fetchall()
     conn.close()
     return rows if rows else []
+
+
+# ==================== EARLY WARNING ====================
+
+async def check_near_target_signals() -> list:
+    """Cek semua open signal yang mendekati TP/SL (radius 2%)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM signals WHERE status = 'open' AND warned = 0")
+    rows = cursor.fetchall()
+    conn.close()
+
+    near_signals = []
+    for sig in rows:
+        sig = dict(sig) if not isinstance(sig, dict) else sig
+        pair = sig["pair"]
+        coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
+        if not coin_id:
+            continue
+
+        try:
+            price_data = await get_price(coin_id)
+            current_price = price_data.get("current_price")
+            if not current_price:
+                continue
+        except Exception:
+            continue
+
+        target = sig["target_price"]
+        sl = sig["stop_loss"]
+        target_distance = abs(current_price - target) / target
+        sl_distance = abs(current_price - sl) / sl
+
+        if target_distance <= 0.02:
+            near_signals.append({"signal": sig, "current_price": current_price, "type": "near_tp"})
+        elif sl_distance <= 0.02:
+            near_signals.append({"signal": sig, "current_price": current_price, "type": "near_sl"})
+
+    return near_signals
+
+
+def mark_signal_warned(signal_id: int):
+    """Tandai signal sudah dikirim warning."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE signals SET warned = 1 WHERE id = ?", (signal_id,))
+    conn.commit()
+    conn.close()
