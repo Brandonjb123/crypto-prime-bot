@@ -614,9 +614,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             entities=[{"type": "bot_command", "offset": 24, "length": 8}],
         )
     elif data == "menu_price":
-        await query.message.reply_text(
-            "Silakan gunakan command /price \\<SYMBOL\\>\nContoh: `/price BTC`",
-            entities=[{"type": "bot_command", "offset": 24, "length": 6}],
+        await query.answer()
+        await query.edit_message_text(
+            "💰 *Pilih pair untuk cek harga:*\n\n"
+            "Tap salah satu di bawah, atau ketik pair lain.",
+            parse_mode="Markdown",
+            reply_markup=price_pair_selection_keyboard()
         )
     elif data == "menu_news":
         await query.message.reply_text(
