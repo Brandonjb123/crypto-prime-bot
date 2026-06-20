@@ -39,20 +39,32 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     chat_id = update.effective_chat.id
     init_db()
-    is_new = register_user(chat_id, user.username, user.first_name)
 
-    if is_new:
+    from db.models import is_new_user, get_user_plan
+    new_user = is_new_user(chat_id)
+
+    if new_user:
+        register_user(chat_id, user.username, user.first_name)
         msg = (
-            f"👋 Halo {user.first_name}!\n\n"
-            "Selamat datang di Crypto Prime Assistant! 🎉\n"
-            "Aku siap bantu analisis trading crypto kamu.\n\n"
-            "Ketik /help untuk lihat semua perintah yang tersedia."
+            f"👋 Selamat datang di Crypto Prime, {user.first_name}!\n\n"
+            "Aku AI trading assistant khusus futures crypto.\n"
+            "Tiap analisa aku gabungin 3 hal sekaligus:\n"
+            "📊 Pergerakan harga & tren\n"
+            "📰 Berita & sentimen pasar\n"
+            "💧 Likuiditas & keamanan\n\n"
+            "Hasilnya: rekomendasi LONG/SHORT yang jelas,\n"
+            "lengkap dengan Entry, Target, dan Stop Loss.\n"
+            "Bukan tebak-tebakan — semua berbasis data real-time.\n\n"
+            "🎁 Kamu dapat 3x /analyze gratis per hari.\n\n"
+            "Coba sekarang 👇"
         )
     else:
+        plan = get_user_plan(chat_id)
+        plan_label = {"free": "Free", "premium": "Premium", "elite": "Elite", "admin": "Admin"}.get(plan, "Free")
         msg = (
             f"👋 Halo lagi {user.first_name}!\n\n"
-            "Senang bertemu kamu lagi. Ada yang bisa aku bantu hari ini?\n\n"
-            "Ketik /help untuk lihat semua perintah."
+            f"📡 Plan: {plan_label}\n\n"
+            "Ketik /help untuk semua perintah."
         )
 
     await update.effective_message.reply_text(msg, reply_markup=main_menu_keyboard())

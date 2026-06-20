@@ -33,6 +33,16 @@ def get_user(chat_id: int):
     return None
 
 
+def is_new_user(chat_id: int) -> bool:
+    """Return True kalau user belum pernah terdaftar di tabel users."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT chat_id FROM users WHERE chat_id = ?", (chat_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row is None
+
+
 def get_user_plan(chat_id: int) -> str:
     """Return plan user saat ini. Otomatis downgrade ke free kalau expired."""
     conn = get_connection()
