@@ -32,7 +32,9 @@ from bot.keyboards import (
 from services.scanner import scan_market
 from utils.formatter import format_scan_result
 from utils.validator import validate_signal_prices
-
+from services.signals import has_open_signal
+from services.signals import count_open_signals
+from utils.rate_limiter import MAX_OPEN_SIGNALS
 
 # ==================== START ====================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -140,14 +142,30 @@ async def run_analyze(pair: str, chat_id: int) -> tuple[str, InlineKeyboardMarku
         data["verdict_reason"] = "Setup ditolak: entry tidak realistis atau R:R kurang."
 
     if data.get("verdict") == "SETUP_VALID" and is_valid:
-        save_signal(
-            chat_id,
-            pair,
-            data["side"].lower(),
-            float(data["entry_price"]),
-            float(data["target_price"]),
-            float(data["stop_loss"]),
-        )
+        plan = get_user_plan(chat_id)
+        max_signals = MAX_OPEN_SIGNALS.get(plan, 5)
+        current_count = count_open_signals(chat_id)
+
+        if current_count >= max_signals:
+            data["duplicate_note"] = (
+                f"⚠️ Kamu sudah mencapai limit {max_signals} open signal "
+                f"untuk plan {plan}. Signal ini TIDAK disimpan. "
+                f"Tunggu signal lain closed atau upgrade plan."
+            )
+        elif has_open_signal(chat_id, pair):
+            data["duplicate_note"] = (
+                f"ℹ️ Kamu sudah punya open signal untuk {pair}. "
+                f"Signal baru ini TIDAK disimpan ke /mysignals."
+            )
+        else:
+            save_signal(
+                chat_id,
+                pair,
+                data["side"].lower(),
+                float(data["entry_price"]),
+                float(data["target_price"]),
+                float(data["stop_loss"]),
+            )
 
     result_text = format_analyze(data, pair, price_data)
     keyboard = analyze_result_keyboard(pair)

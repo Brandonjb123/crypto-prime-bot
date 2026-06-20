@@ -9,6 +9,13 @@ PLAN_LIMITS = {
     "admin": {"analyze": 999999, "news": 999999},
 }
 
+MAX_OPEN_SIGNALS = {
+    "free": 5,
+    "premium": 15,
+    "elite": 30,
+    "admin": 999999,
+}
+
 
 def get_limit(plan: str, command: str) -> int:
     """Return limit harian berdasarkan plan dan command."""

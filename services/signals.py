@@ -146,6 +146,33 @@ def get_open_signals(chat_id: int) -> list:
     return rows if rows else []
 
 
+def count_open_signals(chat_id: int) -> int:
+    """Hitung jumlah open signal milik user."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT COUNT(*) FROM signals WHERE chat_id = ? AND status = 'open'",
+        (chat_id,),
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return row[0] if not isinstance(row, dict) else row["COUNT(*)"]
+    return 0
+
+
+def has_open_signal(chat_id: int, pair: str) -> bool:
+    """Cek apakah user sudah punya open signal untuk pair ini."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id FROM signals WHERE chat_id = ? AND pair = ? AND status = 'open'",
+        (chat_id, pair),
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row is not None
+
 # ==================== EARLY WARNING ====================
 
 async def check_near_target_signals() -> list:
