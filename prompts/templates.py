@@ -1,9 +1,14 @@
 # prompts/templates.py
 
 def build_analyze_prompt(pair: str, price_data: dict, news_headlines: list) -> str:
-    current_price = price_data.get('current_price')
-    if current_price is None:
-        current_price = 0
+    current_price = price_data.get('current_price') or 0
+    change_24h = price_data.get('price_change_24h') or 0
+    change_7d = price_data.get('price_change_7d') or 0
+    high_24h = price_data.get('high_24h') or 0
+    low_24h = price_data.get('low_24h') or 0
+    total_volume = price_data.get('total_volume') or 0
+    market_cap = price_data.get('market_cap') or 0
+
     headlines_str = "\n".join(f"- {h}" for h in news_headlines[:5])
 
     # Tentukan format contoh angka berdasarkan harga asli
@@ -26,12 +31,12 @@ HARGA SEKARANG: {current_price} USD
 
 DATA TEKNIKAL (dari CoinGecko):
 - Harga sekarang: {current_price} USD
-- Change 24h: {price_data['price_change_24h']}%
-- Change 7d: {price_data['price_change_7d']}%
-- High 24h: {price_data['high_24h']} USD
-- Low 24h: {price_data['low_24h']} USD
-- Volume 24h: ${price_data['total_volume']:,.0f}
-- Market Cap: ${price_data['market_cap']:,.0f}
+- Change 24h: {change_24h}%
+- Change 7d: {change_7d}%
+- High 24h: {high_24h} USD
+- Low 24h: {low_24h} USD
+- Volume 24h: ${total_volume:,.0f}
+- Market Cap: ${market_cap:,.0f}
 
 BERITA & SENTIMEN (5 headline terkini):
 {headlines_str}
