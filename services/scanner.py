@@ -9,9 +9,24 @@ from prompts.templates import build_analyze_prompt
 from loguru import logger
 from utils.validator import inject_calculated_prices, validate_signal_prices
 
+# Daftar simbol yang termasuk top 10 market cap
+TOP_MCAP_SYMBOLS = {"BTC", "ETH", "BNB", "XRP", "SOL", "ADA", "DOGE", "AVAX", "DOT", "LINK"}
+
+
+def _sort_signals_by_rr(signals: list) -> list:
+    """Urutkan sinyal berdasarkan R:R ratio (tertinggi ke terendah)."""
+    return sorted(
+        signals,
+        key=lambda x: (
+            (x.get("target_price", 0) - x.get("entry_price", 0)) /
+            max(x.get("entry_price", 0) - x.get("stop_loss", 1), 0.000001)
+        ),
+        reverse=True
+    )
+
 
 async def scan_market(limit: int = 100) -> list:
-    """Scan top {limit} pair, return list signal yang LAYAK (max 10)."""
+    """Scan top {limit} pair, return list sinyal LAYAK (max 10, ter-diversifikasi)."""
     top_pairs = await get_top_pairs(limit)
     results = []
 
@@ -41,6 +56,7 @@ async def scan_market(limit: int = 100) -> list:
             except Exception as e:
                 logger.warning(f"Groq/API error untuk {symbol}: {e}")
                 continue
+
             if data.get("verdict") == "SETUP_VALID":
                 current_price = price_data.get("current_price", 0)
                 if validate_signal_prices(data, current_price):
@@ -55,13 +71,16 @@ async def scan_market(limit: int = 100) -> list:
         # Rate limit protection
         await asyncio.sleep(0.5)
 
-    # Sort by R:R ratio (terbaik duluan)
-    results.sort(
-        key=lambda x: (
-            (x.get("target_price", 0) - x.get("entry_price", 0)) /
-            max(x.get("entry_price", 0) - x.get("stop_loss", 1), 0.000001)
-        ),
-        reverse=True
-    )
+    # --- DIVERSIFIKASI HASIL ---
+    # Pisahkan top market cap dari sisanya
+    top_mcap_results = [r for r in results if r["pair"].split("/")[0] in TOP_MCAP_SYMBOLS]
+    other_results = [r for r in results if r["pair"].split("/")[0] not in TOP_MCAP_SYMBOLS]
 
-    return results[:10]
+    # Urutkan masing-masing berdasarkan R:R (terbaik duluan)
+    top_mcap_results = _sort_signals_by_rr(top_mcap_results)
+    other_results = _sort_signals_by_rr(other_results)
+
+    # Gabungkan: maksimal 3 dari top market cap, sisanya dari yang lain
+    final_results = top_mcap_results[:3] + other_results[:7]
+
+    return final_results[:10]
