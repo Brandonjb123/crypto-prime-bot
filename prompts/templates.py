@@ -7,24 +7,14 @@ def build_analyze_prompt(pair: str, price_data: dict, news_headlines: list) -> s
     # Tentukan format contoh angka berdasarkan harga asli
     if current_price >= 10000:
         price_example = f"{int(current_price * 0.999)}"
-        target_example = f"{int(current_price * 1.04)}"
-        sl_example = f"{int(current_price * 0.975)}"
     elif current_price >= 100:
         price_example = f"{current_price * 0.999:.2f}"
-        target_example = f"{current_price * 1.04:.2f}"
-        sl_example = f"{current_price * 0.975:.2f}"
     elif current_price >= 1:
         price_example = f"{current_price * 0.999:.4f}"
-        target_example = f"{current_price * 1.04:.4f}"
-        sl_example = f"{current_price * 0.975:.4f}"
     elif current_price >= 0.0001:
         price_example = f"{current_price * 0.999:.6f}"
-        target_example = f"{current_price * 1.04:.6f}"
-        sl_example = f"{current_price * 0.975:.6f}"
     else:
         price_example = f"{current_price * 0.999:.8f}"
-        target_example = f"{current_price * 1.04:.8f}"
-        sl_example = f"{current_price * 0.975:.8f}"
 
     return f"""Analisa pair berikut untuk FUTURES TRADING dan kembalikan
 HANYA JSON, tanpa teks lain, tanpa markdown backticks.
@@ -44,12 +34,14 @@ DATA TEKNIKAL (dari CoinGecko):
 BERITA & SENTIMEN (5 headline terkini):
 {headlines_str}
 
-INSTRUKSI WAJIB UNTUK ANGKA:
-- Harga pair ini adalah {current_price} USD
+INSTRUKSI WAJIB UNTUK entry_price:
 - entry_price HARUS dalam range {current_price * 0.95:.8f} sampai {current_price * 1.05:.8f}
 - Gunakan skala desimal yang SAMA dengan harga asli ({current_price})
 - Jangan kalikan atau bagi dengan 10, 100, atau 1000
-- R:R minimum 1:1.5, jika tidak tercapai beri verdict TIDAK LAYAK
+
+CATATAN: Kamu TIDAK PERLU menghitung target_price dan stop_loss.
+Sistem akan menghitungnya otomatis. Cukup isi null untuk kedua
+field tersebut di JSON.
 
 JSON schema (gunakan angka sesuai skala harga {current_price}):
 {{
@@ -59,11 +51,11 @@ JSON schema (gunakan angka sesuai skala harga {current_price}):
   "sentiment": "Positif atau Negatif atau Neutral",
   "liquidity": "Tinggi atau Cukup atau Rendah",
   "verdict_reason": "alasan singkat 1-2 kalimat",
-  "side": "LONG atau SHORT (null jika TIDAK LAYAK)",
+  "side": "LONG atau SHORT (null jika NO_SETUP)",
   "entry_price": {price_example},
-  "target_price": {target_example},
-  "stop_loss": {sl_example},
-  "summary": "ringkasan analisa (null jika TIDAK LAYAK)",
-  "risk_notes": "catatan risiko (null jika TIDAK LAYAK)"
+  "target_price": null,
+  "stop_loss": null,
+  "summary": "ringkasan analisa (null jika NO_SETUP)",
+  "risk_notes": "catatan risiko (null jika NO_SETUP)"
 }}
 """

@@ -31,7 +31,7 @@ from bot.keyboards import (
 
 from services.scanner import scan_market
 from utils.formatter import format_scan_result
-from utils.validator import validate_signal_prices
+from utils.validator import inject_calculated_prices, validate_signal_prices
 from services.signals import has_open_signal
 from services.signals import count_open_signals
 from utils.rate_limiter import MAX_OPEN_SIGNALS
@@ -133,6 +133,8 @@ async def run_analyze(pair: str, chat_id: int) -> tuple[str, InlineKeyboardMarku
 
     try:
         data = json.loads(raw)
+         # Hitung target_price & stop_loss matematis
+        data = inject_calculated_prices(data)
     except json.JSONDecodeError:
         return (raw, back_to_menu_keyboard())
 

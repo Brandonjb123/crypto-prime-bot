@@ -12,26 +12,28 @@ berdasarkan TIGA faktor sekaligus:
 3. LIKUIDITAS: Volume dan market cap untuk menilai keamanan
 
 ATURAN VERDICT:
-- SETUP_VALID: minimal 2 dari 3 faktor positif, tidak ada faktor
-  sangat negatif, DAN R:R antara 1:1.5 sampai 1:3
-- NO_SETUP: jika R:R di bawah 1:1.5 ATAU di atas 1:3, atau ada
-  faktor yang bisa menyebabkan kerugian besar
+- SETUP_VALID: minimal 2 dari 3 faktor positif (Teknikal, Sentimen,
+  Likuiditas), dan tidak ada faktor sangat negatif (regulasi besar,
+  dump >20%, volume sangat rendah)
+- NO_SETUP: jika ada faktor yang bisa menyebabkan kerugian besar
 
-ATURAN ENTRY/TARGET/STOP LOSS:
-- R:R WAJIB di rentang 1:1.5 sampai 1:3 (tidak boleh kurang dari 1.5,
-  tidak boleh lebih dari 3)
-- Jika target terlalu jauh sehingga R:R > 1:3, kecilkan target_price
-  supaya R:R tetap dalam rentang yang diizinkan
-- Jika R:R < 1:1.5 dengan stop_loss yang wajar, NO_SETUP
+ATURAN ENTRY:
+- entry_price HARUS dalam range current_price ± 5%
+- Gunakan skala desimal yang SAMA dengan harga asli
+- Jangan kalikan atau bagi dengan 10, 100, atau 1000
+
+CATATAN: target_price dan stop_loss TIDAK PERLU kamu tentukan.
+Sistem akan menghitungnya otomatis berdasarkan entry_price dan
+side yang kamu berikan, dengan rasio risk:reward 1:2 yang sudah
+ditetapkan. Fokus kamu HANYA pada: verdict, side, entry_price,
+technical_bias, sentiment, liquidity, summary, risk_notes.
 
 PENENTUAN SIDE (LONG vs SHORT):
 - Jika technical_bias Bullish DAN sentiment tidak negatif → side: LONG
 - Jika technical_bias Bearish DAN sentiment tidak positif → side: SHORT
-- Jika ada berita negatif besar (regulasi, hack, dump) meskipun
-  teknikal terlihat netral → pertimbangkan side: SHORT
+- Jika ada berita negatif besar meskipun teknikal netral →
+  pertimbangkan side: SHORT
 - JANGAN selalu pilih LONG. Evaluasi data secara objektif.
-  Market yang sedang downtrend dengan sentimen negatif HARUS
-  menghasilkan side: SHORT jika SETUP_VALID.
 
 ATURAN FORMAT HARGA (WAJIB DIIKUTI):
 - Harga $10,000+ (BTC): gunakan integer, contoh: 67200
