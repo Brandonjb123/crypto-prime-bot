@@ -1,40 +1,33 @@
 # bot/handlers.py
 import json
 from datetime import datetime
-
 from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from loguru import logger
-
 from services.coingecko import get_price, get_market_data
 from services.llm import ask_llm
 from services.news import get_news
 from services.signals import save_signal, get_open_signals, check_and_update_signal, get_signal_stats
-
 from db.database import init_db
 from db.models import register_user, get_user_plan, set_user_plan, get_user
-
 from utils.rate_limiter import check_and_increment, get_remaining
 from utils.formatter import format_price, format_analyze, format_signals, format_paperstats
 from utils.symbols import SYMBOL_TO_COINGECKO_ID
-
 from prompts.system import SYSTEM_PROMPT
 from prompts.templates import build_analyze_prompt
-
 from config import ADMIN_CHAT_ID
-
 from bot.keyboards import (
     main_menu_keyboard, price_keyboard, analyze_keyboard, analyze_result_keyboard,
     signals_keyboard, paperstats_keyboard, back_to_menu_keyboard,
     pair_selection_keyboard, price_pair_selection_keyboard,
     news_pair_selection_keyboard, 
 )
-
 from services.scanner import scan_market
 from utils.formatter import format_scan_result
 from utils.validator import inject_calculated_prices, validate_signal_prices
 from services.signals import has_open_signal
 from services.signals import count_open_signals
+from utils.rate_limiter import check_and_increment, get_remaining, MAX_OPEN_SIGNALS
 
 # ==================== START ====================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
