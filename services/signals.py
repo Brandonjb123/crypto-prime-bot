@@ -268,9 +268,23 @@ def get_today_activity() -> dict:
     cursor.execute("SELECT SUM(analyze_count), SUM(news_count) FROM usage_log WHERE date = ?", (today,))
     row = cursor.fetchone()
     conn.close()
+
+    analyze_count = 0
+    news_count = 0
+
     if row:
-        return {
-            "analyze_count": row[0] if not isinstance(row, dict) else (row["SUM(analyze_count)"] or 0),
-            "news_count": row[1] if not isinstance(row, dict) else (row["SUM(news_count)"] or 0),
-        }
-    return {"analyze_count": 0, "news_count": 0}    
+        # Handle Turso dict format
+        if isinstance(row, dict):
+            raw_analyze = row.get("SUM(analyze_count)")
+            raw_news = row.get("SUM(news_count)")
+        else:
+            raw_analyze = row[0]
+            raw_news = row[1]
+
+        # Handle nilai null/None dari database
+        if raw_analyze and not isinstance(raw_analyze, dict):
+            analyze_count = int(raw_analyze)
+        if raw_news and not isinstance(raw_news, dict):
+            news_count = int(raw_news)
+
+    return {"analyze_count": analyze_count, "news_count": news_count}    
