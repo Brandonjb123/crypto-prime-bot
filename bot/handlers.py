@@ -11,7 +11,7 @@ from services.signals import save_signal, get_open_signals, check_and_update_sig
 from db.database import init_db
 from db.models import register_user, get_user_plan, set_user_plan, get_user
 from utils.rate_limiter import check_and_increment, get_remaining
-from utils.formatter import format_price, format_analyze, format_signals, format_paperstats
+from utils.formatter import format_price, format_analyze, format_signals, format_paperstats, _wib_now
 from utils.symbols import SYMBOL_TO_COINGECKO_ID, get_coin_id
 from prompts.system import SYSTEM_PROMPT
 from prompts.templates import build_analyze_prompt
