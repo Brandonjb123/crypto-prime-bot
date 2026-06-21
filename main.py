@@ -43,9 +43,9 @@ async def scheduled_broadcast(context):
 async def check_signal_warnings(context):
     """Job tiap 20 menit — update status signal + cek yang mendekati TP/SL."""
     from services.signals import check_and_update_signal
-    from utils.formatter import _smart_price, calculate_leverage_pnl
+    from utils.formatter import _smart_price, calculate_leverage_pnl, _format_pair_display
 
-    # ===== BAGIAN BARU: Update status semua open signal =====
+    # Update status semua open signal
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -61,15 +61,15 @@ async def check_signal_warnings(context):
                 continue
     except Exception as e:
         logger.error(f"Error update status sinyal: {e}")
-    # ===== AKHIR BAGIAN BARU =====
 
-    # Lanjut ke pengecekan early warning seperti biasa
+    # Lanjut ke pengecekan early warning
     near_signals = await check_near_target_signals()
 
     for item in near_signals:
         sig = item["signal"]
         chat_id = sig["chat_id"]
         pair = sig["pair"]
+        display_pair = _format_pair_display(pair)  # ← AMAN: hanya tambah /USDT kalau belum ada
         signal_type = item["type"]
         current_price = item["current_price"]
 
@@ -82,7 +82,7 @@ async def check_signal_warnings(context):
             distance_pct = abs(target - current_price) / current_price * 100
             pnl_10x = calculate_leverage_pnl(entry, target, sl, side)[10]
             message = (
-                f"🎯 *{pair}/USDT mendekati Target!*\n\n"
+                f"🎯 *{display_pair} mendekati Target!*\n\n"
                 f"💰 Harga sekarang : {_smart_price(current_price)}\n"
                 f"🎯 Target          : {_smart_price(target)}\n"
                 f"📏 Jarak           : {distance_pct:.1f}% lagi\n\n"
@@ -93,7 +93,7 @@ async def check_signal_warnings(context):
             distance_pct = abs(sl - current_price) / current_price * 100
             pnl_10x = calculate_leverage_pnl(entry, target, sl, side)[10]
             message = (
-                f"⚠️ *{pair}/USDT mendekati Stop Loss!*\n\n"
+                f"⚠️ *{display_pair} mendekati Stop Loss!*\n\n"
                 f"💰 Harga sekarang : {_smart_price(current_price)}\n"
                 f"🛑 Stop Loss       : {_smart_price(sl)}\n"
                 f"📏 Jarak           : {distance_pct:.1f}% lagi\n\n"
