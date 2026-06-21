@@ -28,6 +28,8 @@ from utils.validator import inject_calculated_prices, validate_signal_prices
 from services.signals import has_open_signal
 from services.signals import count_open_signals
 from utils.rate_limiter import check_and_increment, get_remaining, MAX_OPEN_SIGNALS
+from db.models import get_user_counts_by_plan, get_total_user_count, get_new_users_today
+from services.signals import get_signal_summary, get_today_activity
 
 # ==================== START ====================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -482,6 +484,43 @@ async def userinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🔹 Chat ID: `{target_id}`\n🔹 Plan: {plan}\n🔹 Expiry: {expiry_str}"
     )
     await update.effective_message.reply_text(msg, parse_mode="Markdown")
+
+
+async def adminstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_user.id
+
+    if chat_id != ADMIN_CHAT_ID:
+        await update.effective_message.reply_text("⛔ Kamu tidak punya akses command ini.")
+        return
+
+    plan_counts = get_user_counts_by_plan()
+    total_users = get_total_user_count()
+    new_today = get_new_users_today()
+    signal_summary = get_signal_summary()
+    activity = get_today_activity()
+
+    text = (
+        f"📊 *Admin Stats — Crypto Prime*\n"
+        f"_{_wib_now().strftime('%H:%M WIB, %d %b %Y')}_\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"👥 *User*\n"
+        f"Total: {total_users} | Baru hari ini: +{new_today}\n\n"
+        f"🆓 Free     : {plan_counts['free']}\n"
+        f"⭐ Premium  : {plan_counts['premium']}\n"
+        f"💎 Elite    : {plan_counts['elite']}\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"📡 *Sinyal Paper Trading*\n"
+        f"Open    : {signal_summary['total_open']}\n"
+        f"Closed  : {signal_summary['total_closed']}\n"
+        f"Win/Loss: {signal_summary['win_count']}/{signal_summary['loss_count']}\n"
+        f"Win Rate: {signal_summary['win_rate']}%\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"📈 *Aktivitas Hari Ini*\n"
+        f"/analyze : {activity['analyze_count']}x\n"
+        f"/news    : {activity['news_count']}x\n"
+    )
+
+    await update.effective_message.reply_text(text, parse_mode="Markdown")
 
 
 async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):

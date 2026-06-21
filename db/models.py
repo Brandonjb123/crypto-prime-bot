@@ -99,3 +99,40 @@ def set_user_plan(chat_id: int, plan: str, days: int = None) -> bool:
     conn.commit()
     conn.close()
     return True
+
+
+def get_user_counts_by_plan() -> dict:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT plan, COUNT(*) FROM users GROUP BY plan")
+    rows = cursor.fetchall()
+    conn.close()
+    counts = {"free": 0, "premium": 0, "elite": 0, "admin": 0}
+    for row in rows:
+        plan = row["plan"] if isinstance(row, dict) else row[0]
+        count = row[1] if not isinstance(row, dict) else row["COUNT(*)"]
+        counts[plan or "free"] = count
+    return counts
+
+
+def get_total_user_count() -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM users")
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return row[0] if not isinstance(row, dict) else row["COUNT(*)"]
+    return 0
+
+
+def get_new_users_today() -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    cursor.execute("SELECT COUNT(*) FROM users WHERE DATE(joined_at) = ?", (today,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return row[0] if not isinstance(row, dict) else row["COUNT(*)"]
+    return 0

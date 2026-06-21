@@ -230,3 +230,47 @@ def mark_signal_warned(signal_id: int):
     cursor.execute("UPDATE signals SET warned = 1 WHERE id = ?", (signal_id,))
     conn.commit()
     conn.close()
+
+
+def get_signal_summary() -> dict:
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM signals WHERE status = 'open'")
+    open_row = cursor.fetchone()
+    total_open = open_row[0] if not isinstance(open_row, dict) else open_row["COUNT(*)"]
+
+    cursor.execute("SELECT COUNT(*) FROM signals WHERE status != 'open'")
+    closed_row = cursor.fetchone()
+    total_closed = closed_row[0] if not isinstance(closed_row, dict) else closed_row["COUNT(*)"]
+
+    cursor.execute("SELECT COUNT(*) FROM signals WHERE status != 'open' AND result_pct > 0")
+    win_row = cursor.fetchone()
+    win_count = win_row[0] if not isinstance(win_row, dict) else win_row["COUNT(*)"]
+
+    loss_count = total_closed - win_count
+    win_rate = round((win_count / total_closed * 100), 1) if total_closed > 0 else 0.0
+
+    conn.close()
+    return {
+        "total_open": total_open,
+        "total_closed": total_closed,
+        "win_count": win_count,
+        "loss_count": loss_count,
+        "win_rate": win_rate,
+    }
+
+
+def get_today_activity() -> dict:
+    conn = get_connection()
+    cursor = conn.cursor()
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    cursor.execute("SELECT SUM(analyze_count), SUM(news_count) FROM usage_log WHERE date = ?", (today,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return {
+            "analyze_count": row[0] if not isinstance(row, dict) else (row["SUM(analyze_count)"] or 0),
+            "news_count": row[1] if not isinstance(row, dict) else (row["SUM(news_count)"] or 0),
+        }
+    return {"analyze_count": 0, "news_count": 0}    
