@@ -3,7 +3,7 @@ from datetime import datetime
 from db.database import get_connection
 from loguru import logger
 from services.coingecko import get_price
-from utils.symbols import SYMBOL_TO_COINGECKO_ID
+from utils.symbols import SYMBOL_TO_COINGECKO_ID, get_coin_id
 
 def get_signal_stats(chat_id: int) -> dict:
     """Hitung statistik performa sinyal user."""
@@ -60,7 +60,7 @@ async def check_and_update_signal(signal: dict) -> dict:
     target = signal["target_price"]
     stop = signal["stop_loss"]
 
-    coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
+    coin_id = get_coin_id(pair)
     if not coin_id:
         return signal
 
@@ -198,7 +198,7 @@ async def check_near_target_signals() -> list:
     for sig in rows:
         sig = dict(sig) if not isinstance(sig, dict) else sig
         pair = sig["pair"]
-        coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
+        coin_id = get_coin_id(pair)
         if not coin_id:
             continue
 

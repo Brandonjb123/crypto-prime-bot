@@ -12,7 +12,7 @@ from db.database import init_db
 from db.models import register_user, get_user_plan, set_user_plan, get_user
 from utils.rate_limiter import check_and_increment, get_remaining
 from utils.formatter import format_price, format_analyze, format_signals, format_paperstats
-from utils.symbols import SYMBOL_TO_COINGECKO_ID
+from utils.symbols import SYMBOL_TO_COINGECKO_ID, get_coin_id
 from prompts.system import SYSTEM_PROMPT
 from prompts.templates import build_analyze_prompt
 from config import ADMIN_CHAT_ID
@@ -67,7 +67,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def run_price(pair: str) -> tuple[str, InlineKeyboardMarkup]:
     """Logic inti /price, reusable."""
-    coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
+    coin_id = get_coin_id(pair)
     if not coin_id:
         return (f"❌ Pair {pair} tidak ditemukan.", back_to_menu_keyboard())
 
@@ -107,7 +107,7 @@ async def run_analyze(pair: str, chat_id: int) -> tuple[str, InlineKeyboardMarku
     Logic inti analisa, reusable.
     Return (result_text, keyboard) siap dikirim/edit.
     """
-    coin_id = SYMBOL_TO_COINGECKO_ID.get(pair)
+    coin_id = get_coin_id(pair)
     if not coin_id:
         return (f"❌ Pair {pair} tidak ditemukan.", back_to_menu_keyboard())
 
@@ -282,7 +282,7 @@ async def mysignals_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             continue
 
         try:
-            coin_id = SYMBOL_TO_COINGECKO_ID.get(sig["pair"])
+            coin_id = get_coin_id(sig["pair"])
             if coin_id:
                 price_data = await get_price(coin_id)
                 sig["current_price"] = price_data.get("current_price")
@@ -661,7 +661,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # --- REFRESH PRICE ---
     elif data.startswith("refresh_price_"):
         symbol = data.replace("refresh_price_", "")
-        coin_id = SYMBOL_TO_COINGECKO_ID.get(symbol)
+        coin_id = get_coin_id(symbol)
         if coin_id:
             try:
                 price_data = await get_price(coin_id)
@@ -683,7 +683,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 sig = await check_and_update_signal(sig)
                 if sig["status"] == "open":
                     try:
-                        coin_id = SYMBOL_TO_COINGECKO_ID.get(sig["pair"])
+                        coin_id = get_coin_id(sig["pair"])
                         if coin_id:
                             price_data = await get_price(coin_id)
                             sig["current_price"] = price_data.get("current_price")

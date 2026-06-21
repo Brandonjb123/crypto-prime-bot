@@ -12,6 +12,7 @@ from bot.handlers import (
 from services.scanner import scan_market
 from services.broadcaster import broadcast_signals
 from services.signals import check_near_target_signals, mark_signal_warned
+from db.database import get_connection
 
 logger.add("bot.log", rotation="1 day", retention="7 days", level="DEBUG")
 logger.info("Starting bot...")
@@ -40,9 +41,29 @@ async def scheduled_broadcast(context):
 
 
 async def check_signal_warnings(context):
-    """Job tiap 20 menit — cek signal yang mendekati TP/SL."""
+    """Job tiap 20 menit — update status signal + cek yang mendekati TP/SL."""
+    from services.signals import check_and_update_signal
     from utils.formatter import _smart_price, calculate_leverage_pnl
 
+    # ===== BAGIAN BARU: Update status semua open signal =====
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM signals WHERE status = 'open'")
+        open_signals = cursor.fetchall()
+        conn.close()
+
+        for sig in open_signals:
+            sig = dict(sig) if not isinstance(sig, dict) else sig
+            try:
+                await check_and_update_signal(sig)
+            except Exception:
+                continue
+    except Exception as e:
+        logger.error(f"Error update status sinyal: {e}")
+    # ===== AKHIR BAGIAN BARU =====
+
+    # Lanjut ke pengecekan early warning seperti biasa
     near_signals = await check_near_target_signals()
 
     for item in near_signals:
@@ -60,7 +81,6 @@ async def check_signal_warnings(context):
         if signal_type == "near_tp":
             distance_pct = abs(target - current_price) / current_price * 100
             pnl_10x = calculate_leverage_pnl(entry, target, sl, side)[10]
-
             message = (
                 f"🎯 *{pair}/USDT mendekati Target!*\n\n"
                 f"💰 Harga sekarang : {_smart_price(current_price)}\n"
@@ -69,10 +89,9 @@ async def check_signal_warnings(context):
                 f"💡 Estimasi profit @10x: +{pnl_10x['profit']}%\n\n"
                 f"Pantau terus di /mysignals"
             )
-        else:  # near_sl
+        else:
             distance_pct = abs(sl - current_price) / current_price * 100
             pnl_10x = calculate_leverage_pnl(entry, target, sl, side)[10]
-
             message = (
                 f"⚠️ *{pair}/USDT mendekati Stop Loss!*\n\n"
                 f"💰 Harga sekarang : {_smart_price(current_price)}\n"

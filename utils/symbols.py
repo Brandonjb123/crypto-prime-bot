@@ -26,3 +26,13 @@ SYMBOL_TO_COINGECKO_ID = {
     "PEPE": "pepe",
     "SHIB": "shiba-inu",
 }
+
+def get_coin_id(pair: str):
+    """
+    Ambil coin_id dari pair, terlepas dari formatnya
+    ("BTC" atau "BTC/USDT" sama-sama bisa diproses).
+    Ini SATU-SATUNYA titik lookup coin_id di seluruh codebase.
+    """
+    # Bersihkan format: ambil bagian sebelum "/" kalau ada
+    symbol = pair.split("/")[0].upper().strip()
+    return SYMBOL_TO_COINGECKO_ID.get(symbol)
