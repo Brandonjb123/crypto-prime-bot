@@ -8,7 +8,7 @@ SYMBOL_TO_COINGECKO_ID = {
     "SOL": "solana",
     "DOGE": "dogecoin",
     "DOT": "polkadot",
-    "MATIC": "matic-network",
+    "MATIC": "polygon-ecosystem-token",
     "POL": "polygon-ecosystem-token",
     "TRX": "tron",
     "AVAX": "avalanche-2",
