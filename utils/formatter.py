@@ -284,3 +284,36 @@ def format_broadcast_signal(signal: dict) -> str:
         f"📝 {summary}\n\n"
         f"⚠️ Bukan financial advice. DYOR."
     )
+
+
+def format_signal_closed(result: dict) -> str:
+    pair = result["pair"]
+    side = result["side"]
+    result_type = result["result"]  # "TP" atau "SL"
+    entry = result["entry_price"]
+    close_price = result["close_price"]
+    result_pct = result["result_pct"]
+    side_icon = "🟢" if side.upper() == "LONG" else "🔴"
+
+    if result_type == "TP":
+        return (
+            f"✅ *{pair} HIT TARGET!*\n\n"
+            f"{side_icon} Side: {side.upper()}\n"
+            f"📍 Entry   : {_smart_price(entry)}\n"
+            f"🎯 Closed  : {_smart_price(close_price)}\n"
+            f"📊 Result  : +{result_pct:.2f}%\n\n"
+            f"💡 @10x leverage: +{result_pct * 10:.1f}%\n\n"
+            f"🎉 Profit! Cek /paperstats untuk statistik."
+        )
+    else:
+        return (
+            f"🔴 *{pair} HIT STOP LOSS*\n\n"
+            f"{side_icon} Side: {side.upper()}\n"
+            f"📍 Entry   : {_smart_price(entry)}\n"
+            f"🛑 Closed  : {_smart_price(close_price)}\n"
+            f"📊 Result  : {result_pct:.2f}%\n\n"
+            f"💡 @10x leverage: {result_pct * 10:.1f}%\n\n"
+            f"📉 Loss. Cek /paperstats untuk statistik."
+        )
+    
+    

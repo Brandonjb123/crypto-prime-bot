@@ -41,19 +41,34 @@ async def scheduled_broadcast(context):
 
 
 async def check_signal_warnings(context):
-    """Job tiap 20 menit — update status signal + cek yang mendekati TP/SL."""
-    from services.signals import check_and_update_signal
-    from utils.formatter import _smart_price, calculate_leverage_pnl, _format_pair_display
+    """Job tiap 20 menit — update status signal + kirim notif closed + cek yang mendekati TP/SL."""
+    from services.signals import check_and_update_signal, get_all_open_signals
+    from utils.formatter import _smart_price, calculate_leverage_pnl, _format_pair_display, format_signal_closed
 
-    # Update status semua open signal
+    # ===== BAGIAN BARU: Cek closed signal & kirim notifikasi =====
+    open_signals = get_all_open_signals()
+    for signal in open_signals:
+        result = await check_and_update_signal(signal, return_closed_info=True)
+        if result and result.get("closed"):
+            message = format_signal_closed(result)
+            try:
+                await context.bot.send_message(
+                    chat_id=result["chat_id"],
+                    text=message,
+                    parse_mode="Markdown"
+                )
+            except Exception as e:
+                logger.error(f"Gagal kirim notif closed sinyal #{signal.get('id')}: {e}")
+
+    # ===== BAGIAN LAMA: Update status (kalau belum ter-update) + Early warning =====
     try:
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM signals WHERE status = 'open'")
-        open_signals = cursor.fetchall()
+        remaining_open = cursor.fetchall()
         conn.close()
 
-        for sig in open_signals:
+        for sig in remaining_open:
             sig = dict(sig) if not isinstance(sig, dict) else sig
             try:
                 await check_and_update_signal(sig)
@@ -69,7 +84,7 @@ async def check_signal_warnings(context):
         sig = item["signal"]
         chat_id = sig["chat_id"]
         pair = sig["pair"]
-        display_pair = _format_pair_display(pair)  # ← AMAN: hanya tambah /USDT kalau belum ada
+        display_pair = _format_pair_display(pair)
         signal_type = item["type"]
         current_price = item["current_price"]
 

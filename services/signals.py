@@ -52,8 +52,11 @@ def get_signal_stats(chat_id: int) -> dict:
         "open_count": open_count,
     }
 
-async def check_and_update_signal(signal: dict) -> dict:
-    """Cek apakah sinyal sudah kena target atau stop loss."""
+async def check_and_update_signal(signal: dict, return_closed_info: bool = False):
+    """
+    Cek apakah sinyal sudah kena target atau stop loss.
+    Kalau return_closed_info=True, return dict info closed, bukan sinyal utuh.
+    """
     pair = signal["pair"]
     side = signal["side"]
     entry = signal["entry_price"]
@@ -62,15 +65,15 @@ async def check_and_update_signal(signal: dict) -> dict:
 
     coin_id = get_coin_id(pair)
     if not coin_id:
-        return signal
+        return None if return_closed_info else signal
 
     try:
         price_data = await get_price(coin_id)
         current_price = price_data.get("current_price")
         if current_price is None:
-            return signal
+            return None if return_closed_info else signal
     except Exception:
-        return signal
+        return None if return_closed_info else signal
 
     new_status = None
     result_pct = 0.0
@@ -106,7 +109,19 @@ async def check_and_update_signal(signal: dict) -> dict:
         signal["result_pct"] = result_pct
         signal["closed_at"] = now
 
-    return signal
+        if return_closed_info:
+            return {
+                "closed": True,
+                "result": "TP" if new_status == "hit_target" else "SL",
+                "pair": pair,
+                "side": side,
+                "entry_price": entry,
+                "close_price": current_price,
+                "result_pct": result_pct,
+                "chat_id": signal["chat_id"],
+            }
+
+    return None if return_closed_info else signal
 
 def normalize_pair(pair: str) -> str:
     """
@@ -288,3 +303,17 @@ def get_today_activity() -> dict:
             news_count = int(raw_news)
 
     return {"analyze_count": analyze_count, "news_count": news_count}    
+
+
+def get_all_open_signals() -> list:
+    """Return semua open signal dari semua user."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM signals WHERE status = 'open'")
+    rows = cursor.fetchall()
+    conn.close()
+    result = []
+    for row in rows:
+        result.append(dict(row) if not isinstance(row, dict) else row)
+    return result
+
