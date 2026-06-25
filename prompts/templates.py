@@ -1,6 +1,6 @@
 # prompts/templates.py
 
-def build_analyze_prompt(pair: str, price_data: dict, news_headlines: list) -> str:
+def build_analyze_prompt(pair: str, price_data: dict, news_headlines: list, indicators: dict = None) -> str:
     current_price = price_data.get('current_price') or 0
     change_24h = price_data.get('price_change_24h') or 0
     change_7d = price_data.get('price_change_7d') or 0
@@ -23,6 +23,21 @@ def build_analyze_prompt(pair: str, price_data: dict, news_headlines: list) -> s
     else:
         price_example = f"{current_price * 0.999:.8f}"
 
+    # Section indikator teknikal (RSI, EMA, posisi harga)
+    indicators_section = ""
+    if indicators:
+        rsi_signal = indicators.get('rsi_signal', '-')
+        ema_signal = indicators.get('ema_signal', '-')
+        price_pos = indicators.get('price_position_pct')
+        pos_str = f"{price_pos}% dari Low ke High 24h" if price_pos is not None else '-'
+
+        indicators_section = f"""
+INDIKATOR TEKNIKAL:
+- RSI (14)  : {rsi_signal}
+- EMA Signal: {ema_signal}
+- Posisi    : {pos_str} (0% = di Low, 100% = di High)
+"""
+
     return f"""Analisa pair berikut untuk FUTURES TRADING dan kembalikan
 HANYA JSON, tanpa teks lain, tanpa markdown backticks.
 
@@ -37,7 +52,7 @@ DATA TEKNIKAL (dari CoinGecko):
 - Low 24h: {low_24h} USD
 - Volume 24h: ${total_volume:,.0f}
 - Market Cap: ${market_cap:,.0f}
-
+{indicators_section}
 BERITA & SENTIMEN (5 headline terkini):
 {headlines_str}
 

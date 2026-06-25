@@ -49,6 +49,35 @@ PENENTUAN SIDE (LONG vs SHORT):
   pertimbangkan side: SHORT
 - JANGAN selalu pilih LONG. Evaluasi data secara objektif.
 
+INSTRUKSI INTERPRETASI INDIKATOR TEKNIKAL:
+Gunakan indikator berikut sebagai konteks TAMBAHAN untuk
+memperkuat atau melemahkan verdict:
+
+RSI (Relative Strength Index):
+- RSI > 70 (Overbought): Harga kemungkinan sudah terlalu tinggi.
+  Kurangi confidence untuk LONG. Pertimbangkan SHORT atau NO_SETUP.
+- RSI < 30 (Oversold): Harga kemungkinan sudah terlalu rendah.
+  Kurangi confidence untuk SHORT. Pertimbangkan LONG atau NO_SETUP.
+- RSI 30-70 (Neutral): Tidak ada sinyal kuat dari RSI, ikuti
+  faktor lain.
+
+EMA Signal (Exponential Moving Average):
+- EMA20 > EMA50 (Bullish): Tren jangka pendek lebih kuat dari
+  jangka menengah — mendukung LONG.
+- EMA20 < EMA50 (Bearish): Tren jangka pendek lebih lemah —
+  mendukung SHORT.
+
+Posisi Harga vs High/Low 24h:
+- Di atas 80%: Harga dekat high, momentum kuat tapi risiko
+  reversal tinggi.
+- Di bawah 20%: Harga dekat low, potensi bounce tapi bisa
+  lanjut turun.
+- 20-80%: Posisi normal, ikuti faktor lain.
+
+PENTING: Indikator ini adalah KONFIRMASI tambahan, bukan
+pengganti analisa teknikal/sentimen/likuiditas. Kalau indikator
+bertentangan dengan faktor utama, pertimbangkan NO_SETUP.
+
 ATURAN FORMAT HARGA (WAJIB DIIKUTI):
 - Harga $10,000+ (BTC): gunakan integer, contoh: 67200
 - Harga $100-$9,999 (ETH, BNB): gunakan 2 desimal, contoh: 3420.50
