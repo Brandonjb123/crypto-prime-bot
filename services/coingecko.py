@@ -118,3 +118,110 @@ async def get_top_pairs(limit: int = 100) -> list:
     # Cache 1 jam
     price_cache.set("top_pairs", pairs)
     return pairs[:limit]
+
+
+# ==================== INDIKATOR TEKNIKAL ====================
+
+# ==================== INDIKATOR TEKNIKAL ====================
+
+async def get_ohlc_data(coin_id: str, days: int = 14) -> list:
+    cache_key = f"ohlc_{coin_id}_{days}"
+    cached = price_cache.get(cache_key)
+    if cached:
+        return cached
+
+    url = f"{COINGECKO_BASE_URL}/coins/{coin_id}/ohlc"
+    params = {"vs_currency": "usd", "days": days}
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, params=params, timeout=15.0)
+            response.raise_for_status()
+            data = response.json()
+        price_cache.set(cache_key, data)
+        return data
+    except Exception as e:
+        logger.warning(f"OHLC fetch gagal untuk {coin_id}: {e}")
+        return []
+
+
+def calculate_rsi(ohlc_data: list, period: int = 14) -> float | None:
+    if len(ohlc_data) < period + 1:
+        return None
+
+    closes = [candle[4] for candle in ohlc_data]
+    deltas = [closes[i] - closes[i-1] for i in range(1, len(closes))]
+    gains = [d if d > 0 else 0 for d in deltas]
+    losses = [abs(d) if d < 0 else 0 for d in deltas]
+
+    avg_gain = sum(gains[:period]) / period
+    avg_loss = sum(losses[:period]) / period
+
+    if avg_loss == 0:
+        return 100.0
+
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return round(rsi, 1)
+
+
+def calculate_ema(closes: list, period: int) -> float | None:
+    if len(closes) < period:
+        return None
+
+    ema = sum(closes[:period]) / period
+    multiplier = 2 / (period + 1)
+
+    for close in closes[period:]:
+        ema = close * multiplier + ema * (1 - multiplier)
+
+    return round(ema, 6)
+
+
+async def get_technical_indicators(coin_id: str) -> dict:
+    ohlc = await get_ohlc_data(coin_id, days=14)
+
+    if not ohlc or len(ohlc) < 51:
+        return {}
+
+    closes = [candle[4] for candle in ohlc]
+
+    rsi = calculate_rsi(ohlc)
+    ema20 = calculate_ema(closes, 20)
+    ema50 = calculate_ema(closes, 50)
+
+    recent_candles = ohlc[-4:] if len(ohlc) >= 4 else ohlc
+    high_24h = max(c[2] for c in recent_candles)
+    low_24h = min(c[3] for c in recent_candles)
+    last_close = closes[-1]
+
+    price_position = None
+    if high_24h != low_24h:
+        price_position = round(
+            (last_close - low_24h) / (high_24h - low_24h) * 100, 1
+        )
+
+    ema_signal = None
+    if ema20 and ema50:
+        if ema20 > ema50:
+            ema_signal = "Bullish (EMA20 > EMA50)"
+        else:
+            ema_signal = "Bearish (EMA20 < EMA50)"
+
+    rsi_signal = None
+    if rsi is not None:
+        if rsi > 70:
+            rsi_signal = f"Overbought ({rsi})"
+        elif rsi < 30:
+            rsi_signal = f"Oversold ({rsi})"
+        else:
+            rsi_signal = f"Neutral ({rsi})"
+
+    return {
+        "rsi": rsi,
+        "rsi_signal": rsi_signal,
+        "ema20": ema20,
+        "ema50": ema50,
+        "ema_signal": ema_signal,
+        "price_position_pct": price_position,
+    }
