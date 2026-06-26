@@ -27,6 +27,13 @@ Pilih SHORT jika:
   potensi reversal tinggi, lebih baik tunggu
 - Sentimen negatif atau neutral
 - Harga bergerak ke bawah dengan volume memadai
+PENTING UNTUK SHORT: RSI netral (40-60) + EMA bearish
+(EMA20 < EMA50) adalah kondisi SHORT yang IDEAL — artinya
+harga masih punya ruang untuk turun lebih jauh. Jangan
+tunggu RSI oversold untuk entry SHORT, karena saat RSI
+sudah oversold berarti harga sudah turun terlalu jauh
+dan risiko reversal tinggi. Entry SHORT terbaik justru
+saat RSI masih di zona netral tapi tren sudah bearish.
 
 ---
 
