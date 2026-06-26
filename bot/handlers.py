@@ -545,34 +545,6 @@ async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"Error /scan: {e}")
         await msg.edit_text("😔 Gagal melakukan scan market. Coba lagi nanti.")
 
-async def debugtech_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Command sementara untuk debug RSI/EMA — admin only"""
-    if update.effective_user.id != ADMIN_CHAT_ID:
-        await update.effective_message.reply_text("⛔ Akses khusus admin.")
-        return
-    
-    await update.effective_message.reply_text("🔍 Fetching indikator teknikal untuk BTC...")
-    
-    from services.coingecko import get_technical_indicators
-    indicators = await get_technical_indicators("bitcoin")
-    
-    if not indicators:
-        await update.effective_message.reply_text(
-            "⚠️ Indikator KOSONG untuk BTC — kemungkinan 429 rate limit atau data OHLC tidak tersedia."
-        )
-        return
-    
-    text = (
-        f"📊 *Debug Indikator Teknikal — BTC*\n\n"
-        f"RSI (14): {indicators.get('rsi', 'N/A')}\n"
-        f"RSI Signal: {indicators.get('rsi_signal', 'N/A')}\n"
-        f"EMA 20: {indicators.get('ema20', 'N/A')}\n"
-        f"EMA 50: {indicators.get('ema50', 'N/A')}\n"
-        f"EMA Signal: {indicators.get('ema_signal', 'N/A')}\n"
-        f"Posisi vs High/Low 24h: {indicators.get('price_position_pct', 'N/A')}%\n"
-    )
-    await update.effective_message.reply_text(text, parse_mode="Markdown")
-
 # ==================== HELP ====================
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     from utils.rate_limiter import PLAN_LIMITS, MAX_OPEN_SIGNALS
