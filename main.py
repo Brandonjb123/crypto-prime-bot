@@ -8,6 +8,7 @@ from bot.handlers import (
     mysignals_command, paperstats_command, setplan_command,
     upgrade_command, handle_callback, userinfo_command,
     scan_command, handle_pair_text_input, adminstats_command,
+    debugtech_command,
 )
 from services.scanner import scan_market
 from services.broadcaster import broadcast_signals
@@ -143,6 +144,7 @@ def main():
     app.add_handler(CommandHandler("scan", scan_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_pair_text_input))
     app.add_handler(CommandHandler("adminstats", adminstats_command))
+    app.add_handler(CommandHandler("debugtech", debugtech_command))
 
     # Auto broadcast tiap 4 jam
     app.job_queue.run_repeating(

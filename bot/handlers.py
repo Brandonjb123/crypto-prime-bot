@@ -4,7 +4,7 @@ from datetime import datetime
 from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from loguru import logger
-from services.coingecko import get_price, get_market_data
+from services.coingecko import get_price, get_market_data, get_technical_indicators
 from services.llm import ask_llm
 from services.news import get_news
 from services.signals import save_signal, get_open_signals, check_and_update_signal, get_signal_stats
@@ -115,6 +115,8 @@ async def run_analyze(pair: str, chat_id: int) -> tuple[str, InlineKeyboardMarku
 
     try:
         price_data = await get_market_data(coin_id)
+        # Fetch indikator teknikal
+        indicators = await get_technical_indicators(coin_id)
     except Exception:
         basic = await get_price(coin_id)
         price_data = {
@@ -129,7 +131,7 @@ async def run_analyze(pair: str, chat_id: int) -> tuple[str, InlineKeyboardMarku
 
     articles = await get_news(pair)
     headlines = [a["title"] for a in articles[:5]]
-    prompt = build_analyze_prompt(pair, price_data, headlines)
+    prompt = build_analyze_prompt(pair, price_data, headlines, indicators)
     raw = await ask_llm(SYSTEM_PROMPT, prompt)
 
     try:
@@ -543,6 +545,33 @@ async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"Error /scan: {e}")
         await msg.edit_text("😔 Gagal melakukan scan market. Coba lagi nanti.")
 
+async def debugtech_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Command sementara untuk debug RSI/EMA — admin only"""
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        await update.effective_message.reply_text("⛔ Akses khusus admin.")
+        return
+    
+    await update.effective_message.reply_text("🔍 Fetching indikator teknikal untuk BTC...")
+    
+    from services.coingecko import get_technical_indicators
+    indicators = await get_technical_indicators("bitcoin")
+    
+    if not indicators:
+        await update.effective_message.reply_text(
+            "⚠️ Indikator KOSONG untuk BTC — kemungkinan 429 rate limit atau data OHLC tidak tersedia."
+        )
+        return
+    
+    text = (
+        f"📊 *Debug Indikator Teknikal — BTC*\n\n"
+        f"RSI (14): {indicators.get('rsi', 'N/A')}\n"
+        f"RSI Signal: {indicators.get('rsi_signal', 'N/A')}\n"
+        f"EMA 20: {indicators.get('ema20', 'N/A')}\n"
+        f"EMA 50: {indicators.get('ema50', 'N/A')}\n"
+        f"EMA Signal: {indicators.get('ema_signal', 'N/A')}\n"
+        f"Posisi vs High/Low 24h: {indicators.get('price_position_pct', 'N/A')}%\n"
+    )
+    await update.effective_message.reply_text(text, parse_mode="Markdown")
 
 # ==================== HELP ====================
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
