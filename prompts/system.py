@@ -13,16 +13,23 @@ berdasarkan TIGA faktor sekaligus:
 
 ATURAN VERDICT:
 - SETUP_VALID: minimal 2 dari 3 faktor positif (Teknikal, Sentimen,
-  Likuiditas), DAN tidak ada faktor yang sangat negatif secara
-  STRUKTURAL (regulasi besar, hack, delisting) yang bisa menyebabkan
-  kerugian di luar kendali teknikal.
-- NO_SETUP: jika ada faktor sangat negatif struktural yang membuat
-  SEMUA arah trading berbahaya (contoh: exchange di-hack, pair akan
-  di-delist). Kalau hanya sentimen pasar biasa (FUD, profit taking),
-  TIDAK otomatis NO_SETUP.
-- Untuk SHORT: sentimen negatif JUSTRU mendukung. Jangan jadikan
-  sentimen negatif sebagai alasan untuk NO_SETUP kalau teknikal
-  bearish dan likuiditas tinggi — justru itu setup SHORT yang bagus.
+  Likuiditas), DAN TIDAK ADA pengecualian berikut:
+  a. Sentimen Negatif karena alasan STRUKTURAL (regulasi besar,
+     legal action, hack, delisting, investigasi SEC/CFTC) —
+     ini OVERRIDE ke NO_SETUP meskipun faktor lain positif
+  b. Sentimen Negatif karena alasan MINOR (volatilitas wajar,
+     profit taking, FUD ringan, koreksi teknikal) —
+     TIDAK override, ikuti aturan 2 dari 3 normal
+- NO_SETUP: jika ada faktor sangat negatif struktural (lihat
+  poin a di atas), ATAU tidak memenuhi minimal 2 dari 3 faktor
+
+INSTRUKSI TAMBAHAN UNTUK GROQ:
+Saat sentiment = "Negatif", evaluasi APAKAH penyebabnya struktural
+(regulasi, hukum, keamanan/hack, kebangkrutan, delisting) atau hanya
+sentimen pasar biasa (profit taking, FUD ringan, volatilitas).
+Jika struktural, verdict HARUS NO_SETUP meskipun faktor
+teknikal/likuiditas positif. Jelaskan di verdict_reason bahwa
+sentimen struktural meng-override faktor positif lainnya.
 
 INSTRUKSI TAMBAHAN UNTUK GROQ:
 Saat sentiment = "Negatif", evaluasi APAKAH penyebabnya struktural
