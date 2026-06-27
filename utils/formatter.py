@@ -80,31 +80,56 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
     is_valid = verdict == 'SETUP_VALID'
     display_pair = _format_pair_display(pair)
 
-    # Teknikal section
+    # Teknikal section — derive dari price_data, bukan dari Claude
     change_24h = price_data.get('price_change_24h', 0) or 0
     change_7d = price_data.get('price_change_7d', 0) or 0
     current_price = price_data.get('current_price', 0) or 0
+
+    if change_24h > 1:
+        tren = "📈 Bullish"
+    elif change_24h < -1:
+        tren = "📉 Bearish"
+    else:
+        tren = "➡️ Sideways"
 
     teknikal = (
         f"📊 *Teknikal*\n"
         f"   Harga: {_smart_price(current_price)}\n"
         f"   24h: {change_24h:+.1f}%  |  7d: {change_7d:+.1f}%\n"
-        f"   Tren: {data.get('technical_bias', '-')}"
+        f"   Tren: {tren}"
     )
 
-    # Sentiment section
-    sentiment = data.get('sentiment', 'Neutral')
-    sent_icon = '✅' if sentiment == 'Positif' else ('⚠️' if sentiment == 'Negatif' else '➖')
+    # Sentimen section — derive dari side yang dipilih Claude
+    side = data.get('side')
+    if side == 'LONG':
+        sent_icon = '✅'
+        sentiment = 'Bullish'
+    elif side == 'SHORT':
+        sent_icon = '⚠️'
+        sentiment = 'Bearish'
+    else:
+        sent_icon = '➖'
+        sentiment = 'Neutral'
     sentimen = f"📰 *Sentimen*\n   {sent_icon} {sentiment}"
 
-    # Likuiditas section
+    # Likuiditas section — derive dari volume & mcap
     vol = price_data.get('total_volume', 0) or 0
     mcap = price_data.get('market_cap', 0) or 0
+
+    if vol >= 1_000_000_000:
+        liq_status = "🟢 Tinggi"
+    elif vol >= 100_000_000:
+        liq_status = "🟡 Sedang"
+    elif vol >= 1_000_000:
+        liq_status = "🟠 Rendah"
+    else:
+        liq_status = "🔴 Sangat Rendah"
+
     likuiditas = (
         f"💧 *Likuiditas*\n"
         f"   Volume 24h: ${vol/1e6:.1f}M\n"
         f"   Mcap: ${mcap/1e9:.1f}B\n"
-        f"   Status: {data.get('liquidity', '-')}"
+        f"   Status: {liq_status}"
     )
 
     # Verdict
@@ -112,9 +137,9 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
         entry = data.get('entry_price')
         target = data.get('target_price')
         sl = data.get('stop_loss')
-        # R:R selalu 2.0, tampilkan langsung
         rr_display = round(REWARD_PERCENT / RISK_PERCENT, 1)
         verdict_box = "✅ *SETUP VALID — TRADE READY*"
+        reasoning = data.get('reasoning', '')
         trade_section = (
             f"📐 *Setup Trade (4H)*\n"
             f"   Side    : {data.get('side', '-')}\n"
@@ -122,8 +147,8 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
             f"   Target  : {_smart_price(target)}\n"
             f"   Stop    : {_smart_price(sl)}\n"
             f"   R:R     : 1:{rr_display}\n\n"
-            f"📝 {data.get('summary', '')}\n"
-            f"⚠️ {data.get('risk_notes', 'DYOR, bukan financial advice')}"
+            f"📝 {reasoning}\n"
+            f"⚠️ DYOR, bukan financial advice"
         )
         side_val = data.get('side', 'LONG')
         leverage_estimate = format_leverage_estimate(entry, target, sl, side_val)
@@ -134,8 +159,9 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
         )
     else:
         verdict_box = "🚫 *NO SETUP — TIDAK ADA TRADE*"
+        reason = data.get('verdict_reason') or data.get('reasoning', 'Kondisi market tidak ideal untuk entry.')
         trade_section = (
-            f"Alasan: {data.get('verdict_reason', '-')}\n"
+            f"Alasan: {reason}\n"
             f"Rekomendasi: Wait & see dulu"
         )
 
@@ -143,7 +169,6 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
     tv_pair = display_pair.replace("/USDT", "USD").replace("USDT", "USD")
     tv_link = f"https://www.tradingview.com/chart/?symbol={tv_pair}"
 
-    display_pair = _format_pair_display(pair)
     result = (
         f"🔍 *Analisa: {display_pair}*\n\n"
         f"{teknikal}\n\n"
@@ -218,7 +243,7 @@ def format_paperstats(stats: dict) -> str:
     message += f"💸 Avg Loss: 🔴 {stats.get('avg_loss', 0):+.2f}%\n\n"
     message += f"📡 Open: {stats.get('open_count', 0)} sinyal aktif\n"
     message += f"✅ Closed: {stats.get('total_closed', 0)} sinyal\n\n"
-    message += f"Model: llama-3.1-8b-instant\n"
+    message += f"Model: Claude 3 Haiku\n"
     message += f"🕐 *Diperbarui: {_wib_now().strftime('%H:%M:%S')} WIB*"
     
     return message
