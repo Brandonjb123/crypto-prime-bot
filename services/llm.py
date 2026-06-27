@@ -1,32 +1,32 @@
-import anthropic
+# services/llm.py
 import os
+import httpx
 import logging
 
 logger = logging.getLogger(__name__)
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-MODEL = "claude-haiku-4-5-20251001"
-
-client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+MODEL = "anthropic/claude-haiku-4-5-20251001"
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 async def ask_llm(system_prompt: str, prompt: str) -> str:
-    try:
-        response = client.messages.create(
-            model=MODEL,
-            max_tokens=800,
-            temperature=0.3,
-            system=system_prompt if system_prompt else "You are a helpful assistant.",
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return response.content[0].text
-    except anthropic.APIConnectionError as e:
-        logger.error(f"Anthropic connection error: {e}")
-        raise
-    except anthropic.RateLimitError as e:
-        logger.error(f"Anthropic rate limit: {e}")
-        raise
-    except anthropic.APIStatusError as e:
-        logger.error(f"Anthropic API error {e.status_code}: {e.message}")
-        raise
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": MODEL,
+        "max_tokens": 800,
+        "temperature": 0.3,
+        "messages": [
+            {"role": "system", "content": system_prompt if system_prompt else "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ]
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(OPENROUTER_URL, json=payload, headers=headers, timeout=30.0)
+        response.raise_for_status()
+        data = response.json()
+
+    return data["choices"][0]["message"]["content"]

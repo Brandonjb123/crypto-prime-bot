@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 CCDATA_API_KEY = os.getenv("CCDATA_API_KEY", "placeholder")
 ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0"))
 
@@ -16,9 +16,9 @@ if TELEGRAM_BOT_TOKEN:
 else:
     print("❌ TELEGRAM_BOT_TOKEN TIDAK DITEMUKAN di environment")
 
-if ANTHROPIC_API_KEY:
-    print(f"✅ ANTHROPIC_API_KEY ditemukan: ...{ANTHROPIC_API_KEY[-10:]}")
+if OPENROUTER_API_KEY:
+    print(f"✅ OPENROUTER_API_KEY ditemukan: ...{OPENROUTER_API_KEY[-10:]}")
 else:
-    print("❌ ANTHROPIC_API_KEY TIDAK DITEMUKAN di environment")
+    print("❌ OPENROUTER_API_KEY TIDAK DITEMUKAN di environment")
 
 # Jangan crash jika token tidak ada, biarkan bot jalan dan error nanti saat dipakai
