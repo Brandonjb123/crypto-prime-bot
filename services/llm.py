@@ -1,15 +1,15 @@
 # services/llm.py
 import os
 import httpx
-import logging
-
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 MODEL = "anthropic/claude-haiku-4-5-20251001"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 async def ask_llm(system_prompt: str, prompt: str) -> str:
+    logger.info("🚀 ask_llm dipanggil")
+    
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
@@ -24,9 +24,19 @@ async def ask_llm(system_prompt: str, prompt: str) -> str:
         ]
     }
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(OPENROUTER_URL, json=payload, headers=headers, timeout=30.0)
-        response.raise_for_status()
-        data = response.json()
-
-    return data["choices"][0]["message"]["content"]
+    logger.info(f"📡 Mengirim request ke OpenRouter...")
+    
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(OPENROUTER_URL, json=payload, headers=headers)
+            logger.info(f"📬 Response status: {response.status_code}")
+            response.raise_for_status()
+            data = response.json()
+            logger.info(f"📦 Response received: {str(data)[:200]}...")
+            return data["choices"][0]["message"]["content"]
+    except httpx.TimeoutException:
+        logger.error("⏰ Timeout dari OpenRouter")
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error dari OpenRouter: {type(e).__name__}: {e}")
+        raise
