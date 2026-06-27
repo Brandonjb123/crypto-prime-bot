@@ -1,41 +1,32 @@
-# services/llm.py
-import httpx
-from config import GROQ_API_KEY
+import anthropic
+import os
+import logging
 
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-DEFAULT_MODEL = "llama-3.1-8b-instant"
+logger = logging.getLogger(__name__)
 
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+MODEL = "claude-haiku-4-5-20251001"
 
-async def ask_llm(system_prompt: str, user_message: str, model: str = None) -> str:
-    if model is None:
-        model = DEFAULT_MODEL
+client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json",
-    }
-
-    payload = {
-        "model": model,
-        "temperature": 0.3,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message},
-        ],
-    }
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            GROQ_API_URL,
-            json=payload,
-            headers=headers,
-            timeout=30.0,
+async def ask_llm(system_prompt: str, prompt: str) -> str:
+    try:
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=800,
+            temperature=0.3,
+            system=system_prompt if system_prompt else "You are a helpful assistant.",
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
         )
-        # DEBUG: cetak status dan body jika bukan 200
-        if response.status_code != 200:
-            print("ERROR RESPONSE:", response.status_code)
-            print(response.text)
-        response.raise_for_status()
-        data = response.json()
-
-    return data["choices"][0]["message"]["content"] 
+        return response.content[0].text
+    except anthropic.APIConnectionError as e:
+        logger.error(f"Anthropic connection error: {e}")
+        raise
+    except anthropic.RateLimitError as e:
+        logger.error(f"Anthropic rate limit: {e}")
+        raise
+    except anthropic.APIStatusError as e:
+        logger.error(f"Anthropic API error {e.status_code}: {e.message}")
+        raise
