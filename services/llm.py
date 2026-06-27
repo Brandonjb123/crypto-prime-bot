@@ -4,7 +4,7 @@ import httpx
 from loguru import logger
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-MODEL = "anthropic/claude-haiku-4-5-20251001"
+MODEL = "claude-3-haiku-20240307"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 async def ask_llm(system_prompt: str, prompt: str) -> str:
