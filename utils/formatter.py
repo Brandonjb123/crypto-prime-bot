@@ -243,7 +243,6 @@ def format_paperstats(stats: dict) -> str:
     message += f"💸 Avg Loss: 🔴 {stats.get('avg_loss', 0):+.2f}%\n\n"
     message += f"📡 Open: {stats.get('open_count', 0)} sinyal aktif\n"
     message += f"✅ Closed: {stats.get('total_closed', 0)} sinyal\n\n"
-    message += f"Model: Claude 3 Haiku\n"
     message += f"🕐 *Diperbarui: {_wib_now().strftime('%H:%M:%S')} WIB*"
     
     return message
