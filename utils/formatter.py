@@ -270,12 +270,12 @@ def format_broadcast_signal(signal: dict) -> str:
     sl = signal.get("stop_loss", 0)
     summary = signal.get("summary", "")
     side_icon = "🟢" if side == "LONG" else "🔴"
-    rr_display = round(REWARD_PERCENT / RISK_PERCENT, 1)  # selalu 2.0
+    rr_display = round(REWARD_PERCENT / RISK_PERCENT, 1)
 
     pnl_10x = calculate_leverage_pnl(entry, target, sl, side)[10]
     return (
         f"🚨 *VIP SIGNAL — {display_pair}*\n\n"
-        f"{side_icon} Side: {side.upper()}\n"
+        f"{side_icon} Side: {side}\n"
         f"📍 Entry   : {_smart_price(entry)}\n"
         f"🎯 Target  : {_smart_price(target)}\n"
         f"🛑 Stop    : {_smart_price(sl)}\n"
