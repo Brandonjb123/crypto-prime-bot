@@ -9,7 +9,7 @@ from services.llm import ask_llm
 from services.news import get_news
 from services.signals import save_signal, get_open_signals, check_and_update_signal, get_signal_stats
 from db.database import init_db
-from db.models import register_user, get_user_plan, set_user_plan, get_user
+from db.models import register_user, get_user_plan, set_user_plan, get_user, get_all_users
 from utils.rate_limiter import check_and_increment, get_remaining
 from utils.formatter import format_price, format_analyze, format_signals, format_paperstats, _wib_now
 from utils.symbols import SYMBOL_TO_COINGECKO_ID, get_coin_id
@@ -523,6 +523,76 @@ async def adminstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     )
 
     await update.effective_message.reply_text(text, parse_mode="Markdown")
+
+
+async def manual_broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    caller_id = update.effective_user.id
+    if caller_id != ADMIN_CHAT_ID:
+        await update.effective_message.reply_text("⛔ Kamu tidak punya akses command ini.")
+        return
+
+    users = get_all_users()
+    if not users:
+        await update.effective_message.reply_text("❌ Tidak ada user terdaftar.")
+        return
+
+    message = update.effective_message
+    text = " ".join(context.args) if context.args else None
+    has_photo = bool(message.photo)
+    has_video = bool(message.video)
+
+    if not text and not has_photo and not has_video:
+        await message.reply_text(
+            "⚠️ *Cara pakai:*\n\n"
+            "Teks: `/broadcast <pesan>`\n"
+            "Gambar: Kirim foto dengan caption `/broadcast <pesan>`\n"
+            "Video: Kirim video dengan caption `/broadcast <pesan>`",
+            parse_mode="Markdown"
+        )
+        return
+
+    status_msg = await message.reply_text(f"📡 Mengirim ke {len(users)} user...")
+
+    success = 0
+    failed = 0
+
+    for user in users:
+        chat_id = user["chat_id"]
+        try:
+            if has_photo:
+                photo = message.photo[-1].file_id
+                await context.bot.send_photo(
+                    chat_id=chat_id,
+                    photo=photo,
+                    caption=text or "",
+                    parse_mode="Markdown"
+                )
+            elif has_video:
+                video = message.video.file_id
+                await context.bot.send_video(
+                    chat_id=chat_id,
+                    video=video,
+                    caption=text or "",
+                    parse_mode="Markdown"
+                )
+            else:
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=text,
+                    parse_mode="Markdown"
+                )
+            success += 1
+        except Exception as e:
+            logger.warning(f"Broadcast gagal untuk {chat_id}: {e}")
+            failed += 1
+
+    await status_msg.edit_text(
+        f"✅ *Broadcast Selesai!*\n\n"
+        f"📨 Terkirim : {success}\n"
+        f"❌ Gagal    : {failed}\n"
+        f"👥 Total    : {len(users)}",
+        parse_mode="Markdown"
+    )
 
 
 async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):

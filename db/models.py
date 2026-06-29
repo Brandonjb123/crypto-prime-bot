@@ -136,3 +136,13 @@ def get_new_users_today() -> int:
     if row:
         return row[0] if not isinstance(row, dict) else row["COUNT(*)"]
     return 0
+
+
+def get_all_users() -> list:
+    """Ambil semua chat_id user yang terdaftar."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT chat_id FROM users")
+    rows = cursor.fetchall()
+    conn.close()
+    return [{"chat_id": row["chat_id"] if isinstance(row, dict) else row[0]} for row in rows]
