@@ -819,6 +819,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith("refresh_analyze_"):
         pair = data.replace("refresh_analyze_", "")
         await query.answer("🔄 Menganalisis ulang...")
+        await query.edit_message_text(
+            f"🔄 Menganalisis ulang *{pair}*... Mohon tunggu ⏳",
+            parse_mode="Markdown"
+        )
         result_text, keyboard = await run_analyze(pair, query.message.chat_id)
         await query.edit_message_text(
             result_text, parse_mode="Markdown", reply_markup=keyboard, disable_web_page_preview=True
@@ -828,6 +832,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith("analyze_pair_"):
         pair = data.replace("analyze_pair_", "")
         await query.answer(f"🔍 Menganalisis {pair}...")
+        await query.edit_message_text(
+            f"🔍 Menganalisis *{pair}*... Mohon tunggu ⏳",
+            parse_mode="Markdown"
+        )
         result_text, keyboard = await run_analyze(pair, query.message.chat_id)
         await query.edit_message_text(
             result_text, parse_mode="Markdown", reply_markup=keyboard, disable_web_page_preview=True
@@ -852,6 +860,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith("analyze_"):
         symbol = data.replace("analyze_", "")
         await query.answer(f"🔍 Menganalisis {symbol}...")
+        await query.edit_message_text(
+            f"🔍 Menganalisis *{symbol}*... Mohon tunggu ⏳",
+            parse_mode="Markdown"
+        )
         result_text, keyboard = await run_analyze(symbol, query.message.chat_id)
         await query.edit_message_text(
             result_text,
