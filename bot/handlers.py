@@ -109,16 +109,24 @@ async def run_analyze(pair: str, chat_id: int) -> tuple[str, InlineKeyboardMarku
     Logic inti analisa, reusable.
     Return (result_text, keyboard) siap dikirim/edit.
     """
+    logger.info(f"🔍 run_analyze mulai untuk {pair}")
+    
     coin_id = get_coin_id(pair)
     if not coin_id:
+        logger.warning(f"❌ Coin ID tidak ditemukan untuk {pair}")
         return (f"❌ Pair {pair} tidak ditemukan.", back_to_menu_keyboard())
 
+    logger.info(f"📡 Fetching market data untuk {coin_id}...")
     try:
         price_data = await get_market_data(coin_id)
+        logger.info(f"✅ Market data didapat: {price_data.get('current_price')}")
         # Fetch indikator teknikal
         indicators = await get_technical_indicators(coin_id)
-    except Exception:
+        logger.info(f"📊 Indicators: RSI={indicators.get('rsi')}, EMA20={indicators.get('ema20')}")
+    except Exception as e:
+        logger.error(f"❌ Gagal fetch market data: {e}")
         basic = await get_price(coin_id)
+        logger.info(f"⚠️ Fallback ke get_price: {basic.get('current_price')}")
         price_data = {
             "current_price": basic.get("current_price"),
             "price_change_24h": basic.get("price_change_percentage_24h", 0) or 0,
@@ -128,17 +136,24 @@ async def run_analyze(pair: str, chat_id: int) -> tuple[str, InlineKeyboardMarku
             "high_24h": None,
             "low_24h": None,
         }
+        indicators = {}  # fallback kosong
 
+    logger.info(f"📰 Fetching news untuk {pair}...")
     articles = await get_news(pair)
     headlines = [a["title"] for a in articles[:5]]
+    logger.info(f"📰 News didapat: {len(headlines)} headlines")
+
+    logger.info(f"🤖 Building prompt & calling LLM...")
     prompt = build_analyze_prompt(pair, price_data, headlines, indicators)
     raw = await ask_llm(SYSTEM_PROMPT, prompt)
+    logger.info(f"🤖 LLM response: {raw[:200]}...")
 
     try:
         data = json.loads(raw)
-         # Hitung target_price & stop_loss matematis
+        logger.info(f"✅ JSON parsed: verdict={data.get('verdict')}")
         data = inject_calculated_prices(data)
     except json.JSONDecodeError:
+        logger.error(f"❌ JSON decode error")
         return (raw, back_to_menu_keyboard())
 
     is_valid = validate_signal_prices(data, price_data["current_price"])
