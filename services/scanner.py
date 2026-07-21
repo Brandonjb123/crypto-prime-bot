@@ -22,7 +22,7 @@ def _sort_signals_by_rr(signals: list) -> list:
     )
 
 
-async def scan_market(limit: int = 250) -> list:
+async def scan_market(limit: int = 100) -> list:
     top_pairs = await get_top_pairs(limit)
 
     random.shuffle(top_pairs)
@@ -35,7 +35,15 @@ async def scan_market(limit: int = 250) -> list:
             symbol = pair_info["symbol"]
             coin_id = pair_info["coin_id"]
 
-            price_data = await get_market_data(coin_id)
+            # Fetch market data (dengan retry handling)
+            try:
+                price_data = await get_market_data(coin_id)
+            except Exception as e:
+                if "429" in str(e):
+                    await asyncio.sleep(10)  # Tunggu 10 detik jika rate limit
+                    continue
+                continue
+
             if not price_data or not price_data.get("current_price"):
                 continue
 
@@ -71,6 +79,6 @@ async def scan_market(limit: int = 250) -> list:
             continue
 
         scanned += 1
-        await asyncio.sleep(0.3)
+        await asyncio.sleep(1.5)
 
     return _sort_signals_by_rr(results)[:10]

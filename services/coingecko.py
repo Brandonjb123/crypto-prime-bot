@@ -84,58 +84,44 @@ STABLECOIN_SYMBOLS = {
 }
 
 
-async def get_top_pairs(limit: int = 250) -> list:
-    """Return list top {limit} crypto by market cap dengan pagination."""
+async def get_top_pairs(limit: int = 100) -> list:
+    """Return list top {limit} crypto by market cap (1 halaman saja)."""
     from utils.cache import price_cache
-    import asyncio
 
     cache_key = "top_pairs"
     cached = price_cache.get(cache_key)
     if cached:
         return cached[:limit]
 
-    base_url = "https://api.coingecko.com/api/v3/coins/markets"
-    per_page = 100  # CoinGecko max 100 per page
-    all_pairs = []
-
-    # Hitung berapa halaman yang dibutuhkan
-    pages_needed = (limit + per_page - 1) // per_page  # pembulatan ke atas
+    url = "https://api.coingecko.com/api/v3/coins/markets"
+    params = {
+        "vs_currency": "usd",
+        "order": "market_cap_desc",
+        "per_page": limit,
+        "page": 1,
+        "sparkline": "false",
+        "price_change_percentage": "24h",
+    }
 
     async with httpx.AsyncClient() as client:
-        for page in range(1, pages_needed + 1):
-            params = {
-                "vs_currency": "usd",
-                "order": "market_cap_desc",
-                "per_page": per_page,
-                "page": page,
-                "sparkline": "false",
-                "price_change_percentage": "24h",
-            }
-            try:
-                response = await client.get(base_url, params=params, timeout=30.0)
-                response.raise_for_status()
-                data = response.json()
+        response = await client.get(url, params=params, timeout=30.0)
+        response.raise_for_status()
+        data = response.json()
 
-                for item in data:
-                    symbol = item["symbol"].upper()
-                    if symbol in STABLECOIN_SYMBOLS:
-                        continue  # Skip stablecoin
-                    all_pairs.append({
-                        "symbol": symbol,
-                        "coin_id": item["id"],
-                        "name": item["name"],
-                    })
-            except Exception as e:
-                logger.warning(f"Gagal fetch halaman {page} untuk top pairs: {e}")
-                break  # Stop kalau ada error
-
-            # Delay antar halaman untuk hindari rate limit
-            if page < pages_needed:
-                await asyncio.sleep(0.5)
+    pairs = []
+    for item in data:
+        symbol = item["symbol"].upper()
+        if symbol in STABLECOIN_SYMBOLS:
+            continue
+        pairs.append({
+            "symbol": symbol,
+            "coin_id": item["id"],
+            "name": item["name"],
+        })
 
     # Cache 1 jam
-    price_cache.set(cache_key, all_pairs)
-    return all_pairs[:limit]
+    price_cache.set(cache_key, pairs)
+    return pairs[:limit]
 
 # ==================== INDIKATOR TEKNIKAL ====================
 

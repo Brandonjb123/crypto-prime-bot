@@ -3,7 +3,7 @@ import os
 import httpx
 from loguru import logger
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
 MODEL = "anthropic/claude-3-haiku"  
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
