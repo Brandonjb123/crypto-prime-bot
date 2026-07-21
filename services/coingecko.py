@@ -6,6 +6,12 @@ from loguru import logger
 
 COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3"
 
+# Header yang lebih sopan untuk CoinGecko
+HEADERS = {
+    "User-Agent": "CryptoPrimeBot/2.0 (https://t.me/BenzAckerman)",
+    "Accept": "application/json",
+}
+
 async def get_price(coin_id: str) -> dict:
     cached = price_cache.get(coin_id)
     if cached:
@@ -20,7 +26,7 @@ async def get_price(coin_id: str) -> dict:
         "developer_data": "false",
     }
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(headers=HEADERS) as client:
         response = await client.get(url, params=params, timeout=15.0)
         response.raise_for_status()
         data = response.json()
@@ -46,7 +52,7 @@ async def get_market_data(coin_id: str) -> dict:
     Return dict dengan: current_price, price_change_24h, price_change_7d,
     total_volume, market_cap, high_24h, low_24h.
     """
-    from utils.cache import price_cache  # reuse cache yang sama
+    from utils.cache import price_cache
     cached = price_cache.get(f"market_{coin_id}")
     if cached:
         return cached
@@ -58,7 +64,7 @@ async def get_market_data(coin_id: str) -> dict:
         "community_data": "false",
         "developer_data": "false",
     }
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(headers=HEADERS) as client:
         response = await client.get(url, params=params, timeout=15.0)
         response.raise_for_status()
         data = response.json()
@@ -103,7 +109,7 @@ async def get_top_pairs(limit: int = 100) -> list:
         "price_change_percentage": "24h",
     }
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(headers=HEADERS) as client:
         response = await client.get(url, params=params, timeout=30.0)
         response.raise_for_status()
         data = response.json()
@@ -119,11 +125,9 @@ async def get_top_pairs(limit: int = 100) -> list:
             "name": item["name"],
         })
 
-    # Cache 1 jam
     price_cache.set(cache_key, pairs)
     return pairs[:limit]
 
-# ==================== INDIKATOR TEKNIKAL ====================
 
 async def get_ohlc_data(coin_id: str, days: int = 14) -> list:
     cache_key = f"ohlc_{coin_id}_{days}"
@@ -135,7 +139,7 @@ async def get_ohlc_data(coin_id: str, days: int = 14) -> list:
     params = {"vs_currency": "usd", "days": days}
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(headers=HEADERS) as client:
             response = await client.get(url, params=params, timeout=15.0)
             response.raise_for_status()
             data = response.json()
