@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+
 from src.core.models.normalized_asset import NormalizedAsset
 from src.core.types.signal import AnalysisResult
 

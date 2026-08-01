@@ -1,11 +1,13 @@
-from typing import Optional
+from datetime import UTC, datetime
+
 from pydantic import BaseModel
-from datetime import datetime, timezone
-from src.core.types.enums import Side, Verdict, ConfidenceLevel
+
+from src.core.types.enums import ConfidenceLevel, Side, Verdict
 
 
 class SignalResult(BaseModel):
     """Signal individual dalam batch hasil deteksi."""
+
     symbol: str
     pair: str
     side: Side
@@ -13,16 +15,17 @@ class SignalResult(BaseModel):
     target_price: float
     stop_loss: float
     confidence: ConfidenceLevel = ConfidenceLevel.MEDIUM
-    risk_reward_ratio: Optional[float] = None
+    risk_reward_ratio: float | None = None
     verdict: Verdict = Verdict.SETUP_VALID
-    summary: Optional[str] = None
-    risk_notes: Optional[str] = None
-    created_at: Optional[datetime] = None
+    summary: str | None = None
+    risk_notes: str | None = None
+    created_at: datetime | None = None
 
 
 class DetectionBatch(BaseModel):
     """Batch hasil signal detection."""
+
     signals: list[SignalResult]
     total_analyzed: int
     valid_signals: int
-    timestamp: datetime = datetime.now(timezone.utc)
+    timestamp: datetime = datetime.now(UTC)

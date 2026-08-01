@@ -1,5 +1,5 @@
 import time
-from typing import Any, Optional
+from typing import Any
 
 
 class SimpleCache:
@@ -9,7 +9,7 @@ class SimpleCache:
         self._cache: dict[str, tuple[float, Any]] = {}
         self.default_ttl = default_ttl
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Ambil nilai dari cache. Return None jika expired atau tidak ada."""
         entry = self._cache.get(key)
         if entry is None:
@@ -20,7 +20,7 @@ class SimpleCache:
             return None
         return value
 
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """Simpan nilai ke cache dengan TTL tertentu."""
         ttl = ttl if ttl is not None else self.default_ttl
         expiry = time.time() + ttl

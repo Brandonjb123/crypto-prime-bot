@@ -1,15 +1,15 @@
-from typing import Optional
 from pydantic import BaseModel
 
 
 class Asset(BaseModel):
     """Normalized asset object untuk semua data collectors."""
+
     symbol: str
-    name: Optional[str] = None
-    coingecko_id: Optional[str] = None
-    current_price: Optional[float] = None
-    market_cap: Optional[float] = None
-    volume_24h: Optional[float] = None
-    price_change_24h: Optional[float] = None
-    high_24h: Optional[float] = None
-    low_24h: Optional[float] = None
+    name: str | None = None
+    coingecko_id: str | None = None
+    current_price: float | None = None
+    market_cap: float | None = None
+    volume_24h: float | None = None
+    price_change_24h: float | None = None
+    high_24h: float | None = None
+    low_24h: float | None = None

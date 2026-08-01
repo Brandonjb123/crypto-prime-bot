@@ -4,13 +4,8 @@
 def test_import_enums():
     from src.core.types.enums import (
         Side,
-        Verdict,
         Timeframe,
-        TrendDirection,
-        ConfidenceLevel,
-        VolumeSignal,
-        MarketStructure,
-        SentimentLevel,
+        Verdict,
     )
 
     assert Side.LONG == "LONG"
@@ -48,8 +43,8 @@ def test_import_models():
 
 
 def test_import_interfaces():
-    from src.core.interfaces.base_collector import BaseCollector
     from src.core.interfaces.base_analyzer import BaseAnalyzer
+    from src.core.interfaces.base_collector import BaseCollector
     from src.core.interfaces.base_engine import BaseEngine
 
     assert BaseCollector.__abstractmethods__ is not None
@@ -59,6 +54,7 @@ def test_import_interfaces():
 
 def test_import_settings():
     import os
+
     os.environ["TELEGRAM_BOT_TOKEN"] = "test"
     os.environ["ADMIN_CHAT_ID"] = "123"
     os.environ["ANTHROPIC_API_KEY"] = "test"
