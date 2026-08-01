@@ -17,3 +17,18 @@ SCAN_BATCH_DELAY = 2.0
 
 # Maximum concurrent tasks
 MAX_CONCURRENT_API_CALLS = 5
+
+
+# API Base URLs
+BINANCE_FUTURES_URL = "https://fapi.binance.com"
+COINGECKO_API_URL = "https://api.coingecko.com/api/v3"
+FEAR_GREED_API_URL = "https://api.alternative.me"
+GOOGLE_NEWS_RSS_URL = "https://news.google.com/rss/search"
+
+# API Timeouts & Limits
+BINANCE_TIMEOUT = 10.0
+COINGECKO_TIMEOUT = 15.0
+FEAR_GREED_TIMEOUT = 10.0
+NEWS_TIMEOUT = 10.0
+MAX_NEWS_ARTICLES = 5
+MIN_CANDLES_REQUIRED = 20
