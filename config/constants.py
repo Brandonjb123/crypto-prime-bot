@@ -1,0 +1,19 @@
+# Trading pairs default
+DEFAULT_TOP_PAIRS_LIMIT = 100
+
+# Rate limiting (detik)
+COINGECKO_RATE_LIMIT = 1.2
+LLM_RATE_LIMIT = 3.0
+NEWS_RATE_LIMIT = 2.0
+
+# Cache TTL (detik)
+CACHE_TTL_PRICE = 30
+CACHE_TTL_MARKET_DATA = 60
+CACHE_TTL_NEWS = 120
+
+# Scanner
+SCAN_BATCH_SIZE = 10
+SCAN_BATCH_DELAY = 2.0
+
+# Maximum concurrent tasks
+MAX_CONCURRENT_API_CALLS = 5
