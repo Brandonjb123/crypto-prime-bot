@@ -12,3 +12,6 @@ class DataQualityError(CollectorError):
 
 class RateLimitError(CollectorError):
     """Rate limit tercapai."""
+
+class InsufficientDataError(CollectorError):
+    """Data tidak cukup untuk diproses (quality di bawah threshold)."""

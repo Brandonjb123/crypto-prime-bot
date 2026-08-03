@@ -25,11 +25,31 @@ def test_import_exceptions():
 
 
 def test_import_models():
+    from datetime import datetime, UTC
     from src.core.models.normalized_asset import NormalizedAsset
     from src.core.models.signal_model import SignalResult
 
-    asset = NormalizedAsset(symbol="BTC", current_price=50000.0)
+    asset = NormalizedAsset(
+        symbol="BTC",
+        price=50000.0,
+        volume_24h=28000000000.0,
+        volume_spike_ratio=1.0,
+        market_cap=900000000000.0,
+        price_change_24h=2.5,
+        price_change_7d=-1.2,
+        funding_rate=0.0001,
+        open_interest=15000000000.0,
+        long_short_ratio=1.25,
+        fear_greed_value=25,
+        fear_greed_classification="Extreme Fear",
+        news_headlines=["Test headline"],
+        candles_4h=[],
+        candles_1h=[],
+        data_quality_score=1.0,
+        timestamp=datetime.now(UTC),
+    )
     assert asset.symbol == "BTC"
+    assert asset.price == 50000.0
 
     signal = SignalResult(
         symbol="BTC",

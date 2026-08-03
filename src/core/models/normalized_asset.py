@@ -1,21 +1,34 @@
-"""Normalized asset models — Sprint 1 RawData types."""
+"""Normalized asset models — Sprint 2 final."""
 
+from datetime import datetime
 from pydantic import BaseModel
 
 
 class NormalizedAsset(BaseModel):
-    """Normalized asset data hasil processing dari normalizer."""
+    """Final normalized asset — kontrak antar layer. Tidak boleh diubah tanpa review."""
+
     symbol: str
-    current_price: float
-    volume_24h: float | None = None
-    price_change_24h: float | None = None
-    raw_data: dict | None = None
+    price: float
+    volume_24h: float
+    volume_spike_ratio: float
+    market_cap: float
+    price_change_24h: float
+    price_change_7d: float
+    funding_rate: float
+    open_interest: float
+    long_short_ratio: float
+    fear_greed_value: int
+    fear_greed_classification: str
+    news_headlines: list[str]
+    candles_4h: list
+    candles_1h: list
+    data_quality_score: float
+    timestamp: datetime
 
 
-# ── Raw Data Models per Collector ──
+# ── Raw Data Models (dari Sprint 1, tetap dipertahankan) ──
 
 class RawBinanceData(BaseModel):
-    """Raw data dari Binance Futures API."""
     symbol: str
     candles_4h: list
     candles_1h: list
@@ -25,7 +38,6 @@ class RawBinanceData(BaseModel):
 
 
 class RawCoinGeckoData(BaseModel):
-    """Raw data dari CoinGecko API."""
     symbol: str
     coin_id: str
     current_price: float
@@ -36,7 +48,6 @@ class RawCoinGeckoData(BaseModel):
 
 
 class RawFearGreedData(BaseModel):
-    """Raw data dari Fear & Greed Index."""
     symbol: str
     value: int
     classification: str
@@ -44,7 +55,6 @@ class RawFearGreedData(BaseModel):
 
 
 class RawNewsData(BaseModel):
-    """Raw data dari Google News RSS."""
     symbol: str
     headlines: list[str]
     article_count: int
