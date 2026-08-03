@@ -122,3 +122,77 @@ class TestMarketStructureEngine:
         assert result.swing_high is not None
         assert result.swing_low is not None
         assert result.swing_high > result.swing_low
+
+    def test_choch_bullish(self):
+        """Bearish break dulu, lalu reversal break swing high → CHOCH."""
+        engine = MarketStructureEngine()
+        # 24 candle: downtrend, break swing low, lalu reversal break swing high
+        base_time = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
+        candles = []
+        for i in range(24):
+            ts = base_time + timedelta(hours=4 * i)
+            if i < 10:
+                price = 100.0 - i * 5  # turun
+            elif i == 10:
+                price = 45.0  # swing low
+            elif i < 14:
+                price = 50.0 + (i - 10) * 5  # naik pelan
+            elif i < 18:
+                price = 70.0 - (i - 14) * 3  # turun lagi, break swing low?
+            elif i == 18:
+                price = 30.0  # break swing low jelas
+            elif i < 22:
+                price = 40.0 + (i - 18) * 10  # reversal naik cepat
+            else:
+                price = 120.0  # break swing high (sebelumnya swing high ~95)
+
+            candles.append(Candle(
+                timestamp=ts, open=price, high=price + 5,
+                low=price - 5, close=price, volume=100.0
+            ))
+
+        # Simulasi: sebelumnya terjadi BOS_BEARISH (dari candle i=18), lalu reversal
+        result = engine.analyze(
+            candles,
+            trend=TrendDirection.BULLISH,
+            previous_structure=MarketStructure.BOS_BEARISH,
+        )
+
+        assert result.structure == MarketStructure.CHOCH
+        assert result.direction == TrendDirection.BULLISH
+
+    def test_choch_bearish(self):
+        """Bullish break dulu, lalu reversal break swing low → CHOCH."""
+        engine = MarketStructureEngine()
+        base_time = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
+        candles = []
+        for i in range(24):
+            ts = base_time + timedelta(hours=4 * i)
+            if i < 10:
+                price = 50.0 + i * 5  # naik
+            elif i == 10:
+                price = 100.0  # swing high
+            elif i < 14:
+                price = 90.0 - (i - 10) * 5  # turun pelan
+            elif i < 18:
+                price = 80.0 + (i - 14) * 3  # naik lagi, break swing high?
+            elif i == 18:
+                price = 120.0  # break swing high
+            elif i < 22:
+                price = 100.0 - (i - 18) * 15  # reversal turun cepat
+            else:
+                price = 30.0  # break swing low (sebelumnya swing low ~45)
+
+            candles.append(Candle(
+                timestamp=ts, open=price, high=price + 5,
+                low=price - 5, close=price, volume=100.0
+            ))
+
+        result = engine.analyze(
+            candles,
+            trend=TrendDirection.BEARISH,
+            previous_structure=MarketStructure.BOS_BULLISH,
+        )
+
+        assert result.structure == MarketStructure.CHOCH
+        assert result.direction == TrendDirection.BEARISH    
