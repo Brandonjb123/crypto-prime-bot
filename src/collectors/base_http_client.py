@@ -21,29 +21,51 @@ class BaseHTTPClient:
     def __init__(self, base_url: str, timeout: float = DEFAULT_TIMEOUT) -> None:
         self.base_url = base_url
         self.timeout = timeout
+        self.client = httpx.AsyncClient(timeout=self.timeout)
 
     async def get(self, endpoint: str, params: dict | None = None) -> dict:
-        """GET request dengan retry logic."""
+        """GET request dengan retry logic (hanya untuk 429 dan 5xx)."""
         url = f"{self.base_url}{endpoint}"
+
         for attempt in range(self.MAX_RETRIES):
             try:
-                async with httpx.AsyncClient(timeout=self.timeout) as client:
-                    response = await client.get(url, params=params)
-                    if response.status_code == 429:
-                        wait = self.RETRY_DELAY * (2**attempt)
-                        logger.warning(f"Rate limit hit {url}, retry in {wait}s")
-                        await asyncio.sleep(wait)
-                        raise RateLimitError(f"Rate limit: {url}")
-                    response.raise_for_status()
-                    return response.json()
-            except RateLimitError:
-                if attempt == self.MAX_RETRIES - 1:
-                    raise DataSourceUnavailableError(f"Rate limit exceeded: {url}") from None
-                continue
+                response = await self.client.get(url, params=params)
+
+                # 429 — Rate limit
+                if response.status_code == 429:
+                    wait = self.RETRY_DELAY * (2**attempt)
+                    logger.warning(f"429 Rate limit {url}, retry in {wait}s")
+                    await asyncio.sleep(wait)
+                    if attempt == self.MAX_RETRIES - 1:
+                        raise RateLimitError(f"Rate limit exceeded: {url}")
+                    continue
+
+                # 5xx — Server error
+                if response.status_code >= 500:
+                    logger.warning(
+                        f"5xx server error {response.status_code} {url}, "
+                        f"attempt {attempt + 1}"
+                    )
+                    if attempt == self.MAX_RETRIES - 1:
+                        raise DataSourceUnavailableError(
+                            f"Server error {response.status_code}: {url}"
+                        )
+                    continue
+
+                # Sukses atau client error (4xx selain 429) — jangan retry
+                response.raise_for_status()
+                return response.json()
+
             except httpx.TimeoutException:
                 logger.warning(f"Timeout {url} attempt {attempt + 1}")
                 if attempt == self.MAX_RETRIES - 1:
                     raise DataSourceUnavailableError(f"Timeout: {url}") from None
-            except httpx.HTTPError as e:
-                raise DataSourceUnavailableError(f"HTTP error: {e}") from e
-        raise DataSourceUnavailableError(f"Failed after {self.MAX_RETRIES} retries")
+                continue
+
+        raise DataSourceUnavailableError(
+            f"Failed after {self.MAX_RETRIES} retries"
+        )
+
+    async def close(self) -> None:
+        """Tutup AsyncClient."""
+        await self.client.aclose()

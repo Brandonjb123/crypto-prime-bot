@@ -1,5 +1,7 @@
 """Registry semua collectors — single point of access."""
 
+import asyncio
+
 from loguru import logger
 
 from src.collectors.binance import BinanceCollector
@@ -19,7 +21,7 @@ class CollectorRegistry:
 
     async def collect_all(self, symbol: str) -> dict:
         """
-        Collect dari semua sources untuk satu symbol.
+        Collect dari semua sources untuk satu symbol secara concurrent.
         Graceful degrade: gagal satu source tidak stop yang lain.
         """
         results = {
@@ -31,35 +33,29 @@ class CollectorRegistry:
             "data_quality_score": 0.0,
         }
 
-        # Binance — kritis
-        try:
-            results["binance"] = await self.binance.fetch(symbol)
-        except Exception as e:
-            logger.warning(f"Binance fetch failed for {symbol}: {e}")
+        # Jalankan semua collectors secara parallel
+        tasks = {
+            "binance": self.binance.fetch(symbol),
+            "coingecko": self.coingecko.fetch(symbol),
+            "fear_greed": self.fear_greed.fetch(),
+            "news": self.news.fetch(symbol),
+        }
 
-        # CoinGecko — kritis
-        try:
-            results["coingecko"] = await self.coingecko.fetch(symbol)
-        except Exception as e:
-            logger.warning(f"CoinGecko fetch failed for {symbol}: {e}")
+        gathered = await asyncio.gather(*tasks.values(), return_exceptions=True)
 
-        # Fear & Greed — non-kritis
-        try:
-            results["fear_greed"] = await self.fear_greed.fetch()
-        except Exception as e:
-            logger.warning(f"Fear & Greed fetch failed: {e}")
-
-        # News — non-kritis
-        try:
-            results["news"] = await self.news.fetch(symbol)
-        except Exception as e:
-            logger.warning(f"News fetch failed for {symbol}: {e}")
+        for source, result in zip(tasks.keys(), gathered, strict=True):
+            if isinstance(result, Exception):
+                logger.warning(f"{source} fetch failed: {result}")
+            else:
+                results[source] = result
 
         # Hitung data quality score
         critical_sources = ["binance", "coingecko"]
         non_critical_sources = ["fear_greed", "news"]
         critical_ok = sum(1 for s in critical_sources if results[s] is not None)
-        non_critical_ok = sum(1 for s in non_critical_sources if results[s] is not None)
+        non_critical_ok = sum(
+            1 for s in non_critical_sources if results[s] is not None
+        )
         results["data_quality_score"] = (
             (critical_ok / len(critical_sources)) * 0.7
             + (non_critical_ok / len(non_critical_sources)) * 0.3
@@ -81,3 +77,10 @@ class CollectorRegistry:
             "fear_greed": await self.fear_greed.health_check(),
             "news": await self.news.health_check(),
         }
+
+    async def close_all(self) -> None:
+        """Tutup semua HTTP clients."""
+        await self.binance.client.close()
+        await self.coingecko.client.close()
+        await self.fear_greed.client.close()
+        # News tidak pakai BaseHTTPClient
