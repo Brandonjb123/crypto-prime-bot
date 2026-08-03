@@ -1,10 +1,10 @@
 """Unit tests untuk NewsCollector."""
 
 import feedparser
+import pytest
+
 from src.collectors.news import NewsCollector
 from src.core.models.normalized_asset import RawNewsData
-
-import pytest
 
 
 @pytest.mark.asyncio

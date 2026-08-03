@@ -3,6 +3,7 @@
 from datetime import UTC, datetime
 
 from src.core.exceptions.collector_exceptions import InsufficientDataError
+from src.core.models.candle import Candle
 from src.core.models.normalized_asset import NormalizedAsset
 
 
@@ -14,15 +15,6 @@ class AssetNormalizer:
     def normalize(self, raw_data: dict) -> NormalizedAsset:
         """
         Normalize raw collector output menjadi single NormalizedAsset object.
-
-        Args:
-            raw_data: Output dari CollectorRegistry.collect_all()
-
-        Returns:
-            NormalizedAsset dengan semua field terisi
-
-        Raises:
-            InsufficientDataError: Kalau data_quality_score < 0.70
         """
         symbol = raw_data.get("symbol", "UNKNOWN")
         quality_score = raw_data.get("data_quality_score", 0.0)
@@ -33,15 +25,18 @@ class AssetNormalizer:
                 f"{self.MIN_DATA_QUALITY_SCORE:.0%} for {symbol}"
             )
 
-        # Extract raw data dari masing-masing collector
         binance_data = raw_data.get("binance")
         coingecko_data = raw_data.get("coingecko")
         fear_greed_data = raw_data.get("fear_greed")
         news_data = raw_data.get("news")
 
+        # ── Parse Binance raw klines ke Candle ──
+        raw_candles_4h = binance_data.candles_4h if binance_data else []
+        raw_candles_1h = binance_data.candles_1h if binance_data else []
+        candles_4h = self._parse_candles(raw_candles_4h)
+        candles_1h = self._parse_candles(raw_candles_1h)
+
         # ── Binance fields ──
-        candles_4h = binance_data.candles_4h if binance_data else []
-        candles_1h = binance_data.candles_1h if binance_data else []
         funding_rate = binance_data.funding_rate if binance_data else 0.0
         open_interest = binance_data.open_interest if binance_data else 0.0
         long_short_ratio = binance_data.long_short_ratio if binance_data else 1.0
@@ -54,7 +49,7 @@ class AssetNormalizer:
         price_change_7d = coingecko_data.price_change_7d if coingecko_data else 0.0
 
         # ── Volume spike ratio ──
-        volume_spike_ratio = self._calc_volume_spike_ratio(candles_4h)
+        volume_spike_ratio = self._calc_volume_spike_ratio(raw_candles_4h)
 
         # ── Fear & Greed ──
         fear_greed_value = fear_greed_data.value if fear_greed_data else 0
@@ -85,18 +80,37 @@ class AssetNormalizer:
             timestamp=datetime.now(UTC),
         )
 
-    def _calc_volume_spike_ratio(self, candles_4h: list) -> float:
+    def _parse_candles(self, raw_klines: list) -> list[Candle]:
         """
-        Hitung volume spike ratio:
-        volume candle terakhir / avg volume 20 candle sebelumnya.
+        Parse raw Binance klines ke list of Candle objects.
+        Binance kline format:
+        [timestamp_ms, open, high, low, close, volume, ...]
         """
-        if len(candles_4h) < 21:
+        candles = []
+        for kline in raw_klines:
+            try:
+                candles.append(
+                    Candle(
+                        timestamp=datetime.fromtimestamp(kline[0] / 1000, UTC),
+                        open=float(kline[1]),
+                        high=float(kline[2]),
+                        low=float(kline[3]),
+                        close=float(kline[4]),
+                        volume=float(kline[5]),
+                    )
+                )
+            except (IndexError, ValueError):
+                continue
+        return candles
+
+    def _calc_volume_spike_ratio(self, raw_klines: list) -> float:
+        """Hitung volume spike ratio dari raw klines."""
+        if len(raw_klines) < 21:
             return 1.0
 
-        # Volume ada di index 5 pada Binance kline format
         try:
-            current_volume = float(candles_4h[-1][5])
-            avg_volume = sum(float(c[5]) for c in candles_4h[-21:-1]) / 20
+            current_volume = float(raw_klines[-1][5])
+            avg_volume = sum(float(c[5]) for c in raw_klines[-21:-1]) / 20
             if avg_volume > 0:
                 return round(current_volume / avg_volume, 4)
         except (IndexError, ValueError, ZeroDivisionError):

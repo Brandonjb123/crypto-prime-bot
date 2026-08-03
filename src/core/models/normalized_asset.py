@@ -1,7 +1,10 @@
 """Normalized asset models — Sprint 2 final."""
 
 from datetime import datetime
+
 from pydantic import BaseModel
+
+from src.core.models.candle import Candle
 
 
 class NormalizedAsset(BaseModel):
@@ -20,8 +23,8 @@ class NormalizedAsset(BaseModel):
     fear_greed_value: int
     fear_greed_classification: str
     news_headlines: list[str]
-    candles_4h: list
-    candles_1h: list
+    candles_4h: list[Candle]
+    candles_1h: list[Candle]
     data_quality_score: float
     timestamp: datetime
 

@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from src.core.exceptions.collector_exceptions import InsufficientDataError
+from src.core.models.candle import Candle
 from src.core.models.normalized_asset import (
     NormalizedAsset,
     RawBinanceData,
@@ -23,7 +24,6 @@ def sample_raw_data():
     with open(FIXTURES / "normalized_asset.json") as f:
         data = json.load(f)
 
-    # Convert dicts ke Pydantic models
     if data.get("binance"):
         data["binance"] = RawBinanceData(**data["binance"])
     if data.get("coingecko"):
@@ -37,10 +37,8 @@ def sample_raw_data():
 
 
 class TestAssetNormalizer:
-    """Test suite untuk AssetNormalizer."""
 
     def test_normalize_success_all_fields(self, sample_raw_data):
-        """Test normalisasi sukses — semua field terisi dengan benar."""
         normalizer = AssetNormalizer()
         result = normalizer.normalize(sample_raw_data)
 
@@ -62,24 +60,27 @@ class TestAssetNormalizer:
         assert result.data_quality_score == 1.0
         assert result.timestamp is not None
 
+        # Verify candles are Candle objects, not raw lists
+        assert isinstance(result.candles_4h[0], Candle)
+        assert result.candles_4h[0].open == 45000.00
+        assert result.candles_4h[-1].close == 47350.00
+        assert isinstance(result.candles_1h[0], Candle)
+        assert result.candles_1h[0].open == 47500.00
+
     def test_volume_spike_ratio_calculation(self, sample_raw_data):
-        """Test volume spike ratio dihitung dengan benar."""
         normalizer = AssetNormalizer()
         result = normalizer.normalize(sample_raw_data)
 
-        # Ambil langsung dari fixture — 25 candle
-        candles = sample_raw_data["binance"].candles_4h
-        # Volume candle terakhir (index -1, kolom 5)
-        current_volume = float(candles[-1][5])
-        # Avg volume 20 candle sebelumnya (index -21 sampai -2)
-        prev_volumes = [float(c[5]) for c in candles[-21:-1]]
+        # Perhitungan dari raw klines (index 5 = volume)
+        raw_candles = sample_raw_data["binance"].candles_4h
+        current_volume = float(raw_candles[-1][5])
+        prev_volumes = [float(c[5]) for c in raw_candles[-21:-1]]
         expected_avg = sum(prev_volumes) / 20
         expected_ratio = round(current_volume / expected_avg, 4)
 
         assert result.volume_spike_ratio == expected_ratio
 
     def test_volume_spike_ratio_insufficient_candles(self, sample_raw_data):
-        """Test volume spike ratio = 1.0 kalau candles kurang dari 21."""
         sample_raw_data["binance"].candles_4h = sample_raw_data["binance"].candles_4h[:5]
 
         normalizer = AssetNormalizer()
@@ -87,7 +88,6 @@ class TestAssetNormalizer:
         assert result.volume_spike_ratio == 1.0
 
     def test_insufficient_data_quality(self, sample_raw_data):
-        """Test raise InsufficientDataError kalau quality < 0.70."""
         sample_raw_data["data_quality_score"] = 0.50
 
         normalizer = AssetNormalizer()
@@ -95,16 +95,14 @@ class TestAssetNormalizer:
             normalizer.normalize(sample_raw_data)
 
     def test_missing_binance_triggers_insufficient(self, sample_raw_data):
-        """Test kalau Binance None → data_quality_score di bawah threshold."""
         sample_raw_data["binance"] = None
-        sample_raw_data["data_quality_score"] = 0.35  # (0 crit * 0.7) + (1 noncrit * 0.3)
+        sample_raw_data["data_quality_score"] = 0.35
 
         normalizer = AssetNormalizer()
         with pytest.raises(InsufficientDataError):
             normalizer.normalize(sample_raw_data)
 
     def test_null_non_critical_sources_use_fallback(self, sample_raw_data):
-        """Test non-critical source null → pakai fallback values."""
         sample_raw_data["fear_greed"] = None
         sample_raw_data["news"] = None
 
@@ -116,7 +114,6 @@ class TestAssetNormalizer:
         assert result.news_headlines == []
 
     def test_serialize_to_json(self, sample_raw_data):
-        """Test NormalizedAsset bisa di-serialize ke JSON."""
         normalizer = AssetNormalizer()
         result = normalizer.normalize(sample_raw_data)
 
@@ -127,3 +124,7 @@ class TestAssetNormalizer:
         assert parsed["symbol"] == "BTC"
         assert parsed["price"] == 47500.00
         assert parsed["fear_greed_value"] == 25
+        # Candle objects should be serialized as dicts
+        assert isinstance(parsed["candles_4h"], list)
+        assert isinstance(parsed["candles_4h"][0], dict)
+        assert parsed["candles_4h"][0]["open"] == 45000.00

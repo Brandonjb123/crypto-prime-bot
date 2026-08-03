@@ -25,7 +25,9 @@ def test_import_exceptions():
 
 
 def test_import_models():
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
+
+    from src.core.models.candle import Candle
     from src.core.models.normalized_asset import NormalizedAsset
     from src.core.models.signal_model import SignalResult
 
@@ -43,13 +45,25 @@ def test_import_models():
         fear_greed_value=25,
         fear_greed_classification="Extreme Fear",
         news_headlines=["Test headline"],
-        candles_4h=[],
+        candles_4h=[
+            Candle(
+                timestamp=datetime.now(UTC),
+                open=45000.0,
+                high=45100.0,
+                low=44900.0,
+                close=45050.0,
+                volume=1250.5,
+            )
+        ],
         candles_1h=[],
         data_quality_score=1.0,
         timestamp=datetime.now(UTC),
     )
     assert asset.symbol == "BTC"
     assert asset.price == 50000.0
+    assert len(asset.candles_4h) == 1
+    assert isinstance(asset.candles_4h[0], Candle)
+    assert asset.candles_4h[0].close == 45050.0
 
     signal = SignalResult(
         symbol="BTC",
