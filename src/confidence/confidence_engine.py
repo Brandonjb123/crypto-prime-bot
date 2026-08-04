@@ -1,7 +1,8 @@
 """Confidence Engine — rule-based scoring dengan conflict detection."""
 
-from datetime import UTC, datetime
+from datetime import datetime, UTC
 
+from config.constants import CONFIDENCE_WEIGHTS
 from src.core.models.analysis import TechnicalAnalysis
 from src.core.models.confidence import ConfidenceResult
 from src.core.models.market_intelligence import (
@@ -14,6 +15,7 @@ from src.core.models.market_intelligence import (
 from src.core.models.structure import MarketStructureResult
 from src.core.types.enums import (
     ConfidenceLevel,
+    ConfidenceWarning,
     MarketStructure,
     SentimentLevel,
     TrendDirection,
@@ -24,7 +26,6 @@ from src.core.types.enums import (
 class ConfidenceEngine:
     """Rule-based confidence scoring dari semua Analysis Engines."""
 
-    # Thresholds
     HIGH_THRESHOLD = 0.75
     MEDIUM_THRESHOLD = 0.60
 
@@ -41,115 +42,104 @@ class ConfidenceEngine:
         price: float,
     ) -> ConfidenceResult:
         """Hitung confidence score dari semua analysis results."""
-        score = 0.5
+        w = CONFIDENCE_WEIGHTS
+        score = w["base_score"]
         positive: list[str] = []
         negative: list[str] = []
-        warnings: list[str] = []
+        warnings: list[ConfidenceWarning] = []
+        blocked_reasons: list[ConfidenceWarning] = []
 
         # ── POSITIVE RULES ──
 
-        # Trend + Structure aligned (bullish)
         if trend == TrendDirection.BULLISH and structure.structure == MarketStructure.BOS_BULLISH:
-            score += 0.15
+            score += w["trend_structure_aligned"]
             positive.append("Trend BULLISH aligned with BOS_BULLISH")
 
-        # Trend + Structure aligned (bearish)
         if trend == TrendDirection.BEARISH and structure.structure == MarketStructure.BOS_BEARISH:
-            score += 0.15
+            score += w["trend_structure_aligned"]
             positive.append("Trend BEARISH aligned with BOS_BEARISH")
 
-        # Volume SPIKE
         if volume.state == VolumeSignal.SPIKE:
-            score += 0.10
+            score += w["volume_spike"]
             positive.append("Volume SPIKE menunjukkan momentum kuat")
 
-        # Funding NEUTRAL (tidak extreme)
         if futures.sentiment == SentimentLevel.NEUTRAL:
-            score += 0.08
+            score += w["funding_neutral"]
             positive.append("Funding rate NEUTRAL — tidak ada extreme positioning")
 
-        # Sentiment aligned dengan trend
         if trend == TrendDirection.BULLISH and sentiment.overall == SentimentLevel.GREED:
-            score += 0.08
-            positive.append("Sentiment GREED aligned dengan BULLISH trend")
+            score += w["sentiment_aligned"]
+            positive.append("Sentiment GREED aligned dengan trend")
         elif trend == TrendDirection.BEARISH and sentiment.overall == SentimentLevel.FEAR:
-            score += 0.08
-            positive.append("Sentiment FEAR aligned dengan BEARISH trend")
+            score += w["sentiment_aligned"]
+            positive.append("Sentiment FEAR aligned dengan trend")
         elif sentiment.overall == SentimentLevel.NEUTRAL:
-            score += 0.08
+            score += w["sentiment_aligned"]
             positive.append("Sentiment NEUTRAL — tidak ada extreme bias")
 
-        # Price position favorable
-        if sr.price_position is not None:
-            if sr.price_position < 0.4:
-                score += 0.07
-                positive.append("Price di lower half — favorable untuk LONG")
-            elif sr.price_position > 0.6:
-                score += 0.07
-                positive.append("Price di upper half — favorable untuk SHORT")
+        # Price position favorable (tanpa asumsi LONG/SHORT)
+        if sr.price_position is not None and sr.price_position < 0.4:
+            score += w["price_position_favorable"]
+            positive.append("Price di lower half — ada ruang naik")
+        elif sr.price_position is not None and sr.price_position > 0.6:
+            score += w["price_position_favorable"]
+            positive.append("Price di upper half — ada ruang turun")
 
-        # Volatility MEDIUM (ideal)
         if volatility.risk_level == "MEDIUM":
-            score += 0.05
+            score += w["volatility_medium"]
             positive.append("Volatility MEDIUM — ideal untuk trading")
 
         # ── NEGATIVE RULES ──
 
-        # Trend + Structure CONFLICT
         trend_struct_conflict = (
             (trend == TrendDirection.BULLISH and structure.structure == MarketStructure.BOS_BEARISH)
             or (trend == TrendDirection.BEARISH and structure.structure == MarketStructure.BOS_BULLISH)
         )
         if trend_struct_conflict:
-            score -= 0.20
+            score += w["trend_structure_conflict"]
             negative.append("⚠ Trend dan Market Structure CONFLICT")
+            warnings.append(ConfidenceWarning.STRUCTURE_CONFLICT)
 
-        # Volume WEAK
         if volume.state == VolumeSignal.WEAK:
-            score -= 0.15
+            score += w["volume_weak"]
             negative.append("Volume WEAK — kurang partisipasi pasar")
+            warnings.append(ConfidenceWarning.LOW_VOLUME)
 
-        # Sentiment conflict dengan trend
         sentiment_conflict = (
             (trend == TrendDirection.BULLISH and sentiment.overall == SentimentLevel.FEAR)
             or (trend == TrendDirection.BEARISH and sentiment.overall == SentimentLevel.GREED)
         )
         if sentiment_conflict:
-            score -= 0.10
+            score += w["sentiment_conflict"]
             negative.append("Sentiment CONFLICT dengan Trend")
+            warnings.append(ConfidenceWarning.SENTIMENT_CONFLICT)
 
-        # Funding extreme
-        if trend == TrendDirection.BULLISH and futures.sentiment == SentimentLevel.GREED and futures.funding_rate > 0.0005:
-            score -= 0.08
-            negative.append("Funding extreme GREED — risiko reversal")
-        if trend == TrendDirection.BEARISH and futures.sentiment == SentimentLevel.FEAR and futures.funding_rate < -0.0005:
-            score -= 0.08
-            negative.append("Funding extreme FEAR — risiko squeeze")
+        if futures.funding_rate > 0.0005 or futures.funding_rate < -0.0005:
+            score += w["funding_extreme"]
+            negative.append("Funding rate extreme")
+            warnings.append(ConfidenceWarning.FUNDING_EXTREME)
 
-        # Volatility HIGH
         if volatility.risk_level == "HIGH":
-            score -= 0.05
+            score += w["volatility_high"]
             negative.append("Volatility HIGH — chaotic market")
+            warnings.append(ConfidenceWarning.HIGH_VOLATILITY)
 
-        # ── WARNINGS ──
-
-        if volatility.risk_level == "HIGH" and volatility.atr_normalized > 3.0:
-            warnings.append("High volatility detected")
-
-        if abs(futures.funding_rate) > 0.0005:
-            warnings.append("Funding rate extreme")
+        # ── ADDITIONAL WARNINGS ──
 
         if sr.price_position is not None:
             if sr.price_position > 0.85:
-                warnings.append("Price near resistance")
+                warnings.append(ConfidenceWarning.PRICE_NEAR_RESISTANCE)
             elif sr.price_position < 0.15:
-                warnings.append("Price near support")
+                warnings.append(ConfidenceWarning.PRICE_NEAR_SUPPORT)
 
-        if volume.state == VolumeSignal.WEAK:
-            warnings.append("Low volume")
+        # ── BLOCKED REASONS ──
 
-        if sentiment_conflict:
-            warnings.append("Sentiment conflict with trend")
+        if score < self.MEDIUM_THRESHOLD:
+            blocked_reasons.append(ConfidenceWarning.INSUFFICIENT_DATA)
+        if ConfidenceWarning.STRUCTURE_CONFLICT in warnings:
+            blocked_reasons.append(ConfidenceWarning.STRUCTURE_CONFLICT)
+        if ConfidenceWarning.HIGH_VOLATILITY in warnings:
+            blocked_reasons.append(ConfidenceWarning.HIGH_VOLATILITY)
 
         # ── Clamp & finalize ──
         score = max(0.0, min(1.0, score))
@@ -161,18 +151,12 @@ class ConfidenceEngine:
         else:
             level = ConfidenceLevel.LOW
 
-        is_tradeable = (
-            score >= self.MEDIUM_THRESHOLD
-            and not trend_struct_conflict
-            and volatility.risk_level != "HIGH"
-        )
-
         return ConfidenceResult(
             score=round(score, 4),
             level=level,
             positive_factors=positive,
             negative_factors=negative,
-            warnings=warnings,
-            is_tradeable=is_tradeable,
+            warnings=list(set(warnings)),  # deduplicate
+            blocked_reasons=list(set(blocked_reasons)),
             timestamp=datetime.now(UTC),
         )

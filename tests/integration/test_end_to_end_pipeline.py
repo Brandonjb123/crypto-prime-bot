@@ -98,4 +98,6 @@ class TestEndToEndPipeline:
         assert 0.0 <= result.score <= 1.0
         assert result.level.value in ("HIGH", "MEDIUM", "LOW")
         assert len(result.positive_factors) > 0
+        assert isinstance(result.warnings, list)
+        assert isinstance(result.blocked_reasons, list)
         assert result.timestamp is not None

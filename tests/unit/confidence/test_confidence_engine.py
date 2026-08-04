@@ -1,7 +1,7 @@
-"""Unit tests untuk ConfidenceEngine."""
+"""Unit tests untuk ConfidenceEngine — kontrak baru Pre-Sprint 4B."""
 
-from datetime import UTC, datetime
-
+from datetime import datetime, UTC
+import pytest
 from src.confidence.confidence_engine import ConfidenceEngine
 from src.core.models.analysis import TechnicalAnalysis
 from src.core.models.confidence import ConfidenceResult
@@ -15,11 +15,13 @@ from src.core.models.market_intelligence import (
 from src.core.models.structure import MarketStructureResult
 from src.core.types.enums import (
     ConfidenceLevel,
+    ConfidenceWarning,
     MarketStructure,
     SentimentLevel,
     TrendDirection,
     VolumeSignal,
 )
+
 
 # ── Helpers ──
 
@@ -47,7 +49,6 @@ def _make_sentiment(overall=SentimentLevel.GREED, fg_value=75, fg_label="Greed",
 
 class TestConfidenceEngine:
     def test_strong_bullish_aligned(self):
-        """Fixture bullish aligned → score >= 0.75, HIGH, is_tradeable=True."""
         engine = ConfidenceEngine()
         result = engine.calculate(
             technical=_make_ta(),
@@ -64,11 +65,11 @@ class TestConfidenceEngine:
         assert isinstance(result, ConfidenceResult)
         assert result.score >= 0.75
         assert result.level == ConfidenceLevel.HIGH
-        assert result.is_tradeable is True
+        assert result.blocked_reasons == []
         assert len(result.positive_factors) > 0
+        assert all(isinstance(w, ConfidenceWarning) for w in result.warnings)
 
     def test_strong_bearish_aligned(self):
-        """Fixture bearish aligned → score >= 0.75, HIGH."""
         engine = ConfidenceEngine()
         result = engine.calculate(
             technical=_make_ta(ema20=45000.0, ema50=47000.0, rsi14=40.0),
@@ -84,10 +85,9 @@ class TestConfidenceEngine:
 
         assert result.score >= 0.75
         assert result.level == ConfidenceLevel.HIGH
-        assert result.is_tradeable is True
+        assert result.blocked_reasons == []
 
-    def test_conflict_bullish_trend_bearish_structure(self):
-        """Trend BULLISH + BOS_BEARISH → conflict, score rendah, is_tradeable=False."""
+    def test_conflict_has_blocked_reasons(self):
         engine = ConfidenceEngine()
         result = engine.calculate(
             technical=_make_ta(),
@@ -102,10 +102,11 @@ class TestConfidenceEngine:
         )
 
         assert result.score <= 0.50
-        assert result.is_tradeable is False
+        assert ConfidenceWarning.STRUCTURE_CONFLICT in result.blocked_reasons
+        assert ConfidenceWarning.HIGH_VOLATILITY in result.blocked_reasons
+        assert len(result.blocked_reasons) >= 2
 
-    def test_weak_volume_warning(self):
-        """Volume WEAK → negative_factors mengandung volume warning."""
+    def test_weak_volume_warning_enum(self):
         engine = ConfidenceEngine()
         result = engine.calculate(
             technical=_make_ta(),
@@ -119,11 +120,10 @@ class TestConfidenceEngine:
             price=50000.0,
         )
 
+        assert ConfidenceWarning.LOW_VOLUME in result.warnings
         assert any("WEAK" in f or "Volume" in f for f in result.negative_factors)
-        assert any("Low volume" in w for w in result.warnings)
 
-    def test_high_volatility_not_tradeable(self):
-        """Volatility HIGH → is_tradeable=False, warnings tidak kosong."""
+    def test_high_volatility_blocked(self):
         engine = ConfidenceEngine()
         result = engine.calculate(
             technical=_make_ta(),
@@ -137,11 +137,9 @@ class TestConfidenceEngine:
             price=50000.0,
         )
 
-        assert result.is_tradeable is False
-        assert any("High volatility" in w for w in result.warnings)
+        assert ConfidenceWarning.HIGH_VOLATILITY in result.blocked_reasons
 
     def test_score_range(self):
-        """Score selalu 0.0-1.0 untuk berbagai input."""
         engine = ConfidenceEngine()
         for trend, struct in [
             (TrendDirection.BULLISH, MarketStructure.BOS_BULLISH),
@@ -150,33 +148,25 @@ class TestConfidenceEngine:
             (TrendDirection.SIDEWAYS, MarketStructure.NONE),
         ]:
             result = engine.calculate(
-                technical=_make_ta(),
-                trend=trend,
+                technical=_make_ta(), trend=trend,
                 structure=_make_structure(structure=struct, direction=trend),
-                volume=_make_volume(),
-                futures=_make_futures(),
-                volatility=_make_volatility(),
-                sr=_make_sr(),
-                sentiment=_make_sentiment(),
-                price=50000.0,
+                volume=_make_volume(), futures=_make_futures(),
+                volatility=_make_volatility(), sr=_make_sr(),
+                sentiment=_make_sentiment(), price=50000.0,
             )
             assert 0.0 <= result.score <= 1.0
+            assert all(isinstance(w, ConfidenceWarning) for w in result.warnings)
 
     def test_deterministic(self):
-        """Input sama → output sama persis."""
         engine = ConfidenceEngine()
-        result1 = engine.calculate(
+        kwargs = dict(
             technical=_make_ta(), trend=TrendDirection.BULLISH,
             structure=_make_structure(), volume=_make_volume(),
             futures=_make_futures(), volatility=_make_volatility(),
             sr=_make_sr(), sentiment=_make_sentiment(), price=50000.0,
         )
-        result2 = engine.calculate(
-            technical=_make_ta(), trend=TrendDirection.BULLISH,
-            structure=_make_structure(), volume=_make_volume(),
-            futures=_make_futures(), volatility=_make_volatility(),
-            sr=_make_sr(), sentiment=_make_sentiment(), price=50000.0,
-        )
+        result1 = engine.calculate(**kwargs)
+        result2 = engine.calculate(**kwargs)
         assert result1.score == result2.score
-        assert result1.is_tradeable == result2.is_tradeable
-        assert result1.positive_factors == result2.positive_factors
+        assert result1.warnings == result2.warnings
+        assert result1.blocked_reasons == result2.blocked_reasons

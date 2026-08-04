@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from src.core.types.enums import ConfidenceLevel
+from src.core.types.enums import ConfidenceLevel, ConfidenceWarning
 
 
 class ConfidenceResult(BaseModel):
@@ -14,6 +14,6 @@ class ConfidenceResult(BaseModel):
     level: ConfidenceLevel
     positive_factors: list[str]
     negative_factors: list[str]
-    warnings: list[str]
-    is_tradeable: bool
+    warnings: list[ConfidenceWarning]
+    blocked_reasons: list[ConfidenceWarning]
     timestamp: datetime

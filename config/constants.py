@@ -32,3 +32,19 @@ FEAR_GREED_TIMEOUT = 10.0
 NEWS_TIMEOUT = 10.0
 MAX_NEWS_ARTICLES = 5
 MIN_CANDLES_REQUIRED = 20
+
+# Confidence Engine Weights (Sprint 4B)
+CONFIDENCE_WEIGHTS = {
+    "base_score": 0.5,
+    "trend_structure_aligned": 0.15,
+    "volume_spike": 0.10,
+    "funding_neutral": 0.08,
+    "sentiment_aligned": 0.08,
+    "price_position_favorable": 0.07,
+    "volatility_medium": 0.05,
+    "trend_structure_conflict": -0.20,
+    "volume_weak": -0.15,
+    "sentiment_conflict": -0.10,
+    "funding_extreme": -0.08,
+    "volatility_high": -0.05,
+}
