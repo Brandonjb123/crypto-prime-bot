@@ -57,3 +57,14 @@ class ConfidenceWarning(StrEnum):
     PRICE_NEAR_RESISTANCE = "PRICE_NEAR_RESISTANCE"
     PRICE_NEAR_SUPPORT = "PRICE_NEAR_SUPPORT"
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+
+class SetupType(StrEnum):
+    TREND_FOLLOWING = "trend_following"
+    BREAKOUT = "breakout"
+    REVERSAL = "reversal"
+
+
+class RuleType(StrEnum):
+    TREND_FOLLOWING = "trend_following"
+    BREAKOUT = "breakout"
+    REVERSAL = "reversal"    

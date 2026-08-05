@@ -48,3 +48,6 @@ CONFIDENCE_WEIGHTS = {
     "funding_extreme": -0.08,
     "volatility_high": -0.05,
 }
+
+# Setup Detection — Rule Priority Order
+RULE_PRIORITY_ORDER = ["reversal", "breakout", "trend_following"]

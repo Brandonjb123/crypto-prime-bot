@@ -1,4 +1,4 @@
-"""Unit tests untuk SetupDetector orchestrator."""
+"""Unit tests untuk SetupDetector orchestrator — kontrak enum."""
 
 from datetime import UTC, datetime
 
@@ -18,7 +18,10 @@ from src.core.types.enums import (
     ConfidenceLevel,
     ConfidenceWarning,
     MarketStructure,
+    RuleType,
     SentimentLevel,
+    SetupType,
+    Side,
     TrendDirection,
     VolumeSignal,
 )
@@ -46,14 +49,18 @@ def _make_snapshot(**overrides) -> AnalysisSnapshot:
 class TestSetupDetector:
     def test_detect_long_setup(self):
         detector = SetupDetector()
-        snapshot = _make_snapshot()
+        snapshot = _make_snapshot(
+            volume=VolumeAnalysis(state=VolumeSignal.NORMAL, spike_ratio=1.2, confidence_score=0.5, timestamp=datetime.now(UTC)),
+        )
         result = detector.detect(snapshot)
 
         assert isinstance(result, SetupResult)
-        assert result.direction == "LONG"
+        assert result.direction == Side.LONG
+        assert result.setup_type == SetupType.TREND_FOLLOWING
         assert result.is_valid_setup is True
         assert len(result.triggered_rules) > 0
-        assert result.confidence_score == 0.85
+        assert all(isinstance(r, RuleType) for r in result.triggered_rules)
+        assert all(isinstance(r, RuleType) for r in result.failed_rules)
 
     def test_detect_short_setup(self):
         detector = SetupDetector()
@@ -64,7 +71,7 @@ class TestSetupDetector:
             price_position=0.7,
         )
         result = detector.detect(snapshot)
-        assert result.direction == "SHORT"
+        assert result.direction == Side.SHORT
         assert result.is_valid_setup is True
 
     def test_no_setup_when_none_triggered(self):
@@ -80,13 +87,15 @@ class TestSetupDetector:
         assert result.is_valid_setup is False
         assert len(result.triggered_rules) == 0
 
-    def test_blocked_confidence_invalid_setup(self):
+    def test_blocked_confidence_does_not_affect_is_valid_setup(self):
+        """is_valid_setup hanya dari detection, bukan execution permission."""
         detector = SetupDetector()
         snapshot = _make_snapshot(
             confidence=ConfidenceResult(score=0.75, level=ConfidenceLevel.HIGH, positive_factors=["Test"], negative_factors=[], warnings=[], blocked_reasons=[ConfidenceWarning.STRUCTURE_CONFLICT], timestamp=datetime.now(UTC)),
         )
         result = detector.detect(snapshot)
-        assert result.is_valid_setup is False
+        # Setup tetap valid meskipun ada blocked_reasons (itu urusan Validator)
+        assert result.is_valid_setup is True
         assert len(result.blocked_reasons) > 0
 
     def test_deterministic(self):
