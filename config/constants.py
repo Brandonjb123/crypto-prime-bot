@@ -53,3 +53,8 @@ CONFIDENCE_WEIGHTS = {
 RULE_PRIORITY_ORDER = ["reversal", "breakout", "trend_following"]
 
 VALIDATOR_CONFIDENCE_THRESHOLD = 0.60
+
+# Risk Engine Defaults
+RISK_PER_TRADE = 0.02       # 2% modal per trade
+MAX_POSITION_SIZE = 100.0   # Maksimum 100 unit (contoh: kontrak)
+MIN_RISK_REWARD_RATIO = 2.0 # Minimum 1:2
