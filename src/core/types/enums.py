@@ -183,6 +183,19 @@ class SyncReason(StrEnum):
     MANUAL_CHANGE = "MANUAL_CHANGE"
     UNKNOWN = "UNKNOWN"
 
+class BacktestStatus(StrEnum):
+    CREATED = "CREATED"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+
+class TradeOutcome(StrEnum):
+    WIN = "WIN"
+    LOSS = "LOSS"
+    BREAKEVEN = "BREAKEVEN"
+    OPEN = "OPEN"    
+
 class PositionStatus(StrEnum):
     OPEN = "OPEN"
     CLOSED = "CLOSED"
