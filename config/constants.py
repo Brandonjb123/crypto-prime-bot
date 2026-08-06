@@ -51,3 +51,5 @@ CONFIDENCE_WEIGHTS = {
 
 # Setup Detection — Rule Priority Order
 RULE_PRIORITY_ORDER = ["reversal", "breakout", "trend_following"]
+
+VALIDATOR_CONFIDENCE_THRESHOLD = 0.60
