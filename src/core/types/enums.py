@@ -194,7 +194,20 @@ class TradeOutcome(StrEnum):
     WIN = "WIN"
     LOSS = "LOSS"
     BREAKEVEN = "BREAKEVEN"
-    OPEN = "OPEN"    
+    OPEN = "OPEN"
+
+class TelegramCommand(StrEnum):
+    STATUS = "status"
+    POSITIONS = "positions"
+    PORTFOLIO = "portfolio"
+    LAST_SIGNAL = "last_signal"
+    HELP = "help"
+
+
+class TelegramResponseType(StrEnum):
+    TEXT = "text"
+    ERROR = "error"
+    UNKNOWN = "unknown"        
 
 class PositionStatus(StrEnum):
     OPEN = "OPEN"
