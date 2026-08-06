@@ -143,4 +143,18 @@ class OrderRejectReason(StrEnum):
     INVALID_SIZE = "INVALID_SIZE"
     MARKET_CLOSED = "MARKET_CLOSED"
     INSUFFICIENT_BALANCE = "INSUFFICIENT_BALANCE"
-    UNKNOWN = "UNKNOWN"    
+    UNKNOWN = "UNKNOWN"   
+
+class PositionStatus(StrEnum):
+    OPEN = "OPEN"
+    CLOSED = "CLOSED"
+    STOPPED = "STOPPED"
+    TAKE_PROFIT = "TAKE_PROFIT"
+
+
+class PositionCloseReason(StrEnum):
+    NONE = "NONE"
+    MANUAL = "MANUAL"
+    STOP_LOSS = "STOP_LOSS"
+    TAKE_PROFIT = "TAKE_PROFIT"
+    UNKNOWN = "UNKNOWN"     
