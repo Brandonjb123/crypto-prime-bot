@@ -114,3 +114,17 @@ class RecommendationReason(StrEnum):
     NO_SETUP = "NO_SETUP"
     BLOCKED_WARNING = "BLOCKED_WARNING"
     LOW_RISK_REWARD = "LOW_RISK_REWARD"    
+
+class ExecutionAction(StrEnum):
+    PLACE_ORDER = "PLACE_ORDER"
+    DO_NOT_EXECUTE = "DO_NOT_EXECUTE"
+
+
+class ExecutionType(StrEnum):
+    MARKET = "MARKET"
+    LIMIT = "LIMIT"
+
+
+class ExecutionStatus(StrEnum):
+    READY = "READY"
+    BLOCKED = "BLOCKED"    
