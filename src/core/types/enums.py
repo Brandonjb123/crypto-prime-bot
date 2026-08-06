@@ -145,6 +145,23 @@ class OrderRejectReason(StrEnum):
     INSUFFICIENT_BALANCE = "INSUFFICIENT_BALANCE"
     UNKNOWN = "UNKNOWN"   
 
+class ExchangeOrderStatus(StrEnum):
+    NEW = "NEW"
+    PARTIALLY_FILLED = "PARTIALLY_FILLED"
+    FILLED = "FILLED"
+    CANCELED = "CANCELED"
+    REJECTED = "REJECTED"
+    EXPIRED = "EXPIRED"
+
+
+class ExchangeErrorType(StrEnum):
+    NETWORK_ERROR = "NETWORK_ERROR"
+    AUTH_ERROR = "AUTH_ERROR"
+    INSUFFICIENT_BALANCE = "INSUFFICIENT_BALANCE"
+    INVALID_ORDER = "INVALID_ORDER"
+    RATE_LIMIT = "RATE_LIMIT"
+    UNKNOWN = "UNKNOWN"    
+
 class PositionStatus(StrEnum):
     OPEN = "OPEN"
     CLOSED = "CLOSED"
