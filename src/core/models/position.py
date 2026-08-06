@@ -24,3 +24,5 @@ class Position(BaseModel):
     opened_at: datetime
     closed_at: datetime | None
     close_reason: PositionCloseReason
+    last_price: float | None = None
+    last_updated: datetime | None = None

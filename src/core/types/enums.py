@@ -162,4 +162,13 @@ class PositionCloseReason(StrEnum):
 class PortfolioStatus(StrEnum):
     EMPTY = "EMPTY"
     ACTIVE = "ACTIVE"
-    RISK_LIMIT = "RISK_LIMIT"   
+    RISK_LIMIT = "RISK_LIMIT"  
+
+class PositionEvent(StrEnum):
+    NONE = "NONE"
+    STOP_LOSS_HIT = "STOP_LOSS_HIT"
+    TAKE_PROFIT_HIT = "TAKE_PROFIT_HIT"
+    HOLD = "HOLD"
+
+
+     
