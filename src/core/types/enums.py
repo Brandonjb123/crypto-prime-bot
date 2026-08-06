@@ -128,3 +128,19 @@ class ExecutionType(StrEnum):
 class ExecutionStatus(StrEnum):
     READY = "READY"
     BLOCKED = "BLOCKED"    
+
+class OrderStatus(StrEnum):
+    PENDING = "PENDING"
+    SUBMITTED = "SUBMITTED"
+    FILLED = "FILLED"
+    REJECTED = "REJECTED"
+    CANCELLED = "CANCELLED"
+
+
+class OrderRejectReason(StrEnum):
+    NONE = "NONE"
+    INVALID_PRICE = "INVALID_PRICE"
+    INVALID_SIZE = "INVALID_SIZE"
+    MARKET_CLOSED = "MARKET_CLOSED"
+    INSUFFICIENT_BALANCE = "INSUFFICIENT_BALANCE"
+    UNKNOWN = "UNKNOWN"    

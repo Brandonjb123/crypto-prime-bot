@@ -1,8 +1,9 @@
-"""Execution Plan model."""
+"""Execution Plan model — immutable."""
 
 from datetime import datetime
+from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from src.core.types.enums import (
     ConfidenceWarning,
@@ -17,6 +18,9 @@ from src.core.types.enums import (
 
 
 class ExecutionPlan(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    execution_id: UUID
     action: ExecutionAction
     status: ExecutionStatus
     execution_type: ExecutionType

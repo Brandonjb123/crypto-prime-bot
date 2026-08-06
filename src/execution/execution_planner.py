@@ -1,6 +1,7 @@
 """Execution Planner — mengubah Recommendation + Risk menjadi ExecutionPlan."""
 
 from datetime import UTC, datetime
+from uuid import uuid4
 
 from src.core.models.execution import ExecutionPlan
 from src.core.models.recommendation import RecommendationResult
@@ -27,6 +28,7 @@ class ExecutionPlanner:
         # Rule 1: Tidak ready → DO_NOT_EXECUTE
         if not recommendation.ready_for_execution:
             return ExecutionPlan(
+                execution_id=uuid4(),
                 action=ExecutionAction.DO_NOT_EXECUTE,
                 status=ExecutionStatus.BLOCKED,
                 execution_type=ExecutionType.MARKET,
@@ -58,6 +60,7 @@ class ExecutionPlanner:
         else:
             # Rule 4 & 5: WAIT / SKIP → DO_NOT_EXECUTE
             return ExecutionPlan(
+                execution_id=uuid4(),
                 action=ExecutionAction.DO_NOT_EXECUTE,
                 status=ExecutionStatus.BLOCKED,
                 execution_type=ExecutionType.MARKET,
@@ -86,6 +89,7 @@ class ExecutionPlanner:
         )
 
         return ExecutionPlan(
+            execution_id=uuid4(),
             action=ExecutionAction.PLACE_ORDER,
             status=ExecutionStatus.READY,
             execution_type=ExecutionType.MARKET,
