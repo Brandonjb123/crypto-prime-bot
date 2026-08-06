@@ -19,6 +19,8 @@ class InsufficientDataError(CollectorError):
 class DuplicatePositionError(CollectorError):
     """Posisi dengan symbol dan side yang sama sudah ada."""
 
-
 class PositionAlreadyClosedError(CollectorError):
     """Posisi sudah closed, tidak bisa di-close lagi."""
+
+class PipelineExecutionError(CollectorError):
+    """Error saat menjalankan pipeline."""

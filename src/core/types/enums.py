@@ -164,6 +164,17 @@ class PortfolioStatus(StrEnum):
     ACTIVE = "ACTIVE"
     RISK_LIMIT = "RISK_LIMIT"  
 
+class NotificationLevel(StrEnum):
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+
+class PipelineStatus(StrEnum):
+    IDLE = "IDLE"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"    
+
 class PositionEvent(StrEnum):
     NONE = "NONE"
     STOP_LOSS_HIT = "STOP_LOSS_HIT"
