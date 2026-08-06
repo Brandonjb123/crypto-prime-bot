@@ -6,12 +6,15 @@ from uuid import uuid4
 from src.core.models.execution import ExecutionPlan
 from src.core.models.order import OrderResult
 from src.core.types.enums import ExecutionStatus, OrderRejectReason, OrderStatus
+from src.events.event_bus import EventBus
+from src.events.events.order_executed import OrderExecutedEvent
 from src.exchange.base import BaseExchangeAdapter
 
 
 class OrderExecutor:
-    def __init__(self, adapter: BaseExchangeAdapter) -> None:
+    def __init__(self, adapter: BaseExchangeAdapter, event_bus: EventBus | None = None) -> None:
         self.adapter = adapter
+        self.event_bus = event_bus
 
     async def execute(self, plan: ExecutionPlan) -> OrderResult:
         if plan.status != ExecutionStatus.READY:
@@ -30,4 +33,16 @@ class OrderExecutor:
                 take_profit=plan.take_profit,
                 timestamp=datetime.now(UTC),
             )
-        return await self.adapter.place_order(plan)
+
+        result = await self.adapter.place_order(plan)
+
+        if self.event_bus and result.status == OrderStatus.FILLED:
+            self.event_bus.publish(OrderExecutedEvent(
+                execution_id=result.execution_id,
+                order_id=result.order_id,
+                status=result.status,
+                symbol=result.symbol,
+                side=result.side,
+            ))
+
+        return result

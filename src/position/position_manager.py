@@ -10,18 +10,20 @@ from src.core.exceptions.collector_exceptions import (
 from src.core.models.order import OrderResult
 from src.core.models.position import Position
 from src.core.types.enums import OrderStatus, PositionCloseReason, PositionStatus
+from src.events.event_bus import EventBus
+from src.events.events.position_closed import PositionClosedEvent
+from src.events.events.position_opened import PositionOpenedEvent
 
 
 class PositionManager:
-    def __init__(self) -> None:
-        self._positions: dict[str, Position] = {}  # key = position_id (str)
+    def __init__(self, event_bus: EventBus | None = None) -> None:
+        self._positions: dict[str, Position] = {}
+        self.event_bus = event_bus
 
     def open_position(self, order: OrderResult) -> Position:
-        # Rule 1: Hanya FILLED yang bisa buka posisi
         if order.status != OrderStatus.FILLED:
             raise ValueError(f"Cannot open position from order status: {order.status}")
 
-        # Rule 3: 1 symbol = 1 open position (LONG atau SHORT)
         for pos in self._positions.values():
             if pos.symbol == order.symbol and pos.status == PositionStatus.OPEN:
                 raise DuplicatePositionError(
@@ -44,6 +46,16 @@ class PositionManager:
             close_reason=PositionCloseReason.NONE,
         )
         self._positions[str(position.position_id)] = position
+
+        if self.event_bus:
+            self.event_bus.publish(PositionOpenedEvent(
+                position_id=position.position_id,
+                symbol=position.symbol,
+                side=position.side,
+                entry_price=position.entry_price,
+                position_size=position.position_size,
+            ))
+
         return position
 
     def close_position(self, position_id: str, reason: PositionCloseReason) -> Position:
@@ -53,7 +65,6 @@ class PositionManager:
         if pos.status != PositionStatus.OPEN:
             raise PositionAlreadyClosedError(f"Position {position_id} already closed")
 
-        # Buat object baru (immutable)
         closed_pos = Position(
             position_id=pos.position_id,
             execution_id=pos.execution_id,
@@ -70,6 +81,14 @@ class PositionManager:
             close_reason=reason,
         )
         self._positions[str(position_id)] = closed_pos
+
+        if self.event_bus:
+            self.event_bus.publish(PositionClosedEvent(
+                position_id=closed_pos.position_id,
+                reason=reason,
+                exit_price=None,
+            ))
+
         return closed_pos
 
     def has_open_position(self, symbol: str, side: str | None = None) -> bool:

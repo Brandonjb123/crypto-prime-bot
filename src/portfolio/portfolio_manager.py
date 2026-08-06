@@ -8,11 +8,16 @@ from src.core.models.account import AccountSnapshot
 from src.core.models.portfolio import PortfolioSnapshot
 from src.core.models.position import Position
 from src.core.types.enums import PortfolioStatus, PositionStatus, RiskWarning
+from src.events.event_bus import EventBus
+from src.events.events.portfolio_updated import PortfolioUpdatedEvent
 from src.market.in_memory_price_provider import InMemoryPriceProvider
 from src.market.pnl_engine import calculate_unrealized
 
 
 class PortfolioManager:
+    def __init__(self, event_bus: EventBus | None = None) -> None:
+        self.event_bus = event_bus
+
     def create_snapshot(
         self,
         positions: list[Position],
@@ -29,7 +34,7 @@ class PortfolioManager:
             p.position_size for p in short_positions
         )
 
-        realized_pnl = 0.0  # placeholder
+        realized_pnl = 0.0
         unrealized_pnl = calculate_unrealized(positions, price_provider)
         equity = account.balance + realized_pnl + unrealized_pnl
 
@@ -44,7 +49,7 @@ class PortfolioManager:
         else:
             status = PortfolioStatus.ACTIVE
 
-        return PortfolioSnapshot(
+        snapshot = PortfolioSnapshot(
             snapshot_id=uuid4(),
             timestamp=datetime.now(UTC),
             status=status,
@@ -60,3 +65,13 @@ class PortfolioManager:
             equity=equity,
             warnings=warnings,
         )
+
+        if self.event_bus:
+            self.event_bus.publish(PortfolioUpdatedEvent(
+                snapshot_id=snapshot.snapshot_id,
+                equity=snapshot.equity,
+                gross_exposure=snapshot.gross_exposure,
+                net_exposure=snapshot.net_exposure,
+            ))
+
+        return snapshot
