@@ -158,3 +158,8 @@ class PositionCloseReason(StrEnum):
     STOP_LOSS = "STOP_LOSS"
     TAKE_PROFIT = "TAKE_PROFIT"
     UNKNOWN = "UNKNOWN"     
+
+class PortfolioStatus(StrEnum):
+    EMPTY = "EMPTY"
+    ACTIVE = "ACTIVE"
+    RISK_LIMIT = "RISK_LIMIT"   
