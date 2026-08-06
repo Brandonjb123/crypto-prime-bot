@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from src.core.types.enums import Side
+from src.core.types.enums import RiskWarning, Side
 
 
 class RiskResult(BaseModel):
@@ -21,4 +21,5 @@ class RiskResult(BaseModel):
     max_loss_pct: float
     direction: Side
     risk_model: str
+    warnings: list[RiskWarning] = []
     timestamp: datetime

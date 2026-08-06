@@ -65,3 +65,7 @@ ATR_MULTIPLIERS = {
     "breakout": {"sl": 1.5, "tp": 5.0},
     "reversal": {"sl": 2.5, "tp": 3.5},
 }
+
+# Recommendation Engine
+READY_EXECUTION_MIN_CONFIDENCE = 0.60
+READY_EXECUTION_MIN_RR = 2.0

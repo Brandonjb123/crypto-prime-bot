@@ -68,5 +68,6 @@ class BreakoutRiskModel(BaseRiskModel):
             max_loss_pct=round(max_loss_pct, 2),
             direction=direction,
             risk_model=self.name,
+            warnings=warnings,
             timestamp=datetime.now(UTC),
         )
