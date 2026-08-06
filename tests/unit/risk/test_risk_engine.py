@@ -1,4 +1,4 @@
-"""Unit tests untuk RiskEngine."""
+"""Unit tests untuk RiskEngine — kontrak baru."""
 
 from datetime import UTC, datetime
 
@@ -22,6 +22,7 @@ from src.core.types.enums import (
     SetupType,
     Side,
     TrendDirection,
+    ValidationCheck,
     VolumeSignal,
 )
 from src.risk.risk_engine import RiskEngine
@@ -59,7 +60,6 @@ def _make_setup(setup_type=SetupType.TREND_FOLLOWING, direction=Side.LONG) -> Se
 
 
 def _make_validation(approved=True) -> ValidationResult:
-    from src.core.types.enums import ValidationCheck
     return ValidationResult(
         approved=approved,
         rejection_reasons=[],
@@ -77,13 +77,17 @@ class TestRiskEngine:
         result = engine.calculate(snapshot, setup, validation)
 
         assert isinstance(result, RiskResult)
+        assert result.entry_price == 50000.0
         assert result.direction == Side.LONG
         assert result.risk_model == "trend"
-        assert result.stop_loss < 50000.0  # SL di bawah entry untuk LONG
+        assert result.stop_loss < 50000.0
         assert result.take_profit > 50000.0
+        assert result.stop_distance > 0
+        assert result.take_profit_distance > 0
         assert result.risk_reward_ratio >= 2.0
         assert result.position_size > 0
-        assert result.risk_amount > 0
+        assert result.expected_profit > 0
+        assert result.expected_loss > 0
 
     def test_breakout_risk_short(self):
         engine = RiskEngine()
@@ -94,7 +98,7 @@ class TestRiskEngine:
 
         assert result.direction == Side.SHORT
         assert result.risk_model == "breakout"
-        assert result.stop_loss > 50000.0  # SL di atas entry untuk SHORT
+        assert result.stop_loss > 50000.0
         assert result.take_profit < 50000.0
         assert result.risk_reward_ratio >= 2.0
 
@@ -108,7 +112,6 @@ class TestRiskEngine:
         assert result.risk_model == "reversal"
         assert result.stop_loss < 50000.0
         assert result.take_profit > 50000.0
-        # Reversal position size lebih kecil (MAX * 0.7)
         assert result.position_size <= 70.0
 
     def test_position_size_positive(self):
@@ -118,7 +121,8 @@ class TestRiskEngine:
         validation = _make_validation()
         result = engine.calculate(snapshot, setup, validation)
         assert result.position_size > 0
-        assert result.risk_amount > 0
+        assert result.expected_profit > 0
+        assert result.expected_loss > 0
 
     def test_deterministic(self):
         engine = RiskEngine()
@@ -131,3 +135,4 @@ class TestRiskEngine:
         assert r1.stop_loss == r2.stop_loss
         assert r1.take_profit == r2.take_profit
         assert r1.risk_reward_ratio == r2.risk_reward_ratio
+        assert r1.entry_price == r2.entry_price

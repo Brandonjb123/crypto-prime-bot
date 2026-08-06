@@ -1,4 +1,4 @@
-"""Integration test: Validator → Risk."""
+"""Integration test: Validator → Risk — kontrak baru."""
 
 from datetime import UTC, datetime
 
@@ -66,7 +66,10 @@ class TestRiskPipeline:
         result = engine.calculate(snapshot, setup, validation)
 
         assert isinstance(result, RiskResult)
+        assert result.entry_price == 50000.0
         assert result.direction == Side.LONG
         assert result.risk_model == "trend"
         assert result.position_size > 0
         assert result.risk_reward_ratio >= 2.0
+        assert result.stop_distance > 0
+        assert result.take_profit_distance > 0

@@ -8,14 +8,17 @@ from src.core.types.enums import Side
 
 
 class RiskResult(BaseModel):
-    """Output dari Risk Engine."""
-
+    entry_price: float
+    stop_loss: float
+    stop_distance: float
+    take_profit: float
+    take_profit_distance: float
     position_size: float
     risk_amount: float
-    stop_loss: float
-    take_profit: float
+    expected_profit: float
+    expected_loss: float
     risk_reward_ratio: float
     max_loss_pct: float
     direction: Side
-    risk_model: str  # "trend" | "breakout" | "reversal"
+    risk_model: str
     timestamp: datetime

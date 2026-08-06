@@ -58,3 +58,10 @@ VALIDATOR_CONFIDENCE_THRESHOLD = 0.60
 RISK_PER_TRADE = 0.02       # 2% modal per trade
 MAX_POSITION_SIZE = 100.0   # Maksimum 100 unit (contoh: kontrak)
 MIN_RISK_REWARD_RATIO = 2.0 # Minimum 1:2
+
+# Risk Engine — ATR Multipliers per Risk Model
+ATR_MULTIPLIERS = {
+    "trend": {"sl": 2.0, "tp": 4.0},
+    "breakout": {"sl": 1.5, "tp": 5.0},
+    "reversal": {"sl": 2.5, "tp": 3.5},
+}
