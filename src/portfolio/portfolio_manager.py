@@ -1,43 +1,42 @@
 """Portfolio Manager — menghitung kondisi portfolio dari semua Position."""
 
+from datetime import UTC, datetime
 from uuid import uuid4
-from datetime import datetime, UTC
+
 from config.constants import MAX_PORTFOLIO_EXPOSURE
+from src.core.models.account import AccountSnapshot
 from src.core.models.portfolio import PortfolioSnapshot
 from src.core.models.position import Position
 from src.core.types.enums import PortfolioStatus, PositionStatus, RiskWarning
+from src.market.in_memory_price_provider import InMemoryPriceProvider
+from src.market.pnl_engine import calculate_unrealized
 
 
 class PortfolioManager:
     def create_snapshot(
         self,
         positions: list[Position],
-        account_balance: float = 0.0,
+        account: AccountSnapshot,
+        price_provider: InMemoryPriceProvider,
     ) -> PortfolioSnapshot:
         open_positions = [p for p in positions if p.status == PositionStatus.OPEN]
         closed_positions = [p for p in positions if p.status != PositionStatus.OPEN]
         long_positions = [p for p in open_positions if p.side == "LONG"]
         short_positions = [p for p in open_positions if p.side == "SHORT"]
 
-        # Exposure
         gross_exposure = sum(p.position_size for p in open_positions)
         net_exposure = sum(p.position_size for p in long_positions) - sum(
             p.position_size for p in short_positions
         )
 
-        # PnL — placeholder (0 untuk sekarang)
-        realized_pnl = 0.0
-        unrealized_pnl = 0.0
+        realized_pnl = 0.0  # placeholder
+        unrealized_pnl = calculate_unrealized(positions, price_provider)
+        equity = account.balance + realized_pnl + unrealized_pnl
 
-        # Equity
-        equity = account_balance + realized_pnl + unrealized_pnl
-
-        # Warnings
         warnings: list[RiskWarning] = []
         if gross_exposure > MAX_PORTFOLIO_EXPOSURE:
             warnings.append(RiskWarning.POSITION_SIZE_CAPPED)
 
-        # Status
         if len(open_positions) == 0:
             status = PortfolioStatus.EMPTY
         elif gross_exposure > MAX_PORTFOLIO_EXPOSURE:
