@@ -1,27 +1,18 @@
-from datetime import UTC, datetime
-
-from src.core.models.analysis import TechnicalAnalysis
+from datetime import datetime, UTC
 from src.core.models.confidence import ConfidenceResult
-from src.core.models.market_intelligence import (
-    FuturesAnalysis,
-    SentimentAnalysis,
-    SupportResistanceResult,
-    VolatilityAnalysis,
-    VolumeAnalysis,
-)
 from src.core.models.setup import SetupResult
 from src.core.models.snapshot import AnalysisSnapshot
 from src.core.models.structure import MarketStructureResult
 from src.core.types.enums import (
-    ConfidenceLevel,
-    ConfidenceWarning,
-    MarketStructure,
-    SetupType,
-    Side,
-    TrendDirection,
-    ValidationReason,
+    ConfidenceLevel, ConfidenceWarning, MarketStructure,
+    SetupType, Side, TrendDirection, ValidationCheck, ValidationReason,
 )
 from src.validator.validator_engine import ValidatorEngine
+from src.core.models.analysis import TechnicalAnalysis
+from src.core.models.market_intelligence import (
+    FuturesAnalysis, SentimentAnalysis, SupportResistanceResult,
+    VolatilityAnalysis, VolumeAnalysis,
+)
 
 
 def _make_setup(overrides=None) -> SetupResult:
@@ -67,6 +58,7 @@ class TestValidatorEngine:
         result = engine.validate(setup, snapshot)
         assert result.approved is True
         assert len(result.rejection_reasons) == 0
+        assert all(result.checks_passed.values())
         assert len(result.checks_passed) == 5
 
     def test_blocked_reasons_rejected(self):
@@ -76,6 +68,7 @@ class TestValidatorEngine:
         result = engine.validate(setup, snapshot)
         assert result.approved is False
         assert ValidationReason.BLOCKED_REASONS in result.rejection_reasons
+        assert result.checks_passed[ValidationCheck.BLOCKED_REASONS_CHECK] is False
 
     def test_low_confidence_rejected(self):
         engine = ValidatorEngine()
@@ -84,6 +77,7 @@ class TestValidatorEngine:
         result = engine.validate(setup, snapshot)
         assert result.approved is False
         assert ValidationReason.LOW_CONFIDENCE in result.rejection_reasons
+        assert result.checks_passed[ValidationCheck.CONFIDENCE_CHECK] is False
 
     def test_sideways_market_rejected(self):
         engine = ValidatorEngine()
@@ -92,6 +86,7 @@ class TestValidatorEngine:
         result = engine.validate(setup, snapshot)
         assert result.approved is False
         assert ValidationReason.SIDEWAYS_MARKET in result.rejection_reasons
+        assert result.checks_passed[ValidationCheck.MARKET_CONDITION] is False
 
     def test_no_setup_rejected(self):
         engine = ValidatorEngine()
@@ -100,6 +95,7 @@ class TestValidatorEngine:
         result = engine.validate(setup, snapshot)
         assert result.approved is False
         assert ValidationReason.NO_SETUP_DETECTED in result.rejection_reasons
+        assert result.checks_passed[ValidationCheck.SETUP_COMPLETENESS] is False
 
     def test_duplicate_signal_rejected(self):
         engine = ValidatorEngine()
@@ -108,6 +104,7 @@ class TestValidatorEngine:
         result = engine.validate(setup, snapshot, existing_signal_count=1)
         assert result.approved is False
         assert ValidationReason.DUPLICATE_SIGNAL in result.rejection_reasons
+        assert result.checks_passed[ValidationCheck.DUPLICATE_SIGNAL] is False
 
     def test_deterministic(self):
         engine = ValidatorEngine()
@@ -117,3 +114,4 @@ class TestValidatorEngine:
         r2 = engine.validate(setup, snapshot)
         assert r1.approved == r2.approved
         assert r1.rejection_reasons == r2.rejection_reasons
+        assert r1.checks_passed == r2.checks_passed

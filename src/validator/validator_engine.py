@@ -1,7 +1,6 @@
 """Validator Engine — menentukan apakah setup layak diteruskan."""
 
-from datetime import UTC, datetime
-
+from datetime import datetime, UTC
 from config.constants import VALIDATOR_CONFIDENCE_THRESHOLD
 from src.core.models.setup import SetupResult
 from src.core.models.snapshot import AnalysisSnapshot
@@ -21,42 +20,48 @@ class ValidatorEngine:
         snapshot: AnalysisSnapshot,
         existing_signal_count: int = 0,
     ) -> ValidationResult:
-        checks_passed: list[ValidationCheck] = []
+        checks: dict[ValidationCheck, bool] = {}
         rejections: list[ValidationReason] = []
 
         # 1. Setup completeness
         if setup.direction is None or not setup.is_valid_setup:
             rejections.append(ValidationReason.NO_SETUP_DETECTED)
+            checks[ValidationCheck.SETUP_COMPLETENESS] = False
         else:
-            checks_passed.append(ValidationCheck.SETUP_COMPLETENESS)
+            checks[ValidationCheck.SETUP_COMPLETENESS] = True
 
         # 2. Blocked reasons
         if setup.blocked_reasons:
             rejections.append(ValidationReason.BLOCKED_REASONS)
+            checks[ValidationCheck.BLOCKED_REASONS_CHECK] = False
         else:
-            checks_passed.append(ValidationCheck.BLOCKED_REASONS_CHECK)
+            checks[ValidationCheck.BLOCKED_REASONS_CHECK] = True
 
         # 3. Confidence
         if setup.confidence_score < VALIDATOR_CONFIDENCE_THRESHOLD:
             rejections.append(ValidationReason.LOW_CONFIDENCE)
+            checks[ValidationCheck.CONFIDENCE_CHECK] = False
         else:
-            checks_passed.append(ValidationCheck.CONFIDENCE_CHECK)
+            checks[ValidationCheck.CONFIDENCE_CHECK] = True
 
         # 4. Market condition (no sideways / no structure)
         if snapshot.trend == TrendDirection.SIDEWAYS or snapshot.structure.structure == MarketStructure.NONE:
             rejections.append(ValidationReason.SIDEWAYS_MARKET)
+            checks[ValidationCheck.MARKET_CONDITION] = False
         else:
-            checks_passed.append(ValidationCheck.MARKET_CONDITION)
+            checks[ValidationCheck.MARKET_CONDITION] = True
 
         # 5. Duplicate signal
+        # TODO: Will integrate with PositionManager / Portfolio Engine in later sprint.
         if existing_signal_count > 0:
             rejections.append(ValidationReason.DUPLICATE_SIGNAL)
+            checks[ValidationCheck.DUPLICATE_SIGNAL] = False
         else:
-            checks_passed.append(ValidationCheck.DUPLICATE_SIGNAL)
+            checks[ValidationCheck.DUPLICATE_SIGNAL] = True
 
         return ValidationResult(
             approved=len(rejections) == 0,
             rejection_reasons=rejections,
-            checks_passed=checks_passed,
+            checks_passed=checks,
             timestamp=datetime.now(UTC),
         )

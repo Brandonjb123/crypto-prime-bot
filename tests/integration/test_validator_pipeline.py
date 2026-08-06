@@ -1,25 +1,17 @@
-from datetime import UTC, datetime
-
+from datetime import datetime, UTC
 from src.core.models.analysis import TechnicalAnalysis
 from src.core.models.confidence import ConfidenceResult
 from src.core.models.market_intelligence import (
-    FuturesAnalysis,
-    SentimentAnalysis,
-    SupportResistanceResult,
-    VolatilityAnalysis,
-    VolumeAnalysis,
+    FuturesAnalysis, SentimentAnalysis, SupportResistanceResult,
+    VolatilityAnalysis, VolumeAnalysis,
 )
 from src.core.models.setup import SetupResult
 from src.core.models.snapshot import AnalysisSnapshot
 from src.core.models.structure import MarketStructureResult
 from src.core.models.validation import ValidationResult
 from src.core.types.enums import (
-    ConfidenceLevel,
-    MarketStructure,
-    SetupType,
-    Side,
-    TrendDirection,
-    VolumeSignal,
+    ConfidenceLevel, MarketStructure, SetupType, Side,
+    TrendDirection, VolumeSignal,
 )
 from src.validator.validator_engine import ValidatorEngine
 
@@ -57,5 +49,5 @@ class TestValidatorPipeline:
 
         assert isinstance(result, ValidationResult)
         assert result.approved is True
-        assert len(result.checks_passed) == 5
+        assert all(result.checks_passed.values())
         assert result.rejection_reasons == []
