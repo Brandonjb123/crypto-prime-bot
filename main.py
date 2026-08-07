@@ -4,18 +4,29 @@ import asyncio
 import signal
 
 from src.bootstrap.bootstrap import Bootstrap
+from src.infrastructure.telegram.application import TelegramApplication
+from src.infrastructure.telegram.polling_runner import PollingRunner
 
 
 async def main():
     bootstrap = Bootstrap()
     bootstrap.startup()
 
-    # Start Telegram polling
-    telegram_service = bootstrap.container.telegram_service
-    await telegram_service.start_polling()
+    container = bootstrap.container
+
+    # Bangun TelegramApplication dengan Service & Bot
+    telegram_app = TelegramApplication(
+        bot=container.telegram_bot,
+        service=container.telegram_service,
+    )
+    telegram_app.build()
+
+    # Jalankan PollingRunner
+    runner = PollingRunner(telegram_app)
+    await runner.run()
 
     # Start Scheduler
-    scheduler = bootstrap.container.scheduler
+    scheduler = container.scheduler
     await scheduler.start()
 
     # Wait for shutdown signal
@@ -29,6 +40,7 @@ async def main():
 
     await stop_event.wait()
 
+    await runner.stop()
     bootstrap.shutdown()
 
 
