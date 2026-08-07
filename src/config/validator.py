@@ -10,7 +10,7 @@ class ConfigurationError(Exception):
 def validate_config() -> None:
     required = [
         "TELEGRAM_BOT_TOKEN",
-        "ANTHROPIC_API_KEY",
+        "OPENROUTER_API_KEY",
         "TURSO_DATABASE_URL",
         "TURSO_AUTH_TOKEN",
     ]

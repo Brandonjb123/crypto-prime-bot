@@ -91,7 +91,7 @@ def test_import_settings():
 
     os.environ["TELEGRAM_BOT_TOKEN"] = "test"
     os.environ["ADMIN_CHAT_ID"] = "123"
-    os.environ["ANTHROPIC_API_KEY"] = "test"
+    os.environ["OPENROUTER_API_KEY"] = "test"
     os.environ["TURSO_DATABASE_URL"] = "test"
     os.environ["TURSO_AUTH_TOKEN"] = "test"
 

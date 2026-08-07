@@ -9,7 +9,7 @@ class TestBootstrap:
     def test_startup_success(self, monkeypatch):
         # Set required environment variables
         monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test_token")
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "test_key")
+        monkeypatch.setenv("OPENROUTER_API_KEY", "test_key")
         monkeypatch.setenv("TURSO_DATABASE_URL", "test_url")
         monkeypatch.setenv("TURSO_AUTH_TOKEN", "test_auth")
 
@@ -34,7 +34,7 @@ class TestBootstrap:
 
     def test_container_created(self, monkeypatch):
         monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test_token")
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "test_key")
+        monkeypatch.setenv("OPENROUTER_API_KEY", "test_key")
         monkeypatch.setenv("TURSO_DATABASE_URL", "test_url")
         monkeypatch.setenv("TURSO_AUTH_TOKEN", "test_auth")
 
