@@ -74,6 +74,12 @@ MAX_PORTFOLIO_EXPOSURE = 300
 
 TELEGRAM_ALLOWED_USERS = []  # Kosong = semua user diizinkan
 
+TELEGRAM_BOT_TOKEN = ""
+TELEGRAM_WEBHOOK_URL = ""
+TELEGRAM_MODE = "polling"  # polling | webhook
+
+ADMIN_CHAT_ID = 123456789  # Ganti dengan chat ID asli
+
 LOG_LEVEL = "INFO"
 MAX_PIPELINE_FAILURES = 5
 HEALTH_CHECK_INTERVAL = 60
