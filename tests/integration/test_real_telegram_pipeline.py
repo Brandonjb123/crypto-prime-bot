@@ -1,8 +1,9 @@
 """Integration test: NotificationDispatcher → TelegramNotifier → TelegramService (mock)."""
 
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
-from datetime import datetime, UTC
 from uuid import uuid4
+
 from src.core.models.notification import NotificationMessage
 from src.core.types.enums import NotificationLevel
 from src.telegram.notifier import TelegramNotifier

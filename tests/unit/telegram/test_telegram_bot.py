@@ -1,4 +1,5 @@
 from unittest.mock import AsyncMock, MagicMock
+
 from src.telegram.bot import TelegramBot
 
 

@@ -1,7 +1,7 @@
 """Unit tests untuk TelegramService."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
-import pytest
+
 from src.infrastructure.telegram.telegram_service import TelegramService
 
 

@@ -1,6 +1,6 @@
-import os
 import pytest
-from src.config.validator import validate_config, ConfigurationError
+
+from src.config.validator import ConfigurationError, validate_config
 
 
 class TestConfigValidator:

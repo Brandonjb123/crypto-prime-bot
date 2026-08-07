@@ -1,8 +1,9 @@
 """Bootstrap — startup & shutdown sequence."""
 
 import sys
-from src.config.validator import validate_config
+
 from src.bootstrap.container import Container
+from src.config.validator import validate_config
 
 
 class Bootstrap:
@@ -38,26 +39,25 @@ class Bootstrap:
             sys.exit(1)
 
     def _load_config(self):
-        from config.settings import settings
         pass  # Already loaded by import
 
     def _init_logger(self):
         self.logger.info("Logger initialized")
 
     def _init_event_bus(self):
-        self.container.event_bus
+        _ = self.container.event_bus
 
     def _init_notification(self):
-        self.container.notification_dispatcher
+        _ = self.container.notification_dispatcher
 
     def _init_telegram(self):
-        self.container.telegram_service
+        _ = self.container.telegram_service
 
     def _init_exchange(self):
-        self.container.paper_exchange
+        _ = self.container.paper_exchange
 
     def _init_pipeline(self):
-        self.container.orchestrator
+        _ = self.container.orchestrator
 
     def _init_scheduler(self):
-        self.container.scheduler
+        _ = self.container.scheduler

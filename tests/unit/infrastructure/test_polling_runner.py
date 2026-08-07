@@ -1,6 +1,7 @@
 """Unit tests untuk PollingRunner."""
 
 from unittest.mock import AsyncMock, MagicMock
+
 from src.infrastructure.telegram.polling_runner import PollingRunner
 
 

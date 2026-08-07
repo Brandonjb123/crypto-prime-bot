@@ -1,6 +1,7 @@
 """Telegram Application — entry point untuk Bot."""
 
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
+
 from config.constants import TELEGRAM_BOT_TOKEN
 from src.telegram.bot import TelegramBot
 

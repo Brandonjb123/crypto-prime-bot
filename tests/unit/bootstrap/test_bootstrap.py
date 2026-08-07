@@ -1,7 +1,9 @@
 """Unit tests for Bootstrap."""
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+
 import pytest
+
 from src.bootstrap.bootstrap import Bootstrap
 
 

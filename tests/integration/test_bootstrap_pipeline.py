@@ -2,8 +2,8 @@
 
 from src.bootstrap.container import Container
 from src.events.event_bus import EventBus
-from src.position.position_manager import PositionManager
 from src.portfolio.portfolio_manager import PortfolioManager
+from src.position.position_manager import PositionManager
 
 
 class TestBootstrapPipeline:

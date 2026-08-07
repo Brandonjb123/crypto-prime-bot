@@ -1,49 +1,46 @@
 """Dependency Injection Container — assembles all services."""
 
 from config.constants import TELEGRAM_BOT_TOKEN
-
-from src.logging.logger import get_logger
-from src.logging.audit_logger import AuditLogger
-
-from src.events.event_bus import EventBus
-from src.events.events.order_executed import OrderExecutedEvent
-from src.events.events.position_opened import PositionOpenedEvent
-from src.events.events.position_closed import PositionClosedEvent
-from src.events.events.portfolio_updated import PortfolioUpdatedEvent
-
-from src.storage.adapters.in_memory_position_repository import InMemoryPositionRepository
-from src.storage.adapters.in_memory_order_repository import InMemoryOrderRepository
-from src.storage.adapters.in_memory_portfolio_repository import InMemoryPortfolioRepository
-
-from src.notification.dispatcher import NotificationDispatcher
-from src.notification.formatters.order_formatter import OrderExecutedFormatter
-from src.notification.formatters.position_formatter import PositionOpenedFormatter, PositionClosedFormatter
-from src.notification.formatters.portfolio_formatter import PortfolioUpdatedFormatter
-
-from src.telegram.notifier import TelegramNotifier
-from src.telegram.bot import TelegramBot
-from src.telegram.command_router import CommandRouter
-from src.telegram.command_handler import (
-    status_handler, positions_handler, portfolio_handler, help_handler, last_signal_handler,
-)
-from src.core.types.enums import TelegramCommand
-
-from src.infrastructure.telegram.telegram_service import TelegramService
-
-from src.exchange.adapters.paper import PaperExchangeAdapter
-from src.exchange.executor import OrderExecutor
-
-from src.position.position_manager import PositionManager
-from src.portfolio.portfolio_manager import PortfolioManager
-from src.market.in_memory_price_provider import InMemoryPriceProvider
-from src.lifecycle.trade_lifecycle_engine import TradeLifecycleEngine
-
 from src.application.orchestrator import PipelineOrchestrator
 from src.application.scheduler import SimpleScheduler
-
-from src.monitoring.runtime_monitor import RuntimeMonitor
+from src.core.types.enums import TelegramCommand
+from src.events.event_bus import EventBus
+from src.events.events.order_executed import OrderExecutedEvent
+from src.events.events.portfolio_updated import PortfolioUpdatedEvent
+from src.events.events.position_closed import PositionClosedEvent
+from src.events.events.position_opened import PositionOpenedEvent
+from src.exchange.adapters.paper import PaperExchangeAdapter
+from src.exchange.executor import OrderExecutor
+from src.infrastructure.telegram.telegram_service import TelegramService
+from src.lifecycle.trade_lifecycle_engine import TradeLifecycleEngine
+from src.logging.audit_logger import AuditLogger
+from src.logging.logger import get_logger
+from src.market.in_memory_price_provider import InMemoryPriceProvider
 from src.monitoring.health import HealthMonitor
 from src.monitoring.metrics import MetricsCollector
+from src.monitoring.runtime_monitor import RuntimeMonitor
+from src.notification.dispatcher import NotificationDispatcher
+from src.notification.formatters.order_formatter import OrderExecutedFormatter
+from src.notification.formatters.portfolio_formatter import PortfolioUpdatedFormatter
+from src.notification.formatters.position_formatter import (
+    PositionClosedFormatter,
+    PositionOpenedFormatter,
+)
+from src.portfolio.portfolio_manager import PortfolioManager
+from src.position.position_manager import PositionManager
+from src.storage.adapters.in_memory_order_repository import InMemoryOrderRepository
+from src.storage.adapters.in_memory_portfolio_repository import InMemoryPortfolioRepository
+from src.storage.adapters.in_memory_position_repository import InMemoryPositionRepository
+from src.telegram.bot import TelegramBot
+from src.telegram.command_handler import (
+    help_handler,
+    last_signal_handler,
+    portfolio_handler,
+    positions_handler,
+    status_handler,
+)
+from src.telegram.command_router import CommandRouter
+from src.telegram.notifier import TelegramNotifier
 
 
 class Container:
