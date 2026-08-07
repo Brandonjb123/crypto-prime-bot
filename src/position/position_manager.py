@@ -48,13 +48,15 @@ class PositionManager:
         self._positions[str(position.position_id)] = position
 
         if self.event_bus:
-            self.event_bus.publish(PositionOpenedEvent(
-                position_id=position.position_id,
-                symbol=position.symbol,
-                side=position.side,
-                entry_price=position.entry_price,
-                position_size=position.position_size,
-            ))
+            self.event_bus.publish(
+                PositionOpenedEvent(
+                    position_id=position.position_id,
+                    symbol=position.symbol,
+                    side=position.side,
+                    entry_price=position.entry_price,
+                    position_size=position.position_size,
+                )
+            )
 
         return position
 
@@ -83,11 +85,13 @@ class PositionManager:
         self._positions[str(position_id)] = closed_pos
 
         if self.event_bus:
-            self.event_bus.publish(PositionClosedEvent(
-                position_id=closed_pos.position_id,
-                reason=reason,
-                exit_price=None,
-            ))
+            self.event_bus.publish(
+                PositionClosedEvent(
+                    position_id=closed_pos.position_id,
+                    reason=reason,
+                    exit_price=None,
+                )
+            )
 
         return closed_pos
 

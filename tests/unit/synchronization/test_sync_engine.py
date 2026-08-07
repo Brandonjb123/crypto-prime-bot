@@ -1,12 +1,13 @@
 from unittest.mock import AsyncMock, MagicMock
-from src.core.types.enums import SyncEntityType, SyncStatus, PositionStatus
-from src.storage.adapters.in_memory_position_repository import InMemoryPositionRepository
+
+from src.core.types.enums import SyncEntityType, SyncStatus
 from src.storage.adapters.in_memory_order_repository import InMemoryOrderRepository
 from src.storage.adapters.in_memory_portfolio_repository import InMemoryPortfolioRepository
-from src.synchronization.sync_engine import ExchangeSyncEngine
-from src.synchronization.position_reconciler import PositionReconciler
+from src.storage.adapters.in_memory_position_repository import InMemoryPositionRepository
 from src.synchronization.order_reconciler import OrderReconciler
 from src.synchronization.portfolio_reconciler import PortfolioReconciler
+from src.synchronization.position_reconciler import PositionReconciler
+from src.synchronization.sync_engine import ExchangeSyncEngine
 
 
 class TestExchangeSyncEngine:
@@ -16,9 +17,13 @@ class TestExchangeSyncEngine:
         order_provider = MagicMock()
         order_provider.get_exchange_orders = AsyncMock(return_value=[])
         balance_provider = MagicMock()
-        balance_provider.get_account_snapshot = AsyncMock(return_value=MagicMock(
-            wallet_balance=10000.0, available_balance=9500.0, unrealized_pnl=100.0,
-        ))
+        balance_provider.get_account_snapshot = AsyncMock(
+            return_value=MagicMock(
+                wallet_balance=10000.0,
+                available_balance=9500.0,
+                unrealized_pnl=100.0,
+            )
+        )
 
         engine = ExchangeSyncEngine(
             exchange_position_provider=pos_provider,
@@ -30,7 +35,9 @@ class TestExchangeSyncEngine:
         )
         results = await engine.sync()
         assert len(results) == 3
-        assert all(r.status in (SyncStatus.SYNCED, SyncStatus.MISMATCH, SyncStatus.FAILED) for r in results)
+        assert all(
+            r.status in (SyncStatus.SYNCED, SyncStatus.MISMATCH, SyncStatus.FAILED) for r in results
+        )
 
     async def test_empty_exchange(self):
         pos_provider = MagicMock()

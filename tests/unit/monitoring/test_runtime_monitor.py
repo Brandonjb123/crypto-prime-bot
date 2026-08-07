@@ -1,4 +1,4 @@
-from src.core.types.enums import PipelineStatus, HealthStatus
+from src.core.types.enums import HealthStatus
 from src.monitoring.runtime_monitor import RuntimeMonitor
 
 

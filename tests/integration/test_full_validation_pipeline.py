@@ -47,21 +47,39 @@ def make_asset() -> NormalizedAsset:
             # Lanjut naik stabil
             price = base_price + 20 * 40 + 5 * 60 - 5 * 30 + 10 * 35 + (i - 40) * 25
 
-        candles.append(Candle(
-            timestamp=ts, open=price, high=price + 50,
-            low=price - 30, close=price + 30, volume=1000.0
-        ))
+        candles.append(
+            Candle(
+                timestamp=ts,
+                open=price,
+                high=price + 50,
+                low=price - 30,
+                close=price + 30,
+                volume=1000.0,
+            )
+        )
 
     return NormalizedAsset(
-        symbol="BTC", price=candles[-1].close,
-        volume_24h=28000000000.0, volume_spike_ratio=3.0,  # SPIKE
-        market_cap=900000000000.0, price_change_24h=5.5,
-        price_change_7d=8.2, funding_rate=0.0002,
-        open_interest=15000000000.0, long_short_ratio=1.5,
-        fear_greed_value=80, fear_greed_classification="Extreme Greed",
-        news_headlines=["Bitcoin breakout imminent", "Bullish momentum builds", "New highs expected"],
-        candles_4h=candles, candles_1h=[],
-        data_quality_score=1.0, timestamp=datetime.now(UTC),
+        symbol="BTC",
+        price=candles[-1].close,
+        volume_24h=28000000000.0,
+        volume_spike_ratio=3.0,  # SPIKE
+        market_cap=900000000000.0,
+        price_change_24h=5.5,
+        price_change_7d=8.2,
+        funding_rate=0.0002,
+        open_interest=15000000000.0,
+        long_short_ratio=1.5,
+        fear_greed_value=80,
+        fear_greed_classification="Extreme Greed",
+        news_headlines=[
+            "Bitcoin breakout imminent",
+            "Bullish momentum builds",
+            "New highs expected",
+        ],
+        candles_4h=candles,
+        candles_1h=[],
+        data_quality_score=1.0,
+        timestamp=datetime.now(UTC),
     )
 
 
@@ -77,17 +95,30 @@ class TestFullValidationPipeline:
         sr = SupportResistanceEngine().analyze(asset.candles_4h, asset.price)
         sentiment = SentimentEngine().analyze(asset)
         confidence = ConfidenceEngine().calculate(
-            technical=ta, trend=trend, structure=structure,
-            volume=volume, futures=futures, volatility=volatility,
-            sr=sr, sentiment=sentiment, price=asset.price,
+            technical=ta,
+            trend=trend,
+            structure=structure,
+            volume=volume,
+            futures=futures,
+            volatility=volatility,
+            sr=sr,
+            sentiment=sentiment,
+            price=asset.price,
         )
 
         snapshot = AnalysisSnapshot(
-            symbol=asset.symbol, price=asset.price,
-            technical=ta, trend=trend, structure=structure,
-            volume=volume, futures=futures, volatility=volatility,
-            support_resistance=sr, sentiment=sentiment,
-            confidence=confidence, timestamp=datetime.now(UTC),
+            symbol=asset.symbol,
+            price=asset.price,
+            technical=ta,
+            trend=trend,
+            structure=structure,
+            volume=volume,
+            futures=futures,
+            volatility=volatility,
+            support_resistance=sr,
+            sentiment=sentiment,
+            confidence=confidence,
+            timestamp=datetime.now(UTC),
         )
 
         setup = SetupDetector().detect(snapshot)

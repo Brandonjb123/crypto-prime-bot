@@ -1,6 +1,7 @@
 """Command Router — registry-based."""
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+
 from src.core.models.telegram import TelegramMessage, TelegramResponse
 from src.core.types.enums import TelegramCommand, TelegramResponseType
 

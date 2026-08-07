@@ -9,11 +9,11 @@ class EMACalculator:
     def calculate(self, candles: list[Candle], period: int) -> float | None:
         """
         Hitung EMA untuk period tertentu.
-        
+
         Args:
             candles: List of Candle objects, minimal length = period + 1
             period: EMA period (contoh: 20, 50)
-            
+
         Returns:
             EMA value atau None jika data tidak cukup
         """

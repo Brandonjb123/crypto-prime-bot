@@ -1,9 +1,13 @@
+from datetime import UTC, datetime
 from uuid import uuid4
-from datetime import datetime, UTC
+
 from src.core.models.position import Position
 from src.core.types.enums import (
-    PositionCloseReason, PositionStatus, Side,
-    SyncEntityType, SyncReason, SyncStatus,
+    PositionCloseReason,
+    PositionStatus,
+    Side,
+    SyncReason,
+    SyncStatus,
 )
 from src.storage.adapters.in_memory_position_repository import InMemoryPositionRepository
 from src.synchronization.position_reconciler import PositionReconciler
@@ -11,12 +15,21 @@ from src.synchronization.position_reconciler import PositionReconciler
 
 def _make_pos(symbol="BTCUSDT", side=Side.LONG, size=0.1, status=PositionStatus.OPEN):
     return Position(
-        position_id=uuid4(), execution_id=uuid4(), order_id=uuid4(),
-        symbol=symbol, side=side, status=status,
-        entry_price=50000.0, stop_loss=48000.0, take_profit=55000.0,
-        position_size=size, opened_at=datetime.now(UTC),
+        position_id=uuid4(),
+        execution_id=uuid4(),
+        order_id=uuid4(),
+        symbol=symbol,
+        side=side,
+        status=status,
+        entry_price=50000.0,
+        stop_loss=48000.0,
+        take_profit=55000.0,
+        position_size=size,
+        opened_at=datetime.now(UTC),
         closed_at=None if status == PositionStatus.OPEN else datetime.now(UTC),
-        close_reason=PositionCloseReason.NONE if status == PositionStatus.OPEN else PositionCloseReason.MANUAL,
+        close_reason=PositionCloseReason.NONE
+        if status == PositionStatus.OPEN
+        else PositionCloseReason.MANUAL,
     )
 
 

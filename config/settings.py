@@ -30,10 +30,7 @@ class Settings(BaseSettings):
     ATR_MULTIPLIER_TP3: float = 3.0
     ATR_MULTIPLIER_SL: float = 0.75
 
-    model_config = {
-        "env_file": ".env",
-        "case_sensitive": True
-    }
+    model_config = {"env_file": ".env", "case_sensitive": True}
 
 
 settings = Settings()

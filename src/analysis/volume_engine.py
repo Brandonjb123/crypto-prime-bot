@@ -10,7 +10,7 @@ from src.core.types.enums import VolumeSignal
 class VolumeEngine:
     """Analisis volume spike dari NormalizedAsset."""
 
-    SPIKE_THRESHOLD = 2.0   # >= 2.0 → SPIKE
+    SPIKE_THRESHOLD = 2.0  # >= 2.0 → SPIKE
     NORMAL_THRESHOLD = 1.0  # 1.0 - 2.0 → NORMAL, < 1.0 → WEAK
 
     def analyze(self, asset: NormalizedAsset) -> VolumeAnalysis:

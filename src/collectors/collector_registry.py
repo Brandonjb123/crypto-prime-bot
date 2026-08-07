@@ -53,13 +53,10 @@ class CollectorRegistry:
         critical_sources = ["binance", "coingecko"]
         non_critical_sources = ["fear_greed", "news"]
         critical_ok = sum(1 for s in critical_sources if results[s] is not None)
-        non_critical_ok = sum(
-            1 for s in non_critical_sources if results[s] is not None
-        )
-        results["data_quality_score"] = (
-            (critical_ok / len(critical_sources)) * 0.7
-            + (non_critical_ok / len(non_critical_sources)) * 0.3
-        )
+        non_critical_ok = sum(1 for s in non_critical_sources if results[s] is not None)
+        results["data_quality_score"] = (critical_ok / len(critical_sources)) * 0.7 + (
+            non_critical_ok / len(non_critical_sources)
+        ) * 0.3
 
         logger.info(
             f"Collected {symbol} — quality: {results['data_quality_score']:.0%} "

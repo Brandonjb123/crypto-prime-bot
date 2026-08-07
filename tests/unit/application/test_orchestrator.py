@@ -1,7 +1,7 @@
 """Unit tests untuk PipelineOrchestrator — semua dependency di-mock."""
 
 from unittest.mock import AsyncMock, MagicMock
-import pytest
+
 from src.application.orchestrator import PipelineOrchestrator
 from src.application.pipeline_context import PipelineContext
 from src.core.types.enums import PipelineStatus

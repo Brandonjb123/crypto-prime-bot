@@ -1,4 +1,5 @@
 """Analysis package."""
+
 from src.analysis.futures_engine import FuturesEngine
 from src.analysis.market_structure_engine import MarketStructureEngine
 from src.analysis.sentiment_engine import SentimentEngine

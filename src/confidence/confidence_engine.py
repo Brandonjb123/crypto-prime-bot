@@ -1,6 +1,6 @@
 """Confidence Engine — rule-based scoring dengan conflict detection."""
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 from config.constants import CONFIDENCE_WEIGHTS
 from src.core.models.analysis import TechnicalAnalysis
@@ -92,8 +92,9 @@ class ConfidenceEngine:
         # ── NEGATIVE RULES ──
 
         trend_struct_conflict = (
-            (trend == TrendDirection.BULLISH and structure.structure == MarketStructure.BOS_BEARISH)
-            or (trend == TrendDirection.BEARISH and structure.structure == MarketStructure.BOS_BULLISH)
+            trend == TrendDirection.BULLISH and structure.structure == MarketStructure.BOS_BEARISH
+        ) or (
+            trend == TrendDirection.BEARISH and structure.structure == MarketStructure.BOS_BULLISH
         )
         if trend_struct_conflict:
             score += w["trend_structure_conflict"]
@@ -106,9 +107,8 @@ class ConfidenceEngine:
             warnings.append(ConfidenceWarning.LOW_VOLUME)
 
         sentiment_conflict = (
-            (trend == TrendDirection.BULLISH and sentiment.overall == SentimentLevel.FEAR)
-            or (trend == TrendDirection.BEARISH and sentiment.overall == SentimentLevel.GREED)
-        )
+            trend == TrendDirection.BULLISH and sentiment.overall == SentimentLevel.FEAR
+        ) or (trend == TrendDirection.BEARISH and sentiment.overall == SentimentLevel.GREED)
         if sentiment_conflict:
             score += w["sentiment_conflict"]
             negative.append("Sentiment CONFLICT dengan Trend")

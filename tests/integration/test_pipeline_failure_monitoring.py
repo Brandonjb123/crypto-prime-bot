@@ -1,8 +1,8 @@
 """Integration test: Pipeline failure → Metrics + Health DEGRADED."""
 
-from src.monitoring.runtime_monitor import RuntimeMonitor
-from src.logging.audit_logger import AuditLogger
 from src.core.types.enums import AuditEventType, HealthStatus
+from src.logging.audit_logger import AuditLogger
+from src.monitoring.runtime_monitor import RuntimeMonitor
 
 
 class TestPipelineFailureMonitoring:

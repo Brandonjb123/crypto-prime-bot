@@ -9,6 +9,7 @@ from src.core.types.enums import MarketStructure, TrendDirection
 
 class MarketStructureResult(BaseModel):
     """Hasil analisis market structure."""
+
     structure: MarketStructure
     direction: TrendDirection
     swing_high: float | None = None

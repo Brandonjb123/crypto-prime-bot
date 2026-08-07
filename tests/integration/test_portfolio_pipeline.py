@@ -23,19 +23,33 @@ from src.position.position_manager import PositionManager
 class TestPortfolioPipeline:
     def test_positions_to_portfolio(self):
         order1 = OrderResult(
-            execution_id=uuid4(), order_id=uuid4(),
-            status=OrderStatus.FILLED, reject_reason=OrderRejectReason.NONE,
-            execution_type=ExecutionType.MARKET, side=Side.LONG,
-            symbol="BTC/USDT", requested_entry=50000.0, executed_entry=50000.0,
-            position_size=0.1, stop_loss=48000.0, take_profit=55000.0,
+            execution_id=uuid4(),
+            order_id=uuid4(),
+            status=OrderStatus.FILLED,
+            reject_reason=OrderRejectReason.NONE,
+            execution_type=ExecutionType.MARKET,
+            side=Side.LONG,
+            symbol="BTC/USDT",
+            requested_entry=50000.0,
+            executed_entry=50000.0,
+            position_size=0.1,
+            stop_loss=48000.0,
+            take_profit=55000.0,
             timestamp=datetime.now(UTC),
         )
         order2 = OrderResult(
-            execution_id=uuid4(), order_id=uuid4(),
-            status=OrderStatus.FILLED, reject_reason=OrderRejectReason.NONE,
-            execution_type=ExecutionType.MARKET, side=Side.SHORT,
-            symbol="ETH/USDT", requested_entry=3000.0, executed_entry=3000.0,
-            position_size=0.2, stop_loss=3200.0, take_profit=2800.0,
+            execution_id=uuid4(),
+            order_id=uuid4(),
+            status=OrderStatus.FILLED,
+            reject_reason=OrderRejectReason.NONE,
+            execution_type=ExecutionType.MARKET,
+            side=Side.SHORT,
+            symbol="ETH/USDT",
+            requested_entry=3000.0,
+            executed_entry=3000.0,
+            position_size=0.2,
+            stop_loss=3200.0,
+            take_profit=2800.0,
             timestamp=datetime.now(UTC),
         )
 
@@ -47,7 +61,13 @@ class TestPortfolioPipeline:
         provider.update_price("BTC/USDT", 51000.0)
         provider.update_price("ETH/USDT", 2900.0)
 
-        account = AccountSnapshot(balance=10000.0, equity=10000.0, margin_used=0.0, free_margin=10000.0, timestamp=datetime.now(UTC))
+        account = AccountSnapshot(
+            balance=10000.0,
+            equity=10000.0,
+            margin_used=0.0,
+            free_margin=10000.0,
+            timestamp=datetime.now(UTC),
+        )
 
         pf = PortfolioManager()
         snap = pf.create_snapshot(pm.get_all_positions(), account, provider)

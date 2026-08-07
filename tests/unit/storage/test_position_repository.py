@@ -10,12 +10,21 @@ from src.storage.adapters.in_memory_position_repository import InMemoryPositionR
 
 def _make_pos(symbol="BTC/USDT", side=Side.LONG, status=PositionStatus.OPEN):
     return Position(
-        position_id=uuid4(), execution_id=uuid4(), order_id=uuid4(),
-        symbol=symbol, side=side, status=status,
-        entry_price=50000.0, stop_loss=48000.0, take_profit=55000.0,
-        position_size=0.1, opened_at=datetime.now(UTC),
+        position_id=uuid4(),
+        execution_id=uuid4(),
+        order_id=uuid4(),
+        symbol=symbol,
+        side=side,
+        status=status,
+        entry_price=50000.0,
+        stop_loss=48000.0,
+        take_profit=55000.0,
+        position_size=0.1,
+        opened_at=datetime.now(UTC),
         closed_at=None if status == PositionStatus.OPEN else datetime.now(UTC),
-        close_reason=PositionCloseReason.NONE if status == PositionStatus.OPEN else PositionCloseReason.MANUAL,
+        close_reason=PositionCloseReason.NONE
+        if status == PositionStatus.OPEN
+        else PositionCloseReason.MANUAL,
     )
 
 
@@ -38,12 +47,19 @@ class TestPositionRepository:
         pos2 = _make_pos()
         # Overwrite dengan ID yang sama
         pos_overwrite = Position(
-            position_id=pos1.position_id, execution_id=pos2.execution_id,
-            order_id=pos2.order_id, symbol=pos2.symbol, side=pos2.side,
-            status=pos2.status, entry_price=pos2.entry_price,
-            stop_loss=pos2.stop_loss, take_profit=pos2.take_profit,
-            position_size=pos2.position_size, opened_at=pos2.opened_at,
-            closed_at=pos2.closed_at, close_reason=pos2.close_reason,
+            position_id=pos1.position_id,
+            execution_id=pos2.execution_id,
+            order_id=pos2.order_id,
+            symbol=pos2.symbol,
+            side=pos2.side,
+            status=pos2.status,
+            entry_price=pos2.entry_price,
+            stop_loss=pos2.stop_loss,
+            take_profit=pos2.take_profit,
+            position_size=pos2.position_size,
+            opened_at=pos2.opened_at,
+            closed_at=pos2.closed_at,
+            close_reason=pos2.close_reason,
         )
         repo.save(pos_overwrite)
         found = repo.get_by_id(pos1.position_id)

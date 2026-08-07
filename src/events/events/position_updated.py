@@ -1,8 +1,9 @@
 """PositionUpdatedEvent — dipublikasi saat posisi berubah setelah sync."""
 
 from uuid import UUID
-from src.events.base_event import BaseDomainEvent
+
 from src.core.types.enums import PositionStatus
+from src.events.base_event import BaseDomainEvent
 
 
 class PositionUpdatedEvent(BaseDomainEvent):

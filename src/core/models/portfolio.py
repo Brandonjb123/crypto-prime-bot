@@ -1,8 +1,10 @@
 """Portfolio snapshot model — immutable."""
 
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict
+
 from src.core.types.enums import PortfolioStatus, RiskWarning
 
 

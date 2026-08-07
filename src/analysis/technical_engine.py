@@ -22,7 +22,7 @@ class TechnicalAnalysisEngine:
     def analyze(self, asset: NormalizedAsset) -> TechnicalAnalysis:
         """
         Hitung semua indikator teknikal dari NormalizedAsset.
-        
+
         Kalau candles_4h kurang dari MIN_CANDLES, semua field = None.
         """
         candles = asset.candles_4h

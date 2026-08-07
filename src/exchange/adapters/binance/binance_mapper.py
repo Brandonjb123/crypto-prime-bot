@@ -35,11 +35,16 @@ def map_order_result(binance_order: dict, execution_id: UUID) -> OrderResult:
         execution_id=execution_id,
         order_id=UUID(binance_order.get("orderId", "00000000-0000-0000-0000-000000000000")),
         status=order_status,
-        reject_reason=OrderRejectReason.NONE if order_status == OrderStatus.FILLED else OrderRejectReason.UNKNOWN,
-        execution_type=ExecutionType.MARKET if binance_order.get("type") == "MARKET" else ExecutionType.LIMIT,
+        reject_reason=OrderRejectReason.NONE
+        if order_status == OrderStatus.FILLED
+        else OrderRejectReason.UNKNOWN,
+        execution_type=ExecutionType.MARKET
+        if binance_order.get("type") == "MARKET"
+        else ExecutionType.LIMIT,
         side=Side.LONG if binance_order.get("side") == "BUY" else Side.SHORT,
         symbol=binance_order.get("symbol", ""),
-        requested_entry=float(binance_order.get("price", 0)) or float(binance_order.get("stopPrice", 0)),
+        requested_entry=float(binance_order.get("price", 0))
+        or float(binance_order.get("stopPrice", 0)),
         executed_entry=executed_price,
         position_size=float(binance_order.get("origQty", 0)),
         stop_loss=0.0,

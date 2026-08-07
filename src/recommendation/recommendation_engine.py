@@ -1,6 +1,7 @@
 """Recommendation Engine — decision aggregation."""
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+
 from config.constants import READY_EXECUTION_MIN_CONFIDENCE, READY_EXECUTION_MIN_RR
 from src.core.models.recommendation import RecommendationResult
 from src.core.models.risk import RiskResult
@@ -8,10 +9,8 @@ from src.core.models.setup import SetupResult
 from src.core.models.snapshot import AnalysisSnapshot
 from src.core.models.validation import ValidationResult
 from src.core.types.enums import (
-    ConfidenceLevel,
     RecommendationAction,
     RecommendationReason,
-    SetupType,
     Side,
 )
 

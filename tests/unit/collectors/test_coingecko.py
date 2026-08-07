@@ -25,9 +25,7 @@ async def test_coingecko_fetch_success(monkeypatch, mock_coingecko):
     async def mock_get(self, endpoint, params=None):
         return mock_coingecko
 
-    monkeypatch.setattr(
-        "src.collectors.base_http_client.BaseHTTPClient.get", mock_get
-    )
+    monkeypatch.setattr("src.collectors.base_http_client.BaseHTTPClient.get", mock_get)
 
     collector = CoinGeckoCollector()
     result = await collector.fetch("BTC")
@@ -58,9 +56,7 @@ async def test_coingecko_health_check(monkeypatch):
     async def mock_get(self, endpoint, params=None):
         return {"gecko_says": "pong"}
 
-    monkeypatch.setattr(
-        "src.collectors.base_http_client.BaseHTTPClient.get", mock_get
-    )
+    monkeypatch.setattr("src.collectors.base_http_client.BaseHTTPClient.get", mock_get)
 
     collector = CoinGeckoCollector()
     assert await collector.health_check() is True

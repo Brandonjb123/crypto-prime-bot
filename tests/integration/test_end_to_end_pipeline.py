@@ -35,21 +35,35 @@ def make_full_asset() -> NormalizedAsset:
         else:
             price = base_price + 30 * 30 + 200 - 200 + 150 - (i - 55) * 10
 
-        candles.append(Candle(
-            timestamp=ts, open=price, high=price + 40,
-            low=price - 20, close=price + 20, volume=1000.0
-        ))
+        candles.append(
+            Candle(
+                timestamp=ts,
+                open=price,
+                high=price + 40,
+                low=price - 20,
+                close=price + 20,
+                volume=1000.0,
+            )
+        )
 
     return NormalizedAsset(
-        symbol="BTC", price=base_price + 30 * 30 + 150,
-        volume_24h=28000000000.0, volume_spike_ratio=2.5,
-        market_cap=900000000000.0, price_change_24h=2.5,
-        price_change_7d=-1.2, funding_rate=0.0002,
-        open_interest=15000000000.0, long_short_ratio=1.25,
-        fear_greed_value=75, fear_greed_classification="Greed",
+        symbol="BTC",
+        price=base_price + 30 * 30 + 150,
+        volume_24h=28000000000.0,
+        volume_spike_ratio=2.5,
+        market_cap=900000000000.0,
+        price_change_24h=2.5,
+        price_change_7d=-1.2,
+        funding_rate=0.0002,
+        open_interest=15000000000.0,
+        long_short_ratio=1.25,
+        fear_greed_value=75,
+        fear_greed_classification="Greed",
         news_headlines=["Bitcoin rally continues", "Bullish breakout expected"],
-        candles_4h=candles, candles_1h=[],
-        data_quality_score=1.0, timestamp=datetime.now(UTC),
+        candles_4h=candles,
+        candles_1h=[],
+        data_quality_score=1.0,
+        timestamp=datetime.now(UTC),
     )
 
 
@@ -89,9 +103,15 @@ class TestEndToEndPipeline:
         # Layer 5: Confidence
         conf_engine = ConfidenceEngine()
         result = conf_engine.calculate(
-            technical=technical, trend=trend, structure=structure,
-            volume=volume, futures=futures, volatility=volatility,
-            sr=sr, sentiment=sentiment, price=asset.price,
+            technical=technical,
+            trend=trend,
+            structure=structure,
+            volume=volume,
+            futures=futures,
+            volatility=volatility,
+            sr=sr,
+            sentiment=sentiment,
+            price=asset.price,
         )
 
         assert isinstance(result, ConfidenceResult)

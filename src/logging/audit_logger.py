@@ -1,6 +1,7 @@
 """Audit Logger — record event audit."""
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+
 from src.core.models.audit import AuditRecord
 from src.core.types.enums import AuditEventType
 from src.logging.logger import get_logger

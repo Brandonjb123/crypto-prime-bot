@@ -1,5 +1,6 @@
+from datetime import UTC, datetime
 from uuid import uuid4
-from datetime import datetime, UTC
+
 from src.core.models.exchange_account import ExchangeAccountSnapshot
 from src.core.models.portfolio import PortfolioSnapshot
 from src.core.types.enums import PortfolioStatus, SyncStatus
@@ -14,11 +15,17 @@ class TestPortfolioReconciler:
             snapshot_id=uuid4(),
             timestamp=datetime.now(UTC),
             status=PortfolioStatus.ACTIVE,
-            total_positions=1, open_positions=1, closed_positions=0,
-            long_positions=1, short_positions=0,
-            net_exposure=0.1, gross_exposure=0.1,
-            realized_pnl=0.0, unrealized_pnl=100.0,
-            equity=10100.0, warnings=[],
+            total_positions=1,
+            open_positions=1,
+            closed_positions=0,
+            long_positions=1,
+            short_positions=0,
+            net_exposure=0.1,
+            gross_exposure=0.1,
+            realized_pnl=0.0,
+            unrealized_pnl=100.0,
+            equity=10100.0,
+            warnings=[],
         )
         repo.save(snap)
         exchange = ExchangeAccountSnapshot(
@@ -38,11 +45,17 @@ class TestPortfolioReconciler:
             snapshot_id=uuid4(),
             timestamp=datetime.now(UTC),
             status=PortfolioStatus.ACTIVE,
-            total_positions=1, open_positions=1, closed_positions=0,
-            long_positions=1, short_positions=0,
-            net_exposure=0.1, gross_exposure=0.1,
-            realized_pnl=0.0, unrealized_pnl=50.0,
-            equity=10050.0, warnings=[],
+            total_positions=1,
+            open_positions=1,
+            closed_positions=0,
+            long_positions=1,
+            short_positions=0,
+            net_exposure=0.1,
+            gross_exposure=0.1,
+            realized_pnl=0.0,
+            unrealized_pnl=50.0,
+            equity=10050.0,
+            warnings=[],
         )
         exchange = ExchangeAccountSnapshot(
             asset="USDT",

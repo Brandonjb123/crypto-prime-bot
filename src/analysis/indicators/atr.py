@@ -9,11 +9,11 @@ class ATRCalculator:
     def calculate(self, candles: list[Candle], period: int = 14) -> float | None:
         """
         Hitung ATR untuk period tertentu.
-        
+
         Args:
             candles: List of Candle objects, minimal length = period + 1
             period: ATR period (default 14)
-            
+
         Returns:
             ATR value positif, atau None jika data tidak cukup
         """

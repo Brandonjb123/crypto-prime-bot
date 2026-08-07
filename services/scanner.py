@@ -2,12 +2,14 @@
 import asyncio
 import json
 import random
-from services.coingecko import get_market_data, get_top_pairs, get_technical_indicators
-from services.news import get_news
-from services.llm import ask_llm
+
+from loguru import logger
+
 from prompts.system import SYSTEM_PROMPT
 from prompts.templates import build_analyze_prompt
-from loguru import logger
+from services.coingecko import get_market_data, get_technical_indicators, get_top_pairs
+from services.llm import ask_llm
+from services.news import get_news
 from utils.validator import inject_calculated_prices, validate_signal_prices
 
 
@@ -15,10 +17,10 @@ def _sort_signals_by_rr(signals: list) -> list:
     return sorted(
         signals,
         key=lambda x: (
-            (x.get("target_price", 0) - x.get("entry_price", 0)) /
-            max(x.get("entry_price", 0) - x.get("stop_loss", 1), 0.000001)
+            (x.get("target_price", 0) - x.get("entry_price", 0))
+            / max(x.get("entry_price", 0) - x.get("stop_loss", 1), 0.000001)
         ),
-        reverse=True
+        reverse=True,
     )
 
 

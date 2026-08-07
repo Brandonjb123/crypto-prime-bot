@@ -9,8 +9,8 @@ from src.core.models.market_intelligence import VolatilityAnalysis
 class VolatilityEngine:
     """Analisis volatilitas dari ATR14."""
 
-    LOW_THRESHOLD = 1.0    # < 1% → LOW
-    HIGH_THRESHOLD = 3.0   # >= 3% → HIGH
+    LOW_THRESHOLD = 1.0  # < 1% → LOW
+    HIGH_THRESHOLD = 3.0  # >= 3% → HIGH
 
     def analyze(self, technical: TechnicalAnalysis, price: float) -> VolatilityAnalysis:
         """Klasifikasi risiko berdasarkan ATR sebagai persentase harga."""

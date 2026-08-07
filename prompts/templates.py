@@ -1,13 +1,16 @@
 # prompts/templates.py
 
-def build_analyze_prompt(pair: str, price_data: dict, news_headlines: list, indicators: dict = None) -> str:
-    current_price = price_data.get('current_price') or 0
-    change_24h = price_data.get('price_change_24h') or 0
-    change_7d = price_data.get('price_change_7d') or 0
-    high_24h = price_data.get('high_24h') or 0
-    low_24h = price_data.get('low_24h') or 0
-    total_volume = price_data.get('total_volume') or 0
-    market_cap = price_data.get('market_cap') or 0
+
+def build_analyze_prompt(
+    pair: str, price_data: dict, news_headlines: list, indicators: dict = None
+) -> str:
+    current_price = price_data.get("current_price") or 0
+    change_24h = price_data.get("price_change_24h") or 0
+    change_7d = price_data.get("price_change_7d") or 0
+    high_24h = price_data.get("high_24h") or 0
+    low_24h = price_data.get("low_24h") or 0
+    total_volume = price_data.get("total_volume") or 0
+    market_cap = price_data.get("market_cap") or 0
 
     headlines_str = "\n".join(f"- {h}" for h in news_headlines[:5])
 
@@ -26,10 +29,10 @@ def build_analyze_prompt(pair: str, price_data: dict, news_headlines: list, indi
     # Section indikator teknikal (RSI, EMA, posisi harga)
     indicators_section = ""
     if indicators:
-        rsi_signal = indicators.get('rsi_signal', '-')
-        ema_signal = indicators.get('ema_signal', '-')
-        price_pos = indicators.get('price_position_pct')
-        pos_str = f"{price_pos}% dari Low ke High 24h" if price_pos is not None else '-'
+        rsi_signal = indicators.get("rsi_signal", "-")
+        ema_signal = indicators.get("ema_signal", "-")
+        price_pos = indicators.get("price_position_pct")
+        pos_str = f"{price_pos}% dari Low ke High 24h" if price_pos is not None else "-"
 
         indicators_section = f"""
 INDIKATOR TEKNIKAL:

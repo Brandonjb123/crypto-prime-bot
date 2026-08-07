@@ -1,8 +1,10 @@
 """Pipeline runtime context — not immutable, filled step by step."""
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
+
 from pydantic import BaseModel
+
 from src.core.types.enums import PipelineStatus
 
 

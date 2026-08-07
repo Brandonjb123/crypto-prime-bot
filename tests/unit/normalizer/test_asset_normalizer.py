@@ -37,7 +37,6 @@ def sample_raw_data():
 
 
 class TestAssetNormalizer:
-
     def test_normalize_success_all_fields(self, sample_raw_data):
         normalizer = AssetNormalizer()
         result = normalizer.normalize(sample_raw_data)

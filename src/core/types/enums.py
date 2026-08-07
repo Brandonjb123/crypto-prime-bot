@@ -45,7 +45,7 @@ class MarketStructure(StrEnum):
 class SentimentLevel(StrEnum):
     GREED = "GREED"
     NEUTRAL = "NEUTRAL"
-    FEAR = "FEAR"   
+    FEAR = "FEAR"
 
 
 class ConfidenceWarning(StrEnum):
@@ -58,6 +58,7 @@ class ConfidenceWarning(StrEnum):
     PRICE_NEAR_SUPPORT = "PRICE_NEAR_SUPPORT"
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
 
+
 class SetupType(StrEnum):
     TREND_FOLLOWING = "trend_following"
     BREAKOUT = "breakout"
@@ -67,7 +68,8 @@ class SetupType(StrEnum):
 class RuleType(StrEnum):
     TREND_FOLLOWING = "trend_following"
     BREAKOUT = "breakout"
-    REVERSAL = "reversal"    
+    REVERSAL = "reversal"
+
 
 class ValidationCheck(StrEnum):
     CONFIDENCE_CHECK = "CONFIDENCE_CHECK"
@@ -89,14 +91,16 @@ class ValidationReason(StrEnum):
     MAX_POSITION = "MAX_POSITION"
     MARKET_CLOSED = "MARKET_CLOSED"
     DUPLICATE_POSITION = "DUPLICATE_POSITION"
-    INSUFFICIENT_DATA = "INSUFFICIENT_DATA"    
+    INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+
 
 class RiskWarning(StrEnum):
     RR_TOO_LOW = "RR_TOO_LOW"
     POSITION_SIZE_CAPPED = "POSITION_SIZE_CAPPED"
     STOP_TOO_CLOSE = "STOP_TOO_CLOSE"
     TP_TOO_FAR = "TP_TOO_FAR"
-    HIGH_VOLATILITY_RISK = "HIGH_VOLATILITY_RISK"    
+    HIGH_VOLATILITY_RISK = "HIGH_VOLATILITY_RISK"
+
 
 class RecommendationAction(StrEnum):
     BUY = "BUY"
@@ -113,7 +117,8 @@ class RecommendationReason(StrEnum):
     SIDEWAYS_MARKET = "SIDEWAYS_MARKET"
     NO_SETUP = "NO_SETUP"
     BLOCKED_WARNING = "BLOCKED_WARNING"
-    LOW_RISK_REWARD = "LOW_RISK_REWARD"    
+    LOW_RISK_REWARD = "LOW_RISK_REWARD"
+
 
 class ExecutionAction(StrEnum):
     PLACE_ORDER = "PLACE_ORDER"
@@ -127,7 +132,8 @@ class ExecutionType(StrEnum):
 
 class ExecutionStatus(StrEnum):
     READY = "READY"
-    BLOCKED = "BLOCKED"    
+    BLOCKED = "BLOCKED"
+
 
 class OrderStatus(StrEnum):
     PENDING = "PENDING"
@@ -143,7 +149,8 @@ class OrderRejectReason(StrEnum):
     INVALID_SIZE = "INVALID_SIZE"
     MARKET_CLOSED = "MARKET_CLOSED"
     INSUFFICIENT_BALANCE = "INSUFFICIENT_BALANCE"
-    UNKNOWN = "UNKNOWN"   
+    UNKNOWN = "UNKNOWN"
+
 
 class ExchangeOrderStatus(StrEnum):
     NEW = "NEW"
@@ -153,6 +160,7 @@ class ExchangeOrderStatus(StrEnum):
     REJECTED = "REJECTED"
     EXPIRED = "EXPIRED"
 
+
 class ExchangeErrorType(StrEnum):
     NETWORK_ERROR = "NETWORK_ERROR"
     AUTH_ERROR = "AUTH_ERROR"
@@ -160,6 +168,7 @@ class ExchangeErrorType(StrEnum):
     INVALID_ORDER = "INVALID_ORDER"
     RATE_LIMIT = "RATE_LIMIT"
     UNKNOWN = "UNKNOWN"
+
 
 class SyncStatus(StrEnum):
     SYNCED = "SYNCED"
@@ -183,6 +192,7 @@ class SyncReason(StrEnum):
     MANUAL_CHANGE = "MANUAL_CHANGE"
     UNKNOWN = "UNKNOWN"
 
+
 class BacktestStatus(StrEnum):
     CREATED = "CREATED"
     RUNNING = "RUNNING"
@@ -196,6 +206,7 @@ class TradeOutcome(StrEnum):
     BREAKEVEN = "BREAKEVEN"
     OPEN = "OPEN"
 
+
 class TelegramCommand(StrEnum):
     STATUS = "status"
     POSITIONS = "positions"
@@ -207,7 +218,8 @@ class TelegramCommand(StrEnum):
 class TelegramResponseType(StrEnum):
     TEXT = "text"
     ERROR = "error"
-    UNKNOWN = "unknown"        
+    UNKNOWN = "unknown"
+
 
 class HealthStatus(StrEnum):
     HEALTHY = "healthy"
@@ -231,11 +243,13 @@ class RuntimeStatus(StrEnum):
     STOPPING = "stopping"
     STOPPED = "stopped"
 
+
 class ShutdownReason(StrEnum):
     MANUAL = "manual"
     SIGTERM = "sigterm"
     EXCEPTION = "exception"
     RESTART = "restart"
+
 
 class PositionStatus(StrEnum):
     OPEN = "OPEN"
@@ -249,29 +263,30 @@ class PositionCloseReason(StrEnum):
     MANUAL = "MANUAL"
     STOP_LOSS = "STOP_LOSS"
     TAKE_PROFIT = "TAKE_PROFIT"
-    UNKNOWN = "UNKNOWN"     
+    UNKNOWN = "UNKNOWN"
+
 
 class PortfolioStatus(StrEnum):
     EMPTY = "EMPTY"
     ACTIVE = "ACTIVE"
-    RISK_LIMIT = "RISK_LIMIT"  
+    RISK_LIMIT = "RISK_LIMIT"
+
 
 class NotificationLevel(StrEnum):
     INFO = "INFO"
     WARNING = "WARNING"
     ERROR = "ERROR"
 
+
 class PipelineStatus(StrEnum):
     IDLE = "IDLE"
     RUNNING = "RUNNING"
     COMPLETED = "COMPLETED"
-    FAILED = "FAILED"    
+    FAILED = "FAILED"
+
 
 class PositionEvent(StrEnum):
     NONE = "NONE"
     STOP_LOSS_HIT = "STOP_LOSS_HIT"
     TAKE_PROFIT_HIT = "TAKE_PROFIT_HIT"
     HOLD = "HOLD"
-
-
-     

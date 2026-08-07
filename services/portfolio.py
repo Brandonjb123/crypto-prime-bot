@@ -1,6 +1,7 @@
 # services/portfolio.py
-from db.database import get_connection
 from loguru import logger
+
+from db.database import get_connection
 
 
 def add_position(chat_id: int, pair: str, side: str, entry_price: float, amount: float) -> int:

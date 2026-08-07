@@ -1,4 +1,3 @@
-import pytest
 from src.application.shutdown import ShutdownHandler
 
 

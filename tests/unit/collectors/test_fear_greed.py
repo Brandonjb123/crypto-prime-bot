@@ -24,9 +24,7 @@ async def test_fear_greed_fetch_success(monkeypatch, mock_fear_greed):
     async def mock_get(self, endpoint, params=None):
         return mock_fear_greed
 
-    monkeypatch.setattr(
-        "src.collectors.base_http_client.BaseHTTPClient.get", mock_get
-    )
+    monkeypatch.setattr("src.collectors.base_http_client.BaseHTTPClient.get", mock_get)
 
     collector = FearGreedCollector()
     result = await collector.fetch()
@@ -45,9 +43,7 @@ async def test_fear_greed_health_check(monkeypatch):
     async def mock_get(self, endpoint, params=None):
         return {"data": [{"value": "50"}]}
 
-    monkeypatch.setattr(
-        "src.collectors.base_http_client.BaseHTTPClient.get", mock_get
-    )
+    monkeypatch.setattr("src.collectors.base_http_client.BaseHTTPClient.get", mock_get)
 
     collector = FearGreedCollector()
     assert await collector.health_check() is True

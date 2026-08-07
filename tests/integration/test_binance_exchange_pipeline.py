@@ -21,16 +21,18 @@ from src.exchange.executor import OrderExecutor
 class TestBinanceExchangePipeline:
     async def test_execution_to_binance_order(self):
         client = MagicMock(spec=BinanceClient)
-        client.place_order = AsyncMock(return_value={
-            "orderId": "12345678-1234-5678-1234-567812345678",
-            "status": "FILLED",
-            "side": "BUY",
-            "price": "50000.00",
-            "avgPrice": "50000.00",
-            "origQty": "0.100",
-            "type": "MARKET",
-            "symbol": "BTCUSDT",
-        })
+        client.place_order = AsyncMock(
+            return_value={
+                "orderId": "12345678-1234-5678-1234-567812345678",
+                "status": "FILLED",
+                "side": "BUY",
+                "price": "50000.00",
+                "avgPrice": "50000.00",
+                "origQty": "0.100",
+                "type": "MARKET",
+                "symbol": "BTCUSDT",
+            }
+        )
         adapter = BinanceFuturesAdapter(client)
         executor = OrderExecutor(adapter)
 

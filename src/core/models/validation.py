@@ -1,8 +1,10 @@
 """Validation result model."""
 
 from datetime import datetime
+
 from pydantic import BaseModel
-from src.core.types.enums import ValidationReason, ValidationCheck
+
+from src.core.types.enums import ValidationCheck, ValidationReason
 
 
 class ValidationResult(BaseModel):

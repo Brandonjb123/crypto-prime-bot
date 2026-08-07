@@ -56,6 +56,7 @@ class TestDomainEvents:
     def test_event_immutable(self):
         import pytest
         from pydantic import ValidationError
+
         event = BaseDomainEvent(event_name="test")
         with pytest.raises(ValidationError):
             event.event_name = "changed"

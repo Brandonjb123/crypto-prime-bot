@@ -19,7 +19,14 @@ from src.core.types.enums import (
 from src.position.position_manager import PositionManager
 
 
-def _make_order(status=OrderStatus.FILLED, symbol="BTC/USDT", side=Side.LONG, entry=50000.0, sl=48000.0, tp=55000.0):
+def _make_order(
+    status=OrderStatus.FILLED,
+    symbol="BTC/USDT",
+    side=Side.LONG,
+    entry=50000.0,
+    sl=48000.0,
+    tp=55000.0,
+):
     return OrderResult(
         execution_id=uuid4(),
         order_id=uuid4(),
@@ -114,6 +121,7 @@ class TestPositionManager:
 
     def test_immutable_position(self):
         from pydantic import ValidationError
+
         pos = self.pm().open_position(_make_order())
         with pytest.raises(ValidationError):  # frozen model tidak bisa diubah
             pos.status = PositionStatus.CLOSED

@@ -1,6 +1,6 @@
 """Performance metrics calculator."""
 
-from src.core.models.backtest import TradeRecord, TradeOutcome
+from src.core.models.backtest import TradeOutcome, TradeRecord
 
 
 def calculate_metrics(trades: list[TradeRecord]) -> dict:

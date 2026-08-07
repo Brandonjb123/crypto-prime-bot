@@ -26,7 +26,6 @@ SYMBOL_TO_COINGECKO_ID = {
     "SUI": "sui",
     "PEPE": "pepe",
     "SHIB": "shiba-inu",
-
     # Exchange Tokens
     "OKB": "okb",
     "MNT": "mantle",
@@ -34,7 +33,6 @@ SYMBOL_TO_COINGECKO_ID = {
     "KCS": "kucoin-shares",
     "GT": "gate-token",
     "HT": "huobi-token",
-
     # DeFi
     "AAVE": "aave",
     "MKR": "maker",
@@ -50,7 +48,6 @@ SYMBOL_TO_COINGECKO_ID = {
     "GMX": "gmx",
     "GNS": "gains-network",
     "RDNT": "radiant-capital",
-
     # Layer 1 & Layer 2
     "FTM": "fantom",
     "ALGO": "algorand",
@@ -81,7 +78,6 @@ SYMBOL_TO_COINGECKO_ID = {
     "JTO": "jito-governance-token",
     "TNSR": "tensor",
     "BOME": "book-of-meme",
-
     # Gaming & Metaverse
     "AXS": "axie-infinity",
     "SAND": "the-sandbox",
@@ -93,7 +89,6 @@ SYMBOL_TO_COINGECKO_ID = {
     "GST": "green-satoshi-token",
     "PIXEL": "pixels",
     "PORTAL": "portal-gaming",
-
     # AI & Data
     "FET": "fetch-ai",
     "OCEAN": "ocean-protocol",
@@ -103,14 +98,12 @@ SYMBOL_TO_COINGECKO_ID = {
     "TAO": "bittensor",
     "WLD": "worldcoin-wld",
     "AGIX": "singularitynet",
-
     # Storage & Infrastructure
     "AR": "arweave",
     "HNT": "helium",
     "ANKR": "ankr",
     "API3": "api3",
     "BAND": "band-protocol",
-
     # Meme & Others
     "FLOKI": "floki",
     "BABYDOGE": "baby-doge-coin",
@@ -118,22 +111,18 @@ SYMBOL_TO_COINGECKO_ID = {
     "MYRO": "myro",
     "POPCAT": "popcat",
     "MEW": "cat-in-a-dogs-world",
-
     # Gold & Commodity Token
     "PAXG": "pax-gold",
     "XAUT": "tether-gold",
-
     # Cross-chain & Bridge
     "RUNE": "thorchain",
     "STX": "blockstack",
     "RSR": "reserve-rights-token",
     "REN": "republic-protocol",
-
     # Privacy
     "XMR": "monero",
     "ZEC": "zcash",
     "SCRT": "secret",
-
     # Old but still traded
     "BCH": "bitcoin-cash",
     "BSV": "bitcoin-cash-sv",

@@ -31,10 +31,16 @@ def make_candles(scenario: str = "with_swings") -> list[Candle]:
             else:
                 price = 140.0 - (i - 18) * 5  # turun pelan ke 110
 
-            candles.append(Candle(
-                timestamp=ts, open=price, high=price + 5,
-                low=price - 5, close=price, volume=100.0
-            ))
+            candles.append(
+                Candle(
+                    timestamp=ts,
+                    open=price,
+                    high=price + 5,
+                    low=price - 5,
+                    close=price,
+                    volume=100.0,
+                )
+            )
 
     return candles
 

@@ -1,6 +1,7 @@
 """Metrics Collector — in-memory."""
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+
 from src.core.models.metrics import RuntimeMetrics
 
 

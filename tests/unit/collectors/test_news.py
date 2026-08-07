@@ -13,21 +13,11 @@ async def test_news_fetch_success(monkeypatch):
 
     mock_feed = feedparser.FeedParserDict(
         entries=[
-            feedparser.FeedParserDict(
-                title="Bitcoin hits new all-time high"
-            ),
-            feedparser.FeedParserDict(
-                title="SEC approves spot Bitcoin ETF"
-            ),
-            feedparser.FeedParserDict(
-                title="Bitcoin Layer 2 solutions gain traction"
-            ),
-            feedparser.FeedParserDict(
-                title="Crypto market cap reaches $3 trillion"
-            ),
-            feedparser.FeedParserDict(
-                title="Bitcoin mining difficulty hits record high"
-            ),
+            feedparser.FeedParserDict(title="Bitcoin hits new all-time high"),
+            feedparser.FeedParserDict(title="SEC approves spot Bitcoin ETF"),
+            feedparser.FeedParserDict(title="Bitcoin Layer 2 solutions gain traction"),
+            feedparser.FeedParserDict(title="Crypto market cap reaches $3 trillion"),
+            feedparser.FeedParserDict(title="Bitcoin mining difficulty hits record high"),
         ]
     )
 
@@ -68,9 +58,7 @@ async def test_news_fetch_empty(monkeypatch):
 async def test_news_health_check(monkeypatch):
     """Test health check News."""
 
-    mock_feed = feedparser.FeedParserDict(
-        entries=[feedparser.FeedParserDict(title="Test")]
-    )
+    mock_feed = feedparser.FeedParserDict(entries=[feedparser.FeedParserDict(title="Test")])
 
     def mock_parse(url):
         return mock_feed

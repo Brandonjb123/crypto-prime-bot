@@ -59,13 +59,15 @@ class TestNotificationDispatcher:
         dispatcher.register(OrderExecutedEvent, OrderExecutedFormatter())
 
         for _ in range(3):
-            dispatcher.dispatch(OrderExecutedEvent(
-                execution_id=UUID("aaaaaaaa-1234-5678-1234-567812345678"),
-                order_id=UUID("bbbbbbbb-1234-5678-1234-567812345678"),
-                status=OrderStatus.FILLED,
-                symbol="BTC/USDT",
-                side=Side.LONG,
-            ))
+            dispatcher.dispatch(
+                OrderExecutedEvent(
+                    execution_id=UUID("aaaaaaaa-1234-5678-1234-567812345678"),
+                    order_id=UUID("bbbbbbbb-1234-5678-1234-567812345678"),
+                    status=OrderStatus.FILLED,
+                    symbol="BTC/USDT",
+                    side=Side.LONG,
+                )
+            )
         captured = capsys.readouterr()
         assert captured.out.count("Order Executed") == 3
 

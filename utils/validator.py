@@ -1,7 +1,7 @@
 # utils/validator.py
 
-RISK_PERCENT = 0.02   # 2% risk
-REWARD_PERCENT = 0.06 # 6% reward → R:R = 1:3.0
+RISK_PERCENT = 0.02  # 2% risk
+REWARD_PERCENT = 0.06  # 6% reward → R:R = 1:3.0
 
 
 def calculate_target_and_stop(entry_price: float, side: str) -> tuple:

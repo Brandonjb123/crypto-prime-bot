@@ -64,11 +64,18 @@ class TestEventPipeline:
         bus.register("position_opened", lambda e: received.append(e))
 
         order = OrderResult(
-            execution_id=uuid4(), order_id=uuid4(),
-            status=OrderStatus.FILLED, reject_reason=OrderRejectReason.NONE,
-            execution_type=ExecutionType.MARKET, side=Side.LONG,
-            symbol="BTC/USDT", requested_entry=50000.0, executed_entry=50000.0,
-            position_size=0.1, stop_loss=48000.0, take_profit=55000.0,
+            execution_id=uuid4(),
+            order_id=uuid4(),
+            status=OrderStatus.FILLED,
+            reject_reason=OrderRejectReason.NONE,
+            execution_type=ExecutionType.MARKET,
+            side=Side.LONG,
+            symbol="BTC/USDT",
+            requested_entry=50000.0,
+            executed_entry=50000.0,
+            position_size=0.1,
+            stop_loss=48000.0,
+            take_profit=55000.0,
             timestamp=datetime.now(UTC),
         )
         pm = PositionManager(event_bus=bus)
@@ -83,17 +90,30 @@ class TestEventPipeline:
         bus.register("portfolio_updated", lambda e: received.append(e))
 
         order = OrderResult(
-            execution_id=uuid4(), order_id=uuid4(),
-            status=OrderStatus.FILLED, reject_reason=OrderRejectReason.NONE,
-            execution_type=ExecutionType.MARKET, side=Side.LONG,
-            symbol="BTC/USDT", requested_entry=50000.0, executed_entry=50000.0,
-            position_size=0.1, stop_loss=48000.0, take_profit=55000.0,
+            execution_id=uuid4(),
+            order_id=uuid4(),
+            status=OrderStatus.FILLED,
+            reject_reason=OrderRejectReason.NONE,
+            execution_type=ExecutionType.MARKET,
+            side=Side.LONG,
+            symbol="BTC/USDT",
+            requested_entry=50000.0,
+            executed_entry=50000.0,
+            position_size=0.1,
+            stop_loss=48000.0,
+            take_profit=55000.0,
             timestamp=datetime.now(UTC),
         )
         pm = PositionManager()
         pm.open_position(order)
 
-        account = AccountSnapshot(balance=10000.0, equity=10000.0, margin_used=0.0, free_margin=10000.0, timestamp=datetime.now(UTC))
+        account = AccountSnapshot(
+            balance=10000.0,
+            equity=10000.0,
+            margin_used=0.0,
+            free_margin=10000.0,
+            timestamp=datetime.now(UTC),
+        )
         provider = InMemoryPriceProvider()
         provider.update_price("BTC/USDT", 50000.0)
         pf = PortfolioManager(event_bus=bus)

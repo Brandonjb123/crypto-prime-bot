@@ -16,7 +16,9 @@ from src.exchange.adapters.paper import PaperExchangeAdapter
 def _make_plan(status=ExecutionStatus.READY):
     return ExecutionPlan(
         execution_id=uuid4(),
-        action=ExecutionAction.PLACE_ORDER if status == ExecutionStatus.READY else ExecutionAction.DO_NOT_EXECUTE,
+        action=ExecutionAction.PLACE_ORDER
+        if status == ExecutionStatus.READY
+        else ExecutionAction.DO_NOT_EXECUTE,
         status=status,
         execution_type=ExecutionType.MARKET,
         side=None,

@@ -1,13 +1,14 @@
 """Portfolio Reconciler — bandingkan exchange balance dengan local portfolio."""
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+
 from src.core.models.exchange_account import ExchangeAccountSnapshot
 from src.core.models.portfolio import PortfolioSnapshot
-from src.core.types.enums import SyncEntityType, SyncReason, SyncStatus
 from src.core.models.synchronization import SyncResult
-from src.storage.repositories.portfolio_repository import PortfolioRepository
+from src.core.types.enums import SyncEntityType, SyncReason, SyncStatus
 from src.events.event_bus import EventBus
 from src.events.events.portfolio_updated import PortfolioUpdatedEvent
+from src.storage.repositories.portfolio_repository import PortfolioRepository
 
 
 class PortfolioReconciler:
@@ -27,12 +28,14 @@ class PortfolioReconciler:
             reasons.append(SyncReason.LOCAL_MISSING)
             # Save exchange snapshot as local
             if self.event_bus:
-                self.event_bus.publish(PortfolioUpdatedEvent(
-                    snapshot_id=local_snapshot.snapshot_id if local_snapshot else None,
-                    equity=exchange_snapshot.wallet_balance + exchange_snapshot.unrealized_pnl,
-                    gross_exposure=0.0,
-                    net_exposure=0.0,
-                ))
+                self.event_bus.publish(
+                    PortfolioUpdatedEvent(
+                        snapshot_id=local_snapshot.snapshot_id if local_snapshot else None,
+                        equity=exchange_snapshot.wallet_balance + exchange_snapshot.unrealized_pnl,
+                        gross_exposure=0.0,
+                        net_exposure=0.0,
+                    )
+                )
 
             return SyncResult(
                 status=SyncStatus.MISMATCH,
@@ -50,15 +53,19 @@ class PortfolioReconciler:
 
         if abs(exchange_equity - local_equity) > 1.0:  # tolerance $1
             reasons.append(SyncReason.PRICE_CHANGED)
-            details.append(f"Equity mismatch: local={local_equity:.2f} exchange={exchange_equity:.2f}")
+            details.append(
+                f"Equity mismatch: local={local_equity:.2f} exchange={exchange_equity:.2f}"
+            )
 
             if self.event_bus:
-                self.event_bus.publish(PortfolioUpdatedEvent(
-                    snapshot_id=local_snapshot.snapshot_id,
-                    equity=exchange_equity,
-                    gross_exposure=local_snapshot.gross_exposure,
-                    net_exposure=local_snapshot.net_exposure,
-                ))
+                self.event_bus.publish(
+                    PortfolioUpdatedEvent(
+                        snapshot_id=local_snapshot.snapshot_id,
+                        equity=exchange_equity,
+                        gross_exposure=local_snapshot.gross_exposure,
+                        net_exposure=local_snapshot.net_exposure,
+                    )
+                )
 
             return SyncResult(
                 status=SyncStatus.MISMATCH,

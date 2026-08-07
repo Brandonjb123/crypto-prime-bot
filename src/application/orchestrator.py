@@ -70,17 +70,19 @@ class PipelineOrchestrator:
                 ctx.normalized_asset = self.asset_normalizer.normalize(ctx.collected_data)
 
             # Step 3 — Analysis (8 engines) + Confidence (gabung)
-            if all([
-                ctx.normalized_asset,
-                self.technical_engine,
-                self.trend_engine,
-                self.market_structure_engine,
-                self.volume_engine,
-                self.futures_engine,
-                self.volatility_engine,
-                self.support_resistance_engine,
-                self.sentiment_engine,
-            ]):
+            if all(
+                [
+                    ctx.normalized_asset,
+                    self.technical_engine,
+                    self.trend_engine,
+                    self.market_structure_engine,
+                    self.volume_engine,
+                    self.futures_engine,
+                    self.volatility_engine,
+                    self.support_resistance_engine,
+                    self.sentiment_engine,
+                ]
+            ):
                 asset = ctx.normalized_asset
                 technical = self.technical_engine.analyze(asset)
                 trend = self.trend_engine.analyze(technical, asset.price)
@@ -134,19 +136,35 @@ class PipelineOrchestrator:
                 )
 
             # Step 6 — Risk
-            if self.risk_engine and ctx.analysis_snapshot and ctx.setup_result and ctx.validation_result:
+            if (
+                self.risk_engine
+                and ctx.analysis_snapshot
+                and ctx.setup_result
+                and ctx.validation_result
+            ):
                 ctx.risk_result = self.risk_engine.calculate(
                     ctx.analysis_snapshot, ctx.setup_result, ctx.validation_result
                 )
 
             # Step 7 — Recommendation
-            if self.recommendation_engine and ctx.analysis_snapshot and ctx.setup_result and ctx.validation_result and ctx.risk_result:
+            if (
+                self.recommendation_engine
+                and ctx.analysis_snapshot
+                and ctx.setup_result
+                and ctx.validation_result
+                and ctx.risk_result
+            ):
                 ctx.recommendation_result = self.recommendation_engine.recommend(
                     ctx.analysis_snapshot, ctx.setup_result, ctx.validation_result, ctx.risk_result
                 )
 
             # Step 8 — Execution Plan
-            if self.execution_planner and ctx.recommendation_result and ctx.risk_result and ctx.validation_result:
+            if (
+                self.execution_planner
+                and ctx.recommendation_result
+                and ctx.risk_result
+                and ctx.validation_result
+            ):
                 ctx.execution_plan = self.execution_planner.plan(
                     ctx.recommendation_result, ctx.risk_result, ctx.validation_result
                 )
@@ -163,7 +181,12 @@ class PipelineOrchestrator:
                     pass  # Bisa jadi REJECTED — skip
 
             # Step 11 — Portfolio
-            if self.portfolio_manager and self.position_manager and self.account_snapshot and self.price_provider:
+            if (
+                self.portfolio_manager
+                and self.position_manager
+                and self.account_snapshot
+                and self.price_provider
+            ):
                 positions = self.position_manager.get_all_positions()
                 ctx.portfolio_snapshot = self.portfolio_manager.create_snapshot(
                     positions, self.account_snapshot, self.price_provider

@@ -1,7 +1,7 @@
 """Formatter untuk pesan Telegram."""
 
-from src.core.models.position import Position
 from src.core.models.portfolio import PortfolioSnapshot
+from src.core.models.position import Position
 
 
 def format_positions(positions: list[Position]) -> str:
@@ -9,7 +9,9 @@ def format_positions(positions: list[Position]) -> str:
         return "📭 No open positions."
     lines = ["📊 *Open Positions*", ""]
     for p in positions:
-        lines.append(f"• {p.symbol} {p.side.value} | Size: {p.position_size} | Entry: {p.entry_price:.2f}")
+        lines.append(
+            f"• {p.symbol} {p.side.value} | Size: {p.position_size} | Entry: {p.entry_price:.2f}"
+        )
     return "\n".join(lines)
 
 

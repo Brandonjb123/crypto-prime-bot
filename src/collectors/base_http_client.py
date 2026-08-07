@@ -43,8 +43,7 @@ class BaseHTTPClient:
                 # 5xx — Server error
                 if response.status_code >= 500:
                     logger.warning(
-                        f"5xx server error {response.status_code} {url}, "
-                        f"attempt {attempt + 1}"
+                        f"5xx server error {response.status_code} {url}, attempt {attempt + 1}"
                     )
                     if attempt == self.MAX_RETRIES - 1:
                         raise DataSourceUnavailableError(
@@ -62,9 +61,7 @@ class BaseHTTPClient:
                     raise DataSourceUnavailableError(f"Timeout: {url}") from None
                 continue
 
-        raise DataSourceUnavailableError(
-            f"Failed after {self.MAX_RETRIES} retries"
-        )
+        raise DataSourceUnavailableError(f"Failed after {self.MAX_RETRIES} retries")
 
     async def close(self) -> None:
         """Tutup AsyncClient."""

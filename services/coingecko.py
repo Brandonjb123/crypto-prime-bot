@@ -1,8 +1,9 @@
 # services/coingecko.py
+
 import httpx
-import asyncio
-from utils.cache import price_cache
 from loguru import logger
+
+from utils.cache import price_cache
 
 COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3"
 
@@ -11,6 +12,7 @@ HEADERS = {
     "User-Agent": "CryptoPrimeBot/2.0 (https://t.me/BenzAckerman)",
     "Accept": "application/json",
 }
+
 
 async def get_price(coin_id: str) -> dict:
     cached = price_cache.get(coin_id)
@@ -53,6 +55,7 @@ async def get_market_data(coin_id: str) -> dict:
     total_volume, market_cap, high_24h, low_24h.
     """
     from utils.cache import price_cache
+
     cached = price_cache.get(f"market_{coin_id}")
     if cached:
         return cached
@@ -73,7 +76,9 @@ async def get_market_data(coin_id: str) -> dict:
     result = {
         "current_price": market_data.get("current_price", {}).get("usd"),
         "price_change_24h": market_data.get("price_change_percentage_24h", 0),
-        "price_change_7d": market_data.get("price_change_percentage_7d_in_currency", {}).get("usd", 0),
+        "price_change_7d": market_data.get("price_change_percentage_7d_in_currency", {}).get(
+            "usd", 0
+        ),
         "total_volume": market_data.get("total_volume", {}).get("usd"),
         "market_cap": market_data.get("market_cap", {}).get("usd"),
         "high_24h": market_data.get("high_24h", {}).get("usd"),
@@ -84,9 +89,20 @@ async def get_market_data(coin_id: str) -> dict:
 
 
 STABLECOIN_SYMBOLS = {
-    "USDT", "USDC", "DAI", "BUSD", "TUSD", "FDUSD",
-    "USDD", "GUSD", "USDP", "PYUSD", "FRAX", "USDE",
-    "EURT", "EURS"
+    "USDT",
+    "USDC",
+    "DAI",
+    "BUSD",
+    "TUSD",
+    "FDUSD",
+    "USDD",
+    "GUSD",
+    "USDP",
+    "PYUSD",
+    "FRAX",
+    "USDE",
+    "EURT",
+    "EURS",
 }
 
 
@@ -119,11 +135,13 @@ async def get_top_pairs(limit: int = 100) -> list:
         symbol = item["symbol"].upper()
         if symbol in STABLECOIN_SYMBOLS:
             continue
-        pairs.append({
-            "symbol": symbol,
-            "coin_id": item["id"],
-            "name": item["name"],
-        })
+        pairs.append(
+            {
+                "symbol": symbol,
+                "coin_id": item["id"],
+                "name": item["name"],
+            }
+        )
 
     price_cache.set(cache_key, pairs)
     return pairs[:limit]
@@ -155,7 +173,7 @@ def calculate_rsi(ohlc_data: list, period: int = 14) -> float | None:
         return None
 
     closes = [candle[4] for candle in ohlc_data]
-    deltas = [closes[i] - closes[i-1] for i in range(1, len(closes))]
+    deltas = [closes[i] - closes[i - 1] for i in range(1, len(closes))]
     gains = [d if d > 0 else 0 for d in deltas]
     losses = [abs(d) if d < 0 else 0 for d in deltas]
 
@@ -202,9 +220,7 @@ async def get_technical_indicators(coin_id: str) -> dict:
 
     price_position = None
     if high_24h != low_24h:
-        price_position = round(
-            (last_close - low_24h) / (high_24h - low_24h) * 100, 1
-        )
+        price_position = round((last_close - low_24h) / (high_24h - low_24h) * 100, 1)
 
     ema_signal = None
     if ema20 and ema50:

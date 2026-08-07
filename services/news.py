@@ -1,11 +1,14 @@
 # services/news.py
 import asyncio
-import feedparser
 from urllib.parse import quote
-from utils.cache import news_cache
+
+import feedparser
 from loguru import logger
 
+from utils.cache import news_cache
+
 GOOGLE_NEWS_RSS = "https://news.google.com/rss/search?q={}&hl=en&gl=US&ceid=US:en"
+
 
 async def get_news(pair: str) -> list:
     cached = news_cache.get(pair)
@@ -35,12 +38,14 @@ async def get_news(pair: str) -> list:
         source = "Unknown"
         if hasattr(entry, "source") and entry.source:
             source = entry.source.get("title", "Unknown")
-        articles.append({
-            "title": entry.title,
-            "source": source,
-            "url": entry.link,
-            "published": entry.published,
-        })
+        articles.append(
+            {
+                "title": entry.title,
+                "source": source,
+                "url": entry.link,
+                "published": entry.published,
+            }
+        )
 
     news_cache.set(pair, articles)
     logger.info(f"Fetched {len(articles)} news for {pair}")

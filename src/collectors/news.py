@@ -19,10 +19,7 @@ class NewsCollector(BaseCollector):
         logger.debug(f"Fetching news for {symbol}")
 
         feed = feedparser.parse(url)
-        headlines = [
-            entry.get("title", "")
-            for entry in feed.entries[:self.MAX_ARTICLES]
-        ]
+        headlines = [entry.get("title", "") for entry in feed.entries[: self.MAX_ARTICLES]]
 
         return RawNewsData(
             symbol=symbol,
@@ -32,9 +29,7 @@ class NewsCollector(BaseCollector):
 
     async def health_check(self) -> bool:
         try:
-            feed = feedparser.parse(
-                "https://news.google.com/rss/search?q=bitcoin&hl=en"
-            )
+            feed = feedparser.parse("https://news.google.com/rss/search?q=bitcoin&hl=en")
             return len(feed.entries) > 0
         except Exception:
             return False

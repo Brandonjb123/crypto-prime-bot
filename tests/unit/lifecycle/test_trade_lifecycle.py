@@ -8,7 +8,9 @@ from src.core.types.enums import PositionCloseReason, PositionStatus, Side
 from src.lifecycle.trade_lifecycle_engine import TradeLifecycleEngine
 
 
-def _make_position(side=Side.LONG, status=PositionStatus.OPEN, entry=50000.0, sl=48000.0, tp=55000.0):
+def _make_position(
+    side=Side.LONG, status=PositionStatus.OPEN, entry=50000.0, sl=48000.0, tp=55000.0
+):
     return Position(
         position_id=uuid4(),
         execution_id=uuid4(),
@@ -22,7 +24,9 @@ def _make_position(side=Side.LONG, status=PositionStatus.OPEN, entry=50000.0, sl
         position_size=0.1,
         opened_at=datetime.now(UTC),
         closed_at=None if status == PositionStatus.OPEN else datetime.now(UTC),
-        close_reason=PositionCloseReason.NONE if status == PositionStatus.OPEN else PositionCloseReason.MANUAL,
+        close_reason=PositionCloseReason.NONE
+        if status == PositionStatus.OPEN
+        else PositionCloseReason.MANUAL,
     )
 
 

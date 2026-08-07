@@ -10,11 +10,13 @@ from src.exchange.adapters.binance.client import BinanceClient
 class TestBinanceBalanceProvider:
     async def test_account_success(self):
         client = MagicMock(spec=BinanceClient)
-        client.get_account = AsyncMock(return_value={
-            "totalWalletBalance": "10000.00",
-            "availableBalance": "9500.00",
-            "totalUnrealizedProfit": "200.00",
-        })
+        client.get_account = AsyncMock(
+            return_value={
+                "totalWalletBalance": "10000.00",
+                "availableBalance": "9500.00",
+                "totalUnrealizedProfit": "200.00",
+            }
+        )
         provider = BinanceBalanceProvider(client)
         snapshot = await provider.get_account_snapshot()
         assert isinstance(snapshot, ExchangeAccountSnapshot)

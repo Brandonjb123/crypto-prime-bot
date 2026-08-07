@@ -1,13 +1,19 @@
 """Recommendation Engine result model."""
 
 from datetime import datetime
+
 from pydantic import BaseModel
-from src.core.types.enums import (
-    ConfidenceLevel, RecommendationAction, RecommendationReason,
-    RiskWarning, SetupType, Side,
-)
-from src.core.models.validation import ValidationResult
+
 from src.core.models.risk import RiskResult
+from src.core.models.validation import ValidationResult
+from src.core.types.enums import (
+    ConfidenceLevel,
+    RecommendationAction,
+    RecommendationReason,
+    RiskWarning,
+    SetupType,
+    Side,
+)
 
 
 class RecommendationResult(BaseModel):

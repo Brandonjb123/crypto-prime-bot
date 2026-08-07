@@ -9,11 +9,11 @@ class RSICalculator:
     def calculate(self, candles: list[Candle], period: int = 14) -> float | None:
         """
         Hitung RSI untuk period tertentu.
-        
+
         Args:
             candles: List of Candle objects, minimal length = period + 1
             period: RSI period (default 14)
-            
+
         Returns:
             RSI value antara 0-100, atau None jika data tidak cukup
         """

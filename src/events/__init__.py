@@ -1,4 +1,5 @@
 """Events package."""
+
 from src.events.base_event import BaseDomainEvent
 from src.events.event_bus import EventBus
 from src.events.events.order_executed import OrderExecutedEvent

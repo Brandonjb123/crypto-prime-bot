@@ -1,5 +1,6 @@
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from uuid import uuid4
+
 from src.core.models.notification import NotificationMessage
 from src.core.types.enums import NotificationLevel
 from src.telegram.notifier import TelegramNotifier
@@ -11,7 +12,8 @@ class TestTelegramNotifier:
         notifier = TelegramNotifier(send_func=lambda msg: received.append(msg))
         msg = NotificationMessage(
             message_id=uuid4(),
-            title="Test", body="Hello",
+            title="Test",
+            body="Hello",
             level=NotificationLevel.INFO,
             timestamp=datetime.now(UTC),
         )
@@ -23,10 +25,13 @@ class TestTelegramNotifier:
         received = []
         notifier = TelegramNotifier(send_func=lambda msg: received.append(msg))
         for i in range(3):
-            notifier.notify(NotificationMessage(
-                message_id=uuid4(),
-                title=f"Test {i}", body="body",
-                level=NotificationLevel.INFO,
-                timestamp=datetime.now(UTC),
-            ))
+            notifier.notify(
+                NotificationMessage(
+                    message_id=uuid4(),
+                    title=f"Test {i}",
+                    body="body",
+                    level=NotificationLevel.INFO,
+                    timestamp=datetime.now(UTC),
+                )
+            )
         assert len(received) == 3

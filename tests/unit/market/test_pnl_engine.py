@@ -63,8 +63,8 @@ class TestPnLEngine:
         provider.update_price("BTC/USDT", 51000.0)
         provider.update_price("ETH/USDT", 3000.0)
         positions = [
-            _make_position("BTC/USDT", Side.LONG, 50000.0, 0.1),    # +100
-            _make_position("ETH/USDT", Side.SHORT, 3200.0, 0.5),     # +100
+            _make_position("BTC/USDT", Side.LONG, 50000.0, 0.1),  # +100
+            _make_position("ETH/USDT", Side.SHORT, 3200.0, 0.5),  # +100
         ]
         pnl = calculate_unrealized(positions, provider)
         assert pnl == pytest.approx(200.0)

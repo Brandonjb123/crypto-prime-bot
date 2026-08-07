@@ -1,28 +1,62 @@
 # utils/formatter.py
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+
 from utils.validator import REWARD_PERCENT, RISK_PERCENT
 
+
 def _wib_now():
-    return datetime.now(timezone.utc) + timedelta(hours=7)
+    return datetime.now(UTC) + timedelta(hours=7)
+
 
 # Leverage tier per koin (kiblat Binance)
 LEVERAGE_TIERS = {
-    "BTC": 25, "ETH": 25, "BNB": 20, "XRP": 20,
-    "SOL": 20, "ADA": 15, "DOGE": 15, "AVAX": 15,
-    "LINK": 15, "DOT": 15, "MATIC": 15, "POL": 15,
-    "LTC": 15, "UNI": 10, "ATOM": 10, "FIL": 10,
-    "APT": 10, "ARB": 10, "OP": 10, "NEAR": 10,
-    "INJ": 10, "SUI": 10, "TIA": 10, "SEI": 10,
-    "PAXG": 10, "OKB": 10, "MNT": 10, "TAO": 10,
-    "WIF": 10, "PEPE": 10, "SHIB": 10, "FLOKI": 5,
-    "BONK": 5, "BOME": 5, "POPCAT": 5, "MEW": 5,
+    "BTC": 25,
+    "ETH": 25,
+    "BNB": 20,
+    "XRP": 20,
+    "SOL": 20,
+    "ADA": 15,
+    "DOGE": 15,
+    "AVAX": 15,
+    "LINK": 15,
+    "DOT": 15,
+    "MATIC": 15,
+    "POL": 15,
+    "LTC": 15,
+    "UNI": 10,
+    "ATOM": 10,
+    "FIL": 10,
+    "APT": 10,
+    "ARB": 10,
+    "OP": 10,
+    "NEAR": 10,
+    "INJ": 10,
+    "SUI": 10,
+    "TIA": 10,
+    "SEI": 10,
+    "PAXG": 10,
+    "OKB": 10,
+    "MNT": 10,
+    "TAO": 10,
+    "WIF": 10,
+    "PEPE": 10,
+    "SHIB": 10,
+    "FLOKI": 5,
+    "BONK": 5,
+    "BOME": 5,
+    "POPCAT": 5,
+    "MEW": 5,
 }
+
 
 def get_recommended_leverage(symbol: str) -> int:
     sym = symbol.split("/")[0].upper()
     return LEVERAGE_TIERS.get(sym, 10)
 
-def calculate_leverage_pnl(entry: float, target: float, stop: float, side: str, leverage: int = 10) -> dict:
+
+def calculate_leverage_pnl(
+    entry: float, target: float, stop: float, side: str, leverage: int = 10
+) -> dict:
     if side.upper() == "LONG":
         base_profit_pct = (target - entry) / entry * 100
         base_loss_pct = (entry - stop) / entry * 100
@@ -33,10 +67,13 @@ def calculate_leverage_pnl(entry: float, target: float, stop: float, side: str, 
     return {
         "profit": round(base_profit_pct * leverage, 1),
         "loss": round(base_loss_pct * leverage, 1),
-        "leverage": leverage
+        "leverage": leverage,
     }
 
-def format_leverage_estimate(entry: float, target: float, stop: float, side: str, symbol: str = "") -> str:
+
+def format_leverage_estimate(
+    entry: float, target: float, stop: float, side: str, symbol: str = ""
+) -> str:
     lev = get_recommended_leverage(symbol)
     pnl = calculate_leverage_pnl(entry, target, stop, side, lev)
     return (
@@ -46,6 +83,7 @@ def format_leverage_estimate(entry: float, target: float, stop: float, side: str
         f"   ❌ Loss  : -{pnl['loss']}%\n"
         f"⚠️ _Leverage tinggi = risiko tinggi. DYOR._"
     )
+
 
 def _smart_price(price):
     if price is None:
@@ -59,10 +97,12 @@ def _smart_price(price):
     else:
         return f"${price:,.8f}"
 
+
 def _format_pair_display(pair: str) -> str:
     if "/" in pair:
         return pair
     return f"{pair}/USDT"
+
 
 def format_price(data: dict) -> str:
     name = data.get("name", "Unknown")
@@ -85,26 +125,32 @@ def format_price(data: dict) -> str:
         f"🕐 {_wib_now().strftime('%H:%M:%S')} WIB · CoinGecko"
     )
 
+
 def format_analyze(data: dict, pair: str, price_data: dict) -> str:
-    verdict = data.get('verdict', 'NO_SETUP')
-    is_valid = verdict == 'SETUP_VALID'
+    verdict = data.get("verdict", "NO_SETUP")
+    is_valid = verdict == "SETUP_VALID"
     display_pair = _format_pair_display(pair)
     symbol = pair.split("/")[0].upper()
 
-    change_24h = price_data.get('price_change_24h', 0) or 0
-    change_7d = price_data.get('price_change_7d', 0) or 0
-    current_price = price_data.get('current_price', 0) or 0
-    vol = price_data.get('total_volume', 0) or 0
-    mcap = price_data.get('market_cap', 0) or 0
+    change_24h = price_data.get("price_change_24h", 0) or 0
+    change_7d = price_data.get("price_change_7d", 0) or 0
+    current_price = price_data.get("current_price", 0) or 0
+    vol = price_data.get("total_volume", 0) or 0
 
     tren = "📈 Bullish" if change_24h > 1 else ("📉 Bearish" if change_24h < -1 else "➡️ Sideways")
-    liq_status = ("🟢 Tinggi" if vol >= 1_000_000_000 else
-                  "🟡 Sedang" if vol >= 100_000_000 else
-                  "🟠 Rendah" if vol >= 1_000_000 else "🔴 Sangat Rendah")
+    liq_status = (
+        "🟢 Tinggi"
+        if vol >= 1_000_000_000
+        else "🟡 Sedang"
+        if vol >= 100_000_000
+        else "🟠 Rendah"
+        if vol >= 1_000_000
+        else "🔴 Sangat Rendah"
+    )
 
-    side = data.get('side')
-    sent_icon = '🟢' if side == 'LONG' else ('🔴' if side == 'SHORT' else '⚪')
-    sentiment = 'Bullish' if side == 'LONG' else ('Bearish' if side == 'SHORT' else 'Neutral')
+    side = data.get("side")
+    sent_icon = "🟢" if side == "LONG" else ("🔴" if side == "SHORT" else "⚪")
+    sentiment = "Bullish" if side == "LONG" else ("Bearish" if side == "SHORT" else "Neutral")
 
     header = f"🔍 *ANALISA {display_pair}*\n"
     header += f"🕐 {_wib_now().strftime('%H:%M')} WIB\n"
@@ -117,15 +163,15 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
         f"📉 Tren   : {tren}\n"
         f"💬 Sentimen: {sent_icon} {sentiment}\n"
         f"💧 Likuiditas: {liq_status}\n"
-        f"📦 Volume : ${vol/1e6:.1f}M\n\n"
+        f"📦 Volume : ${vol / 1e6:.1f}M\n\n"
     )
 
     if is_valid:
-        entry = data.get('entry_price')
-        target = data.get('target_price')
-        sl = data.get('stop_loss')
+        entry = data.get("entry_price")
+        target = data.get("target_price")
+        sl = data.get("stop_loss")
         rr_display = round(REWARD_PERCENT / RISK_PERCENT, 1)
-        reasoning = data.get('reasoning', '')
+        reasoning = data.get("reasoning", "")
         lev = get_recommended_leverage(symbol)
         pnl = calculate_leverage_pnl(entry, target, sl, side, lev)
 
@@ -145,7 +191,7 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
             f"⚠️ Bukan financial advice. DYOR."
         )
     else:
-        reason = data.get('verdict_reason') or data.get('reasoning', 'Kondisi market tidak ideal.')
+        reason = data.get("verdict_reason") or data.get("reasoning", "Kondisi market tidak ideal.")
         verdict_section = (
             f"━━━━━━━━━━━━━━━━━━━━\n"
             f"🚫 *NO SETUP — SKIP DULU*\n"
@@ -162,6 +208,7 @@ def format_analyze(data: dict, pair: str, price_data: dict) -> str:
         result += f"\n\n{data['duplicate_note']}"
     return result
 
+
 def format_signals(signals: list) -> str:
     if not signals:
         return "📭 Tidak ada sinyal aktif."
@@ -175,10 +222,14 @@ def format_signals(signals: list) -> str:
         side_emoji = "🟢" if side == "long" else "🔴"
         entry = sig["entry_price"]
         current = sig.get("current_price", entry)
-        pnl = ((current - entry) / entry * 100) if side == "long" else ((entry - current) / entry * 100)
+        pnl = (
+            ((current - entry) / entry * 100)
+            if side == "long"
+            else ((entry - current) / entry * 100)
+        )
         pnl_emoji = "🟢" if pnl >= 0 else "🔴"
-        display_pair = _format_pair_display(sig['pair'])
-        symbol = sig['pair'].split("/")[0]
+        display_pair = _format_pair_display(sig["pair"])
+        symbol = sig["pair"].split("/")[0]
         lev = get_recommended_leverage(symbol)
         pnl_lev = round(pnl * lev, 1)
 
@@ -195,12 +246,13 @@ def format_signals(signals: list) -> str:
 
     return message
 
+
 def format_paperstats(stats: dict) -> str:
-    win_rate = stats.get('win_rate', 0)
-    win_count = stats.get('win_count', 0)
-    total_closed = stats.get('total_closed', 0)
-    avg_profit_base = stats.get('avg_profit', 0)
-    avg_loss_base = stats.get('avg_loss', 0)
+    win_rate = stats.get("win_rate", 0)
+    win_count = stats.get("win_count", 0)
+    total_closed = stats.get("total_closed", 0)
+    avg_profit_base = stats.get("avg_profit", 0)
+    avg_loss_base = stats.get("avg_loss", 0)
 
     # Kalikan dengan leverage 10x untuk display
     avg_profit_10x = avg_profit_base * 10
@@ -220,6 +272,7 @@ def format_paperstats(stats: dict) -> str:
         f"━━━━━━━━━━━━━━━━━━━━\n"
         f"⚠️ _Basis simulasi leverage 10x. Bukan financial advice._"
     )
+
 
 def format_scan_result(signals: list) -> str:
     if not signals:
@@ -261,6 +314,7 @@ def format_scan_result(signals: list) -> str:
     lines.append("⚠️ Bukan financial advice. DYOR.")
     return "\n".join(lines)
 
+
 def format_broadcast_signal(signal: dict) -> str:
     pair = signal.get("pair", "-")
     display_pair = _format_pair_display(pair)
@@ -292,6 +346,7 @@ def format_broadcast_signal(signal: dict) -> str:
         f"⚠️ Bukan financial advice. DYOR.\n"
         f"🤖 Crypto Prime AI Signal"
     )
+
 
 def format_signal_closed(result: dict) -> str:
     pair = result["pair"]

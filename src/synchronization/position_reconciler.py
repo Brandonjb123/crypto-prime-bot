@@ -1,15 +1,20 @@
 """Position Reconciler — bandingkan exchange positions dengan local."""
 
+from datetime import UTC, datetime
 from uuid import uuid4
-from datetime import datetime, UTC
+
 from src.core.models.position import Position
-from src.core.types.enums import (
-    SyncEntityType, SyncReason, SyncStatus, PositionStatus, PositionCloseReason
-)
 from src.core.models.synchronization import SyncResult
-from src.storage.repositories.position_repository import PositionRepository
+from src.core.types.enums import (
+    PositionCloseReason,
+    PositionStatus,
+    SyncEntityType,
+    SyncReason,
+    SyncStatus,
+)
 from src.events.event_bus import EventBus
 from src.events.events.position_updated import PositionUpdatedEvent
+from src.storage.repositories.position_repository import PositionRepository
 
 
 class PositionReconciler:
@@ -58,19 +63,23 @@ class PositionReconciler:
                 )
                 self.repository.save(closed)
                 if self.event_bus:
-                    self.event_bus.publish(PositionUpdatedEvent(
-                        position_id=lp.position_id,
-                        old_status=PositionStatus.OPEN,
-                        new_status=PositionStatus.CLOSED,
-                        reason="EXCHANGE_MISSING",
-                    ))
+                    self.event_bus.publish(
+                        PositionUpdatedEvent(
+                            position_id=lp.position_id,
+                            old_status=PositionStatus.OPEN,
+                            new_status=PositionStatus.CLOSED,
+                            reason="EXCHANGE_MISSING",
+                        )
+                    )
                 continue
 
             # Both exist — compare
             if abs(ep.position_size - lp.position_size) > 0.0001:
                 reasons.append(SyncReason.SIZE_CHANGED)
                 mismatch += 1
-                details.append(f"SIZE_CHANGED: {lp.symbol} ({lp.position_size} → {ep.position_size})")
+                details.append(
+                    f"SIZE_CHANGED: {lp.symbol} ({lp.position_size} → {ep.position_size})"
+                )
                 # Update local with exchange size
                 updated = Position(
                     position_id=lp.position_id,

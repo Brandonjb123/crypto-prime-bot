@@ -1,6 +1,7 @@
 """Validator Engine — menentukan apakah setup layak diteruskan."""
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+
 from config.constants import VALIDATOR_CONFIDENCE_THRESHOLD
 from src.core.models.setup import SetupResult
 from src.core.models.snapshot import AnalysisSnapshot
@@ -45,7 +46,10 @@ class ValidatorEngine:
             checks[ValidationCheck.CONFIDENCE_CHECK] = True
 
         # 4. Market condition (no sideways / no structure)
-        if snapshot.trend == TrendDirection.SIDEWAYS or snapshot.structure.structure == MarketStructure.NONE:
+        if (
+            snapshot.trend == TrendDirection.SIDEWAYS
+            or snapshot.structure.structure == MarketStructure.NONE
+        ):
             rejections.append(ValidationReason.SIDEWAYS_MARKET)
             checks[ValidationCheck.MARKET_CONDITION] = False
         else:

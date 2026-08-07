@@ -26,10 +26,16 @@ def make_candles(scenario: str = "with_swings") -> list[Candle]:
             else:
                 price = 125.0 + (i - 16) * 3  # naik lagi, tidak break 160
 
-            candles.append(Candle(
-                timestamp=ts, open=price, high=price + 5,
-                low=price - 5, close=price, volume=100.0
-            ))
+            candles.append(
+                Candle(
+                    timestamp=ts,
+                    open=price,
+                    high=price + 5,
+                    low=price - 5,
+                    close=price,
+                    volume=100.0,
+                )
+            )
 
     elif scenario == "bos_bullish":
         # Break swing high: harga terakhir > swing high (160)
@@ -46,10 +52,16 @@ def make_candles(scenario: str = "with_swings") -> list[Candle]:
             else:
                 price = 175.0  # break swing high
 
-            candles.append(Candle(
-                timestamp=ts, open=price, high=price + 5,
-                low=price - 5, close=price, volume=100.0
-            ))
+            candles.append(
+                Candle(
+                    timestamp=ts,
+                    open=price,
+                    high=price + 5,
+                    low=price - 5,
+                    close=price,
+                    volume=100.0,
+                )
+            )
 
     elif scenario == "bos_bearish":
         # Break swing low: harga terakhir < swing low (40)
@@ -66,10 +78,16 @@ def make_candles(scenario: str = "with_swings") -> list[Candle]:
             else:
                 price = 25.0  # break swing low
 
-            candles.append(Candle(
-                timestamp=ts, open=price, high=price + 5,
-                low=price - 5, close=price, volume=100.0
-            ))
+            candles.append(
+                Candle(
+                    timestamp=ts,
+                    open=price,
+                    high=price + 5,
+                    low=price - 5,
+                    close=price,
+                    volume=100.0,
+                )
+            )
 
     return candles
 
@@ -146,10 +164,16 @@ class TestMarketStructureEngine:
             else:
                 price = 120.0  # break swing high (sebelumnya swing high ~95)
 
-            candles.append(Candle(
-                timestamp=ts, open=price, high=price + 5,
-                low=price - 5, close=price, volume=100.0
-            ))
+            candles.append(
+                Candle(
+                    timestamp=ts,
+                    open=price,
+                    high=price + 5,
+                    low=price - 5,
+                    close=price,
+                    volume=100.0,
+                )
+            )
 
         # Simulasi: sebelumnya terjadi BOS_BEARISH (dari candle i=18), lalu reversal
         result = engine.analyze(
@@ -183,10 +207,16 @@ class TestMarketStructureEngine:
             else:
                 price = 30.0  # break swing low (sebelumnya swing low ~45)
 
-            candles.append(Candle(
-                timestamp=ts, open=price, high=price + 5,
-                low=price - 5, close=price, volume=100.0
-            ))
+            candles.append(
+                Candle(
+                    timestamp=ts,
+                    open=price,
+                    high=price + 5,
+                    low=price - 5,
+                    close=price,
+                    volume=100.0,
+                )
+            )
 
         result = engine.analyze(
             candles,
@@ -195,4 +225,4 @@ class TestMarketStructureEngine:
         )
 
         assert result.structure == MarketStructure.CHOCH
-        assert result.direction == TrendDirection.BEARISH    
+        assert result.direction == TrendDirection.BEARISH

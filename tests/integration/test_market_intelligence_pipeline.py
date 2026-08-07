@@ -33,24 +33,40 @@ def make_asset(candle_count: int = 60) -> NormalizedAsset:
         elif i < 45:
             price = base_price + 30 * 30 + 200 - (i - 35) * 20  # pullback
         elif i < 55:
-            price = base_price + 30 * 30 + 200 - 200 + (i - 45) * 15  # naik lagi, tapi tidak break resistance
+            price = (
+                base_price + 30 * 30 + 200 - 200 + (i - 45) * 15
+            )  # naik lagi, tapi tidak break resistance
         else:
             price = base_price + 30 * 30 + 200 - 200 + 150 - (i - 55) * 10  # sideways turun dikit
 
-        candles.append(Candle(
-            timestamp=ts, open=price, high=price + 40,
-            low=price - 20, close=price + 20, volume=1000.0
-        ))
+        candles.append(
+            Candle(
+                timestamp=ts,
+                open=price,
+                high=price + 40,
+                low=price - 20,
+                close=price + 20,
+                volume=1000.0,
+            )
+        )
 
     return NormalizedAsset(
-        symbol="BTC", price=base_price + 30 * 30 + 150,  # ~46150, di antara support dan resistance
-        volume_24h=28000000000.0, volume_spike_ratio=1.5,
-        market_cap=900000000000.0, price_change_24h=2.5,
-        price_change_7d=-1.2, funding_rate=0.0002,
-        open_interest=15000000000.0, long_short_ratio=1.25,
-        fear_greed_value=25, fear_greed_classification="Extreme Fear",
-        news_headlines=["Bitcoin rising"], candles_4h=candles,
-        candles_1h=[], data_quality_score=1.0,
+        symbol="BTC",
+        price=base_price + 30 * 30 + 150,  # ~46150, di antara support dan resistance
+        volume_24h=28000000000.0,
+        volume_spike_ratio=1.5,
+        market_cap=900000000000.0,
+        price_change_24h=2.5,
+        price_change_7d=-1.2,
+        funding_rate=0.0002,
+        open_interest=15000000000.0,
+        long_short_ratio=1.25,
+        fear_greed_value=25,
+        fear_greed_classification="Extreme Fear",
+        news_headlines=["Bitcoin rising"],
+        candles_4h=candles,
+        candles_1h=[],
+        data_quality_score=1.0,
         timestamp=datetime.now(UTC),
     )
 

@@ -1,10 +1,10 @@
 """Integration test: EventBus → NotificationDispatcher → TelegramNotifier."""
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from uuid import uuid4
+
 from src.core.models.notification import NotificationMessage
 from src.core.types.enums import NotificationLevel
-from src.notification.dispatcher import NotificationDispatcher
 from src.telegram.notifier import TelegramNotifier
 
 
@@ -12,7 +12,6 @@ class TestTelegramPipeline:
     def test_notification_flow(self):
         received = []
         notifier = TelegramNotifier(send_func=lambda msg: received.append(msg))
-        dispatcher = NotificationDispatcher(notifier)
 
         msg = NotificationMessage(
             message_id=uuid4(),

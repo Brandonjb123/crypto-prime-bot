@@ -1,9 +1,17 @@
-from src.core.models.backtest import TradeRecord, TradeOutcome
 from src.backtest.metrics import calculate_metrics
+from src.core.models.backtest import TradeOutcome, TradeRecord
 
 
 def make_trade(pnl, outcome=TradeOutcome.WIN):
-    return TradeRecord(symbol="BTCUSDT", side="LONG", entry_price=100.0, exit_price=100.0+pnl, position_size=1.0, pnl=pnl, outcome=outcome)
+    return TradeRecord(
+        symbol="BTCUSDT",
+        side="LONG",
+        entry_price=100.0,
+        exit_price=100.0 + pnl,
+        position_size=1.0,
+        pnl=pnl,
+        outcome=outcome,
+    )
 
 
 class TestMetrics:

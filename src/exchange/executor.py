@@ -37,12 +37,14 @@ class OrderExecutor:
         result = await self.adapter.place_order(plan)
 
         if self.event_bus and result.status == OrderStatus.FILLED:
-            self.event_bus.publish(OrderExecutedEvent(
-                execution_id=result.execution_id,
-                order_id=result.order_id,
-                status=result.status,
-                symbol=result.symbol,
-                side=result.side,
-            ))
+            self.event_bus.publish(
+                OrderExecutedEvent(
+                    execution_id=result.execution_id,
+                    order_id=result.order_id,
+                    status=result.status,
+                    symbol=result.symbol,
+                    side=result.side,
+                )
+            )
 
         return result

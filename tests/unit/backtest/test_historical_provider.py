@@ -1,10 +1,20 @@
-from datetime import datetime, UTC
-from src.core.models.backtest import HistoricalCandle
+from datetime import UTC, datetime
+
 from src.backtest.historical_provider import HistoricalPriceProvider
+from src.core.models.backtest import HistoricalCandle
 
 
 def make_candle(close):
-    return HistoricalCandle(timestamp=datetime.now(UTC), symbol="BTCUSDT", timeframe="4h", open=close-1, high=close+2, low=close-2, close=close, volume=100.0)
+    return HistoricalCandle(
+        timestamp=datetime.now(UTC),
+        symbol="BTCUSDT",
+        timeframe="4h",
+        open=close - 1,
+        high=close + 2,
+        low=close - 2,
+        close=close,
+        volume=100.0,
+    )
 
 
 class TestHistoricalPriceProvider:

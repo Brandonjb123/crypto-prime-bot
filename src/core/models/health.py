@@ -1,7 +1,9 @@
 """Health snapshot model."""
 
 from datetime import datetime
+
 from pydantic import BaseModel
+
 from src.core.types.enums import HealthStatus, PipelineStatus
 
 

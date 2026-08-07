@@ -1,4 +1,5 @@
 """Notification package."""
+
 from src.notification.base_notifier import BaseNotifier
 from src.notification.console_notifier import ConsoleNotifier
 from src.notification.dispatcher import NotificationDispatcher

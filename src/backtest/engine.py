@@ -1,12 +1,12 @@
 """Backtest Engine — menjalankan simulasi historical."""
 
-from datetime import datetime, UTC, timedelta
-from uuid import uuid4
-from src.core.models.backtest import BacktestResult, HistoricalCandle, TradeRecord, TradeOutcome
-from src.core.types.enums import BacktestStatus, PositionStatus, Side
-from src.backtest.historical_provider import HistoricalPriceProvider
+from datetime import UTC, datetime
+
 from src.backtest.candle_replay import CandleReplay
+from src.backtest.historical_provider import HistoricalPriceProvider
 from src.backtest.metrics import calculate_metrics
+from src.core.models.backtest import BacktestResult, HistoricalCandle, TradeOutcome, TradeRecord
+from src.core.types.enums import BacktestStatus, PositionStatus, Side
 
 
 class BacktestEngine:
@@ -26,7 +26,9 @@ class BacktestEngine:
         self.price_provider = HistoricalPriceProvider()
         self.replay = CandleReplay()
 
-    async def run(self, candles: list[HistoricalCandle], symbol: str = "BTCUSDT", timeframe: str = "4h") -> BacktestResult:
+    async def run(
+        self, candles: list[HistoricalCandle], symbol: str = "BTCUSDT", timeframe: str = "4h"
+    ) -> BacktestResult:
         if not candles:
             return BacktestResult(
                 status=BacktestStatus.FAILED,
@@ -75,7 +77,13 @@ class BacktestEngine:
                         else:
                             pnl = (updated.entry_price - updated.last_price) * updated.position_size
 
-                        outcome = TradeOutcome.WIN if pnl > 0 else TradeOutcome.LOSS if pnl < 0 else TradeOutcome.BREAKEVEN
+                        outcome = (
+                            TradeOutcome.WIN
+                            if pnl > 0
+                            else TradeOutcome.LOSS
+                            if pnl < 0
+                            else TradeOutcome.BREAKEVEN
+                        )
 
                         record = TradeRecord(
                             symbol=symbol,
@@ -88,7 +96,9 @@ class BacktestEngine:
                         )
                         trades.append(record)
                         # Close position
-                        self.position_manager.close_position(str(updated.position_id), updated.close_reason)
+                        self.position_manager.close_position(
+                            str(updated.position_id), updated.close_reason
+                        )
 
         # Hitung metrics
         metrics = calculate_metrics(trades)

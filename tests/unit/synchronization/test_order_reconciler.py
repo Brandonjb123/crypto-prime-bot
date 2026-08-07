@@ -1,9 +1,14 @@
+from datetime import UTC, datetime
 from uuid import uuid4
-from datetime import datetime, UTC
+
 from src.core.models.order import OrderResult
 from src.core.types.enums import (
-    ExecutionType, OrderRejectReason, OrderStatus, Side,
-    SyncEntityType, SyncReason, SyncStatus,
+    ExecutionType,
+    OrderRejectReason,
+    OrderStatus,
+    Side,
+    SyncReason,
+    SyncStatus,
 )
 from src.storage.adapters.in_memory_order_repository import InMemoryOrderRepository
 from src.synchronization.order_reconciler import OrderReconciler

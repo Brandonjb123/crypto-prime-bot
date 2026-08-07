@@ -1,6 +1,7 @@
 """Command Handlers — context opsional."""
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+
 from src.core.models.telegram import TelegramMessage, TelegramResponse
 from src.core.types.enums import TelegramResponseType
 from src.telegram.formatter import format_help, format_portfolio, format_positions, format_status
@@ -10,7 +11,9 @@ def status_handler(message: TelegramMessage, context: dict | None = None) -> Tel
     ctx = context or {}
     return TelegramResponse(
         response_type=TelegramResponseType.TEXT,
-        text=format_status(ctx.get("orchestrator_status", "UNKNOWN"), ctx.get("pipeline_status", "IDLE")),
+        text=format_status(
+            ctx.get("orchestrator_status", "UNKNOWN"), ctx.get("pipeline_status", "IDLE")
+        ),
         timestamp=datetime.now(UTC),
     )
 

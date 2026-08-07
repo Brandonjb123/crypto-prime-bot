@@ -10,11 +10,18 @@ from src.storage.adapters.in_memory_order_repository import InMemoryOrderReposit
 
 def _make_order():
     return OrderResult(
-        execution_id=uuid4(), order_id=uuid4(),
-        status=OrderStatus.FILLED, reject_reason=OrderRejectReason.NONE,
-        execution_type=ExecutionType.MARKET, side=Side.LONG,
-        symbol="BTC/USDT", requested_entry=50000.0, executed_entry=50000.0,
-        position_size=0.1, stop_loss=48000.0, take_profit=55000.0,
+        execution_id=uuid4(),
+        order_id=uuid4(),
+        status=OrderStatus.FILLED,
+        reject_reason=OrderRejectReason.NONE,
+        execution_type=ExecutionType.MARKET,
+        side=Side.LONG,
+        symbol="BTC/USDT",
+        requested_entry=50000.0,
+        executed_entry=50000.0,
+        position_size=0.1,
+        stop_loss=48000.0,
+        take_profit=55000.0,
         timestamp=datetime.now(UTC),
     )
 

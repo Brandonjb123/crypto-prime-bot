@@ -1,11 +1,10 @@
 """Order Reconciler — bandingkan exchange orders dengan local."""
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+
 from src.core.models.order import OrderResult
-from src.core.types.enums import (
-    SyncEntityType, SyncReason, SyncStatus, OrderStatus
-)
 from src.core.models.synchronization import SyncResult
+from src.core.types.enums import SyncEntityType, SyncReason, SyncStatus
 from src.storage.repositories.order_repository import OrderRepository
 
 
@@ -32,7 +31,9 @@ class OrderReconciler:
             if eo.status != lo.status:
                 reasons.append(SyncReason.STATUS_CHANGED)
                 mismatch += 1
-                details.append(f"STATUS_CHANGED: {lo.order_id} ({lo.status.value} → {eo.status.value})")
+                details.append(
+                    f"STATUS_CHANGED: {lo.order_id} ({lo.status.value} → {eo.status.value})"
+                )
                 # Update local order
                 updated = OrderResult(
                     execution_id=lo.execution_id,

@@ -31,6 +31,7 @@ class NormalizedAsset(BaseModel):
 
 # ── Raw Data Models (dari Sprint 1, tetap dipertahankan) ──
 
+
 class RawBinanceData(BaseModel):
     symbol: str
     candles_4h: list

@@ -1,6 +1,7 @@
 # utils/cache.py
 import time
 
+
 class SimpleCache:
     def __init__(self, ttl: int = 300):
         self.ttl = ttl
@@ -21,8 +22,10 @@ class SimpleCache:
     def clear(self):
         self._store.clear()
 
+
 class BroadcastCooldown:
     """Track pair yang sudah di-broadcast, dengan cooldown 8 jam."""
+
     def __init__(self, cooldown_seconds: int = 28800):
         self.cooldown = cooldown_seconds
         self._last_broadcast = {}  # {pair: timestamp}
@@ -42,8 +45,9 @@ class BroadcastCooldown:
         """Reset cooldown untuk pair tertentu."""
         self._last_broadcast.pop(pair, None)
 
-# Instance global yang dipakai di broadcaster:
-broadcast_cooldown = BroadcastCooldown(cooldown_seconds=28800)        
 
-price_cache = SimpleCache(ttl=300)   # 5 menit
-news_cache = SimpleCache(ttl=600)    # 10 menit
+# Instance global yang dipakai di broadcaster:
+broadcast_cooldown = BroadcastCooldown(cooldown_seconds=28800)
+
+price_cache = SimpleCache(ttl=300)  # 5 menit
+news_cache = SimpleCache(ttl=600)  # 10 menit

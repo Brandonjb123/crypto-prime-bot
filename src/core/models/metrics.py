@@ -1,6 +1,7 @@
 """Runtime metrics model."""
 
 from datetime import datetime
+
 from pydantic import BaseModel
 
 

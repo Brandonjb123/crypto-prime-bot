@@ -53,8 +53,10 @@ class TestEventBus:
     def test_unregister(self):
         bus = self.bus()
         received = []
+
         def handler(e):
             received.append(e)
+
         bus.register("test_event", handler)
         bus.unregister("test_event", handler)
         bus.publish(BaseDomainEvent(event_name="test_event"))

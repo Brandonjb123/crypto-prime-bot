@@ -30,7 +30,9 @@ class BinanceFuturesAdapter(BaseExchangeAdapter):
                 reject_reason=OrderRejectReason.UNKNOWN,
                 execution_type=execution_plan.execution_type,
                 side=execution_plan.side,
-                symbol=execution_plan.side.value + "_" + execution_plan.side.value if execution_plan.side else "",
+                symbol=execution_plan.side.value + "_" + execution_plan.side.value
+                if execution_plan.side
+                else "",
                 requested_entry=execution_plan.entry_price,
                 executed_entry=None,
                 position_size=execution_plan.position_size,

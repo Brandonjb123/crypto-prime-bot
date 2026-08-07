@@ -19,7 +19,13 @@ from src.core.types.enums import (
 from src.execution.execution_planner import ExecutionPlanner
 
 
-def _make_recommendation(action=RecommendationAction.BUY, ready=True, direction=Side.LONG, confidence=0.85, setup_type=SetupType.TREND_FOLLOWING):
+def _make_recommendation(
+    action=RecommendationAction.BUY,
+    ready=True,
+    direction=Side.LONG,
+    confidence=0.85,
+    setup_type=SetupType.TREND_FOLLOWING,
+):
     return RecommendationResult(
         action=action,
         summary="Test summary",
@@ -29,8 +35,28 @@ def _make_recommendation(action=RecommendationAction.BUY, ready=True, direction=
         confidence_level=ConfidenceLevel.HIGH,
         setup_type=setup_type,
         direction=direction,
-        validation_result=ValidationResult(approved=True, rejection_reasons=[], checks_passed={vc: True for vc in ValidationCheck}, timestamp=datetime.now(UTC)),
-        risk_result=RiskResult(entry_price=50000.0, stop_loss=48000.0, stop_distance=2000.0, take_profit=55000.0, take_profit_distance=5000.0, position_size=0.1, risk_amount=200.0, expected_profit=500.0, expected_loss=200.0, risk_reward_ratio=2.5, max_loss_pct=2.0, direction=Side.LONG, risk_model="trend", timestamp=datetime.now(UTC)),
+        validation_result=ValidationResult(
+            approved=True,
+            rejection_reasons=[],
+            checks_passed={vc: True for vc in ValidationCheck},
+            timestamp=datetime.now(UTC),
+        ),
+        risk_result=RiskResult(
+            entry_price=50000.0,
+            stop_loss=48000.0,
+            stop_distance=2000.0,
+            take_profit=55000.0,
+            take_profit_distance=5000.0,
+            position_size=0.1,
+            risk_amount=200.0,
+            expected_profit=500.0,
+            expected_loss=200.0,
+            risk_reward_ratio=2.5,
+            max_loss_pct=2.0,
+            direction=Side.LONG,
+            risk_model="trend",
+            timestamp=datetime.now(UTC),
+        ),
         ready_for_execution=ready,
         timestamp=datetime.now(UTC),
     )
@@ -38,11 +64,21 @@ def _make_recommendation(action=RecommendationAction.BUY, ready=True, direction=
 
 def _make_risk():
     return RiskResult(
-        entry_price=50000.0, stop_loss=48000.0, stop_distance=2000.0,
-        take_profit=55000.0, take_profit_distance=5000.0,
-        position_size=0.1, risk_amount=200.0, expected_profit=500.0,
-        expected_loss=200.0, risk_reward_ratio=2.5, max_loss_pct=2.0,
-        direction=Side.LONG, risk_model="trend", warnings=[], timestamp=datetime.now(UTC),
+        entry_price=50000.0,
+        stop_loss=48000.0,
+        stop_distance=2000.0,
+        take_profit=55000.0,
+        take_profit_distance=5000.0,
+        position_size=0.1,
+        risk_amount=200.0,
+        expected_profit=500.0,
+        expected_loss=200.0,
+        risk_reward_ratio=2.5,
+        max_loss_pct=2.0,
+        direction=Side.LONG,
+        risk_model="trend",
+        warnings=[],
+        timestamp=datetime.now(UTC),
     )
 
 
@@ -60,28 +96,46 @@ class TestExecutionPlanner:
         return ExecutionPlanner()
 
     def test_buy_place_order(self):
-        result = self.pln().plan(_make_recommendation(RecommendationAction.BUY, True, Side.LONG), _make_risk(), _make_validation())
+        result = self.pln().plan(
+            _make_recommendation(RecommendationAction.BUY, True, Side.LONG),
+            _make_risk(),
+            _make_validation(),
+        )
         assert result.action == ExecutionAction.PLACE_ORDER
         assert result.status == ExecutionStatus.READY
         assert result.side == Side.LONG
         assert result.execution_type == ExecutionType.MARKET
 
     def test_sell_place_order(self):
-        result = self.pln().plan(_make_recommendation(RecommendationAction.SELL, True, Side.SHORT), _make_risk(), _make_validation())
+        result = self.pln().plan(
+            _make_recommendation(RecommendationAction.SELL, True, Side.SHORT),
+            _make_risk(),
+            _make_validation(),
+        )
         assert result.action == ExecutionAction.PLACE_ORDER
         assert result.side == Side.SHORT
 
     def test_wait_do_not_execute(self):
-        result = self.pln().plan(_make_recommendation(RecommendationAction.WAIT, False, None), _make_risk(), _make_validation())
+        result = self.pln().plan(
+            _make_recommendation(RecommendationAction.WAIT, False, None),
+            _make_risk(),
+            _make_validation(),
+        )
         assert result.action == ExecutionAction.DO_NOT_EXECUTE
         assert result.status == ExecutionStatus.BLOCKED
 
     def test_skip_do_not_execute(self):
-        result = self.pln().plan(_make_recommendation(RecommendationAction.SKIP, False, None), _make_risk(), _make_validation())
+        result = self.pln().plan(
+            _make_recommendation(RecommendationAction.SKIP, False, None),
+            _make_risk(),
+            _make_validation(),
+        )
         assert result.action == ExecutionAction.DO_NOT_EXECUTE
 
     def test_not_ready_blocked(self):
-        result = self.pln().plan(_make_recommendation(ready=False), _make_risk(), _make_validation())
+        result = self.pln().plan(
+            _make_recommendation(ready=False), _make_risk(), _make_validation()
+        )
         assert result.action == ExecutionAction.DO_NOT_EXECUTE
         assert result.status == ExecutionStatus.BLOCKED
 
@@ -91,7 +145,9 @@ class TestExecutionPlanner:
         assert result.action == ExecutionAction.PLACE_ORDER
 
     def test_blocked_status(self):
-        result = self.pln().plan(_make_recommendation(ready=False), _make_risk(), _make_validation(False))
+        result = self.pln().plan(
+            _make_recommendation(ready=False), _make_risk(), _make_validation(False)
+        )
         assert result.status == ExecutionStatus.BLOCKED
 
     def test_forward_warnings(self):
@@ -103,7 +159,10 @@ class TestExecutionPlanner:
 
     def test_forward_validation_reasons(self):
         validation = _make_validation(False)
-        validation.rejection_reasons = [ValidationReason.LOW_CONFIDENCE, ValidationReason.BLOCKED_REASONS]
+        validation.rejection_reasons = [
+            ValidationReason.LOW_CONFIDENCE,
+            ValidationReason.BLOCKED_REASONS,
+        ]
         result = self.pln().plan(_make_recommendation(ready=False), _make_risk(), validation)
         assert ValidationReason.LOW_CONFIDENCE in result.validation_reasons
         assert ValidationReason.BLOCKED_REASONS in result.validation_reasons

@@ -1,8 +1,9 @@
 # db/database.py
 import os
 import sqlite3
-from turso_python import TursoConnection
+
 from loguru import logger
+from turso_python import TursoConnection
 
 TURSO_URL = os.getenv("TURSO_DATABASE_URL")
 TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
@@ -12,6 +13,7 @@ _connection = None
 
 class TursoCursor:
     """Membungkus hasil query Turso agar mirip sqlite3.Cursor."""
+
     def __init__(self, conn, rows=None, description=None):
         self._conn = conn
         self._rows = rows or []
@@ -27,7 +29,7 @@ class TursoCursor:
         return None
 
     def fetchall(self):
-        remaining = self._rows[self._index:]
+        remaining = self._rows[self._index :]
         self._index = len(self._rows)
         return remaining
 
@@ -70,7 +72,9 @@ class TursoCursor:
                         if cols:
                             row_dict = {}
                             for i, col_name in enumerate(cols):
-                                row_dict[col_name] = converted_row[i] if i < len(converted_row) else None
+                                row_dict[col_name] = (
+                                    converted_row[i] if i < len(converted_row) else None
+                                )
                             rows.append(row_dict)
                         else:
                             rows.append(converted_row)
@@ -88,6 +92,7 @@ class TursoCursor:
 
 class TursoAdapter:
     """Adapter agar TursoConnection berperilaku seperti sqlite3.Connection."""
+
     def __init__(self, url, token):
         self._conn = TursoConnection(url, token)
         self.row_factory = None

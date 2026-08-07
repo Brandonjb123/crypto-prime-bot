@@ -1,8 +1,7 @@
 """Graceful Shutdown Handler."""
 
-import asyncio
+from collections.abc import Callable
 from inspect import iscoroutinefunction
-from typing import Callable
 
 
 class ShutdownHandler:

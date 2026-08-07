@@ -67,11 +67,13 @@ class PortfolioManager:
         )
 
         if self.event_bus:
-            self.event_bus.publish(PortfolioUpdatedEvent(
-                snapshot_id=snapshot.snapshot_id,
-                equity=snapshot.equity,
-                gross_exposure=snapshot.gross_exposure,
-                net_exposure=snapshot.net_exposure,
-            ))
+            self.event_bus.publish(
+                PortfolioUpdatedEvent(
+                    snapshot_id=snapshot.snapshot_id,
+                    equity=snapshot.equity,
+                    gross_exposure=snapshot.gross_exposure,
+                    net_exposure=snapshot.net_exposure,
+                )
+            )
 
         return snapshot

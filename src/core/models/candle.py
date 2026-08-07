@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 class Candle(BaseModel):
     """Single OHLCV candle, format independen dari source."""
+
     timestamp: datetime
     open: float
     high: float

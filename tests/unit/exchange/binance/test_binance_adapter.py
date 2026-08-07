@@ -69,16 +69,18 @@ def _make_plan_short():
 class TestBinanceFuturesAdapter:
     async def test_buy_order_success(self):
         client = MagicMock(spec=BinanceClient)
-        client.place_order = AsyncMock(return_value={
-            "orderId": "12345678-1234-5678-1234-567812345678",
-            "status": "FILLED",
-            "side": "BUY",
-            "price": "50000.00",
-            "avgPrice": "50000.00",
-            "origQty": "0.100",
-            "type": "MARKET",
-            "symbol": "BTCUSDT",
-        })
+        client.place_order = AsyncMock(
+            return_value={
+                "orderId": "12345678-1234-5678-1234-567812345678",
+                "status": "FILLED",
+                "side": "BUY",
+                "price": "50000.00",
+                "avgPrice": "50000.00",
+                "origQty": "0.100",
+                "type": "MARKET",
+                "symbol": "BTCUSDT",
+            }
+        )
         adapter = BinanceFuturesAdapter(client)
         plan = _make_plan()
         result = await adapter.place_order(plan)
@@ -87,16 +89,18 @@ class TestBinanceFuturesAdapter:
 
     async def test_sell_order_success(self):
         client = MagicMock(spec=BinanceClient)
-        client.place_order = AsyncMock(return_value={
-            "orderId": "12345678-1234-5678-1234-567812345678",
-            "status": "FILLED",
-            "side": "SELL",
-            "price": "50000.00",
-            "avgPrice": "50000.00",
-            "origQty": "0.100",
-            "type": "MARKET",
-            "symbol": "BTCUSDT",
-        })
+        client.place_order = AsyncMock(
+            return_value={
+                "orderId": "12345678-1234-5678-1234-567812345678",
+                "status": "FILLED",
+                "side": "SELL",
+                "price": "50000.00",
+                "avgPrice": "50000.00",
+                "origQty": "0.100",
+                "type": "MARKET",
+                "symbol": "BTCUSDT",
+            }
+        )
         adapter = BinanceFuturesAdapter(client)
         plan = _make_plan_short()
         result = await adapter.place_order(plan)
@@ -105,15 +109,17 @@ class TestBinanceFuturesAdapter:
 
     async def test_rejected_order(self):
         client = MagicMock(spec=BinanceClient)
-        client.place_order = AsyncMock(return_value={
-            "orderId": "12345678-1234-5678-1234-567812345678",
-            "status": "REJECTED",
-            "side": "BUY",
-            "avgPrice": "0",
-            "origQty": "0.100",
-            "type": "MARKET",
-            "symbol": "BTCUSDT",
-        })
+        client.place_order = AsyncMock(
+            return_value={
+                "orderId": "12345678-1234-5678-1234-567812345678",
+                "status": "REJECTED",
+                "side": "BUY",
+                "avgPrice": "0",
+                "origQty": "0.100",
+                "type": "MARKET",
+                "symbol": "BTCUSDT",
+            }
+        )
         adapter = BinanceFuturesAdapter(client)
         plan = _make_plan()
         result = await adapter.place_order(plan)
@@ -121,7 +127,11 @@ class TestBinanceFuturesAdapter:
 
     async def test_insufficient_balance(self):
         client = MagicMock(spec=BinanceClient)
-        client.place_order = AsyncMock(side_effect=BinanceAPIError("Insufficient balance", ExchangeErrorType.INSUFFICIENT_BALANCE))
+        client.place_order = AsyncMock(
+            side_effect=BinanceAPIError(
+                "Insufficient balance", ExchangeErrorType.INSUFFICIENT_BALANCE
+            )
+        )
         adapter = BinanceFuturesAdapter(client)
         plan = _make_plan()
         result = await adapter.place_order(plan)
@@ -130,7 +140,9 @@ class TestBinanceFuturesAdapter:
 
     async def test_network_error(self):
         client = MagicMock(spec=BinanceClient)
-        client.place_order = AsyncMock(side_effect=BinanceAPIError("Network error", ExchangeErrorType.NETWORK_ERROR))
+        client.place_order = AsyncMock(
+            side_effect=BinanceAPIError("Network error", ExchangeErrorType.NETWORK_ERROR)
+        )
         adapter = BinanceFuturesAdapter(client)
         plan = _make_plan()
         result = await adapter.place_order(plan)
@@ -139,7 +151,9 @@ class TestBinanceFuturesAdapter:
 
     async def test_auth_error(self):
         client = MagicMock(spec=BinanceClient)
-        client.place_order = AsyncMock(side_effect=BinanceAPIError("Auth error", ExchangeErrorType.AUTH_ERROR))
+        client.place_order = AsyncMock(
+            side_effect=BinanceAPIError("Auth error", ExchangeErrorType.AUTH_ERROR)
+        )
         adapter = BinanceFuturesAdapter(client)
         plan = _make_plan()
         result = await adapter.place_order(plan)
@@ -155,16 +169,18 @@ class TestBinanceFuturesAdapter:
 
     async def test_deterministic_mock(self):
         client = MagicMock(spec=BinanceClient)
-        client.place_order = AsyncMock(return_value={
-            "orderId": "12345678-1234-5678-1234-567812345678",
-            "status": "FILLED",
-            "side": "BUY",
-            "price": "50000.00",
-            "avgPrice": "50000.00",
-            "origQty": "0.100",
-            "type": "MARKET",
-            "symbol": "BTCUSDT",
-        })
+        client.place_order = AsyncMock(
+            return_value={
+                "orderId": "12345678-1234-5678-1234-567812345678",
+                "status": "FILLED",
+                "side": "BUY",
+                "price": "50000.00",
+                "avgPrice": "50000.00",
+                "origQty": "0.100",
+                "type": "MARKET",
+                "symbol": "BTCUSDT",
+            }
+        )
         adapter1 = BinanceFuturesAdapter(client)
         adapter2 = BinanceFuturesAdapter(client)
         plan = _make_plan()

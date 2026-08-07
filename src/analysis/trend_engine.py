@@ -10,11 +10,11 @@ class TrendEngine:
     def analyze(self, technical: TechnicalAnalysis, price: float) -> TrendDirection:
         """
         Tentukan trend direction.
-        
+
         Args:
             technical: TechnicalAnalysis hasil dari TechnicalAnalysisEngine
             price: Harga terbaru (dari NormalizedAsset.price)
-            
+
         Returns:
             TrendDirection: BULLISH, BEARISH, atau SIDEWAYS
         """

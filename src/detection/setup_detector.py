@@ -1,6 +1,6 @@
 """Setup Detection Engine — orchestrator dengan rule registry."""
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 from config.constants import RULE_PRIORITY_ORDER
 from src.core.models.setup import SetupResult

@@ -25,12 +25,14 @@ class TestConsoleNotifier:
     def test_multiple_notify(self, capsys):
         notifier = ConsoleNotifier()
         for i in range(3):
-            notifier.notify(NotificationMessage(
-                message_id=uuid4(),
-                title=f"Test {i}",
-                body="body",
-                level=NotificationLevel.INFO,
-                timestamp=datetime.now(UTC),
-            ))
+            notifier.notify(
+                NotificationMessage(
+                    message_id=uuid4(),
+                    title=f"Test {i}",
+                    body="body",
+                    level=NotificationLevel.INFO,
+                    timestamp=datetime.now(UTC),
+                )
+            )
         captured = capsys.readouterr()
         assert captured.out.count("[INFO]") == 3

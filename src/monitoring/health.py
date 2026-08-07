@@ -1,7 +1,8 @@
 """Health Monitor."""
 
-from datetime import datetime, UTC
 import time
+from datetime import UTC, datetime
+
 from src.core.models.health import HealthSnapshot
 from src.core.types.enums import HealthStatus, PipelineStatus
 

@@ -14,11 +14,17 @@ def _make_snapshot(status=PortfolioStatus.ACTIVE):
         snapshot_id=uuid4(),
         timestamp=datetime.now(UTC),
         status=status,
-        total_positions=0, open_positions=0, closed_positions=0,
-        long_positions=0, short_positions=0,
-        net_exposure=0.0, gross_exposure=0.0,
-        realized_pnl=0.0, unrealized_pnl=0.0,
-        equity=10000.0, warnings=[],
+        total_positions=0,
+        open_positions=0,
+        closed_positions=0,
+        long_positions=0,
+        short_positions=0,
+        net_exposure=0.0,
+        gross_exposure=0.0,
+        realized_pnl=0.0,
+        unrealized_pnl=0.0,
+        equity=10000.0,
+        warnings=[],
     )
 
 

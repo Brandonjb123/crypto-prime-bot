@@ -1,7 +1,7 @@
 # db/models.py
 from datetime import datetime, timedelta
+
 from db.database import get_connection
-from loguru import logger
 
 
 def register_user(chat_id: int, username: str = None, first_name: str = None):
@@ -49,11 +49,11 @@ def get_user_plan(chat_id: int) -> str:
     cursor = conn.cursor()
     cursor.execute("SELECT plan, plan_expiry FROM users WHERE chat_id = ?", (chat_id,))
     row = cursor.fetchone()
-    
+
     if row is None:
         conn.close()
         return "free"
-    
+
     plan = row["plan"] if isinstance(row, dict) else (row[0] or "free")
     expiry_str = row["plan_expiry"] if isinstance(row, dict) else row[1]
 

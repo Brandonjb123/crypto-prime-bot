@@ -12,12 +12,32 @@ class SentimentEngine:
 
     # Keyword lists
     BULLISH_KEYWORDS = [
-        "bullish", "surge", "rally", "breakout", "gain", "pump",
-        "up", "high", "buy", "adoption", "partnership", "launch",
+        "bullish",
+        "surge",
+        "rally",
+        "breakout",
+        "gain",
+        "pump",
+        "up",
+        "high",
+        "buy",
+        "adoption",
+        "partnership",
+        "launch",
     ]
     BEARISH_KEYWORDS = [
-        "bearish", "crash", "dump", "drop", "fall", "down",
-        "sell", "hack", "ban", "lawsuit", "regulation", "fear",
+        "bearish",
+        "crash",
+        "dump",
+        "drop",
+        "fall",
+        "down",
+        "sell",
+        "hack",
+        "ban",
+        "lawsuit",
+        "regulation",
+        "fear",
     ]
 
     def analyze(self, asset: NormalizedAsset) -> SentimentAnalysis:

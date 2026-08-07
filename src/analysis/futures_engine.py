@@ -10,8 +10,8 @@ from src.core.types.enums import SentimentLevel
 class FuturesEngine:
     """Analisis sentimen futures dari funding rate dan OI."""
 
-    GREED_THRESHOLD = 0.0001   # > 0.01% → GREED
-    FEAR_THRESHOLD = -0.0001   # < -0.01% → FEAR
+    GREED_THRESHOLD = 0.0001  # > 0.01% → GREED
+    FEAR_THRESHOLD = -0.0001  # < -0.01% → FEAR
 
     def analyze(self, asset: NormalizedAsset) -> FuturesAnalysis:
         """Tentukan sentimen berdasarkan funding rate."""

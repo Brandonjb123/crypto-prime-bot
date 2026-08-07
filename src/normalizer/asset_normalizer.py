@@ -53,9 +53,7 @@ class AssetNormalizer:
 
         # ── Fear & Greed ──
         fear_greed_value = fear_greed_data.value if fear_greed_data else 0
-        fear_greed_classification = (
-            fear_greed_data.classification if fear_greed_data else "unknown"
-        )
+        fear_greed_classification = fear_greed_data.classification if fear_greed_data else "unknown"
 
         # ── News ──
         news_headlines = news_data.headlines if news_data else []

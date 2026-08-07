@@ -1,4 +1,5 @@
 """Crypto Prime Bot v2.0 — Entry Point."""
+
 from src.shared.logger import setup_logger
 
 

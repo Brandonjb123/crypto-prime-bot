@@ -17,7 +17,9 @@ from src.exchange.executor import OrderExecutor
 def _make_plan(status=ExecutionStatus.READY):
     return ExecutionPlan(
         execution_id=uuid4(),
-        action=ExecutionAction.PLACE_ORDER if status == ExecutionStatus.READY else ExecutionAction.DO_NOT_EXECUTE,
+        action=ExecutionAction.PLACE_ORDER
+        if status == ExecutionStatus.READY
+        else ExecutionAction.DO_NOT_EXECUTE,
         status=status,
         execution_type=ExecutionType.MARKET,
         side=None,
@@ -40,6 +42,7 @@ class TestOrderExecutor:
     async def test_ready_calls_adapter(self):
         class TrackingAdapter(PaperExchangeAdapter):
             called = False
+
             async def place_order(self, plan):
                 self.called = True
                 return await super().place_order(plan)
@@ -53,6 +56,7 @@ class TestOrderExecutor:
     async def test_blocked_does_not_call_adapter(self):
         class TrackingAdapter(PaperExchangeAdapter):
             called = False
+
             async def place_order(self, plan):
                 self.called = True
                 return await super().place_order(plan)

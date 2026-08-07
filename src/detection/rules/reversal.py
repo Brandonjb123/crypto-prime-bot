@@ -38,13 +38,17 @@ class ReversalRule(BaseRule):
         # 3. Sentiment harus berlawanan dengan trend sebelumnya (konfirmasi reversal)
         if snapshot.trend == TrendDirection.BULLISH:
             if snapshot.sentiment.overall not in (SentimentLevel.GREED, SentimentLevel.NEUTRAL):
-                reasons.append(f"Sentiment {snapshot.sentiment.overall.value} — tidak mendukung reversal bullish")
+                reasons.append(
+                    f"Sentiment {snapshot.sentiment.overall.value} — tidak mendukung reversal bullish"
+                )
                 passed = False
             else:
                 reasons.append("Sentiment mendukung reversal bullish")
         else:
             if snapshot.sentiment.overall not in (SentimentLevel.FEAR, SentimentLevel.NEUTRAL):
-                reasons.append(f"Sentiment {snapshot.sentiment.overall.value} — tidak mendukung reversal bearish")
+                reasons.append(
+                    f"Sentiment {snapshot.sentiment.overall.value} — tidak mendukung reversal bearish"
+                )
                 passed = False
             else:
                 reasons.append("Sentiment mendukung reversal bearish")
@@ -61,7 +65,9 @@ class ReversalRule(BaseRule):
             reasons.append(f"Confidence score {snapshot.confidence.score:.2f} < 0.70")
             passed = False
         else:
-            reasons.append(f"Confidence score {snapshot.confidence.score:.2f} — memadai untuk reversal")
+            reasons.append(
+                f"Confidence score {snapshot.confidence.score:.2f} — memadai untuk reversal"
+            )
 
         return RuleResult(
             passed=passed,

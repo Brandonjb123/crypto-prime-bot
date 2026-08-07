@@ -1,11 +1,13 @@
 # services/broadcaster.py
 import asyncio
-from db.database import get_connection
+
 from loguru import logger
-from services.signals import save_signal, has_open_signal, count_open_signals
+
+from db.database import get_connection
 from db.models import get_user_plan
-from utils.rate_limiter import MAX_OPEN_SIGNALS
+from services.signals import count_open_signals, has_open_signal, save_signal
 from utils.cache import broadcast_cooldown
+from utils.rate_limiter import MAX_OPEN_SIGNALS
 
 
 def get_premium_users() -> list:
@@ -74,11 +76,7 @@ async def broadcast_signals(bot, signals: list):
                 )
 
                 # Kirim pesan
-                await bot.send_message(
-                    chat_id=chat_id,
-                    text=message,
-                    parse_mode="Markdown"
-                )
+                await bot.send_message(chat_id=chat_id, text=message, parse_mode="Markdown")
                 sent_to_at_least_one = True
                 await asyncio.sleep(0.05)  # Hindari flood
             except Exception as e:

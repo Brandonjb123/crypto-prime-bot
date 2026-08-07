@@ -28,9 +28,13 @@ class TestBacktestPipeline:
         candles = [
             HistoricalCandle(
                 timestamp=base + timedelta(hours=i * 4),
-                symbol="BTCUSDT", timeframe="4h",
-                open=100.0, high=105.0, low=95.0, close=100.0 + i,
-                volume=1000.0
+                symbol="BTCUSDT",
+                timeframe="4h",
+                open=100.0,
+                high=105.0,
+                low=95.0,
+                close=100.0 + i,
+                volume=1000.0,
             )
             for i in range(50)
         ]

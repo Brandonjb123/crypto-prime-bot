@@ -2,6 +2,7 @@
 
 import asyncio
 from unittest.mock import AsyncMock
+
 from src.application.scheduler import SimpleScheduler
 
 
@@ -10,7 +11,7 @@ class TestSimpleScheduler:
         orch = AsyncMock()
         orch.run = AsyncMock()
         sched = SimpleScheduler(orch, interval_seconds=1)
-        ctx = await sched.run_once("BTC")
+        await sched.run_once("BTC")
         orch.run.assert_called_once_with("BTC", "4h")
 
     async def test_start_stop(self):

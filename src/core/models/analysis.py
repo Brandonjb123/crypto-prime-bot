@@ -29,4 +29,4 @@ class MarketAnalysis(BaseModel):
     market_structure: MarketStructure
     volume_state: VolumeSignal
     futures_sentiment: SentimentLevel
-    timestamp: datetime 
+    timestamp: datetime

@@ -30,12 +30,20 @@ def _make_position(symbol="BTC/USDT", side=Side.LONG, status=PositionStatus.OPEN
         position_size=size,
         opened_at=datetime.now(UTC),
         closed_at=None if status == PositionStatus.OPEN else datetime.now(UTC),
-        close_reason=PositionCloseReason.NONE if status == PositionStatus.OPEN else PositionCloseReason.MANUAL,
+        close_reason=PositionCloseReason.NONE
+        if status == PositionStatus.OPEN
+        else PositionCloseReason.MANUAL,
     )
 
 
 def _make_account(balance=10000.0):
-    return AccountSnapshot(balance=balance, equity=balance, margin_used=0.0, free_margin=balance, timestamp=datetime.now(UTC))
+    return AccountSnapshot(
+        balance=balance,
+        equity=balance,
+        margin_used=0.0,
+        free_margin=balance,
+        timestamp=datetime.now(UTC),
+    )
 
 
 def _make_provider(symbol="BTC/USDT", price=50000.0):
@@ -131,6 +139,7 @@ class TestPortfolioManager:
 
     def test_immutable_snapshot(self):
         from pydantic import ValidationError
+
         account = _make_account()
         provider = _make_provider()
         snap = self.pm().create_snapshot([], account, provider)

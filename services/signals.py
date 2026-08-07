@@ -1,9 +1,12 @@
 # services/signals.py
 from datetime import datetime
-from db.database import get_connection
+
 from loguru import logger
+
+from db.database import get_connection
 from services.coingecko import get_price
-from utils.symbols import SYMBOL_TO_COINGECKO_ID, get_coin_id
+from utils.symbols import get_coin_id
+
 
 def get_signal_stats(chat_id: int) -> dict:
     """Hitung statistik performa sinyal user."""
@@ -51,6 +54,7 @@ def get_signal_stats(chat_id: int) -> dict:
         "avg_loss": avg_loss,
         "open_count": open_count,
     }
+
 
 async def check_and_update_signal(signal: dict, return_closed_info: bool = False):
     """
@@ -123,6 +127,7 @@ async def check_and_update_signal(signal: dict, return_closed_info: bool = False
 
     return None if return_closed_info else signal
 
+
 def normalize_pair(pair: str) -> str:
     """
     Pastikan format pair selalu SYMBOL/USDT sebelum disimpan
@@ -133,8 +138,10 @@ def normalize_pair(pair: str) -> str:
         return pair
     return f"{pair}/USDT"
 
-def save_signal(chat_id: int, pair: str, side: str, entry_price: float,
-                target_price: float, stop_loss: float) -> int:
+
+def save_signal(
+    chat_id: int, pair: str, side: str, entry_price: float, target_price: float, stop_loss: float
+) -> int:
     """Simpan sinyal baru ke tabel signals, return ID sinyal."""
     pair = normalize_pair(pair)
     conn = get_connection()
@@ -145,7 +152,7 @@ def save_signal(chat_id: int, pair: str, side: str, entry_price: float,
         "INSERT INTO signals (chat_id, pair, side, entry_price, target_price, "
         "stop_loss, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'open', ?) "
         "RETURNING id",
-        (chat_id, pair.upper(), side.lower(), entry_price, target_price, stop_loss, now)
+        (chat_id, pair.upper(), side.lower(), entry_price, target_price, stop_loss, now),
     )
     conn.commit()
     row = cursor.fetchone()
@@ -199,7 +206,9 @@ def has_open_signal(chat_id: int, pair: str) -> bool:
     conn.close()
     return row is not None
 
+
 # ==================== EARLY WARNING ====================
+
 
 async def check_near_target_signals() -> list:
     """Cek semua open signal yang mendekati TP/SL (radius 2%)."""
@@ -280,7 +289,9 @@ def get_today_activity() -> dict:
     conn = get_connection()
     cursor = conn.cursor()
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    cursor.execute("SELECT SUM(analyze_count), SUM(news_count) FROM usage_log WHERE date = ?", (today,))
+    cursor.execute(
+        "SELECT SUM(analyze_count), SUM(news_count) FROM usage_log WHERE date = ?", (today,)
+    )
     row = cursor.fetchone()
     conn.close()
 
@@ -302,7 +313,7 @@ def get_today_activity() -> dict:
         if raw_news and not isinstance(raw_news, dict):
             news_count = int(raw_news)
 
-    return {"analyze_count": analyze_count, "news_count": news_count}    
+    return {"analyze_count": analyze_count, "news_count": news_count}
 
 
 def get_all_open_signals() -> list:
@@ -316,4 +327,3 @@ def get_all_open_signals() -> list:
     for row in rows:
         result.append(dict(row) if not isinstance(row, dict) else row)
     return result
-
