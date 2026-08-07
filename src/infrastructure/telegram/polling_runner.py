@@ -1,14 +1,14 @@
 """Polling Runner — menjalankan Telegram Bot dalam polling mode."""
 
-from src.infrastructure.telegram.telegram_service import TelegramService
+from src.infrastructure.telegram.application import TelegramApplication
 
 
 class PollingRunner:
-    def __init__(self, service: TelegramService) -> None:
-        self.service = service
+    def __init__(self, app: TelegramApplication) -> None:
+        self.app = app
 
     async def run(self) -> None:
-        await self.service.start_polling()
+        await self.app.start_polling()
 
     async def stop(self) -> None:
-        await self.service.stop()
+        await self.app.stop()

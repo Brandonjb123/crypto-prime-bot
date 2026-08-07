@@ -3,13 +3,15 @@
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 
 from config.constants import TELEGRAM_BOT_TOKEN
+from src.infrastructure.telegram.telegram_service import TelegramService
 from src.telegram.bot import TelegramBot
 
 
 class TelegramApplication:
-    def __init__(self, bot: TelegramBot, token: str | None = None) -> None:
+    def __init__(self, bot: TelegramBot, service: TelegramService) -> None:
         self.bot = bot
-        self.token = token or TELEGRAM_BOT_TOKEN
+        self.service = service
+        self.token = TELEGRAM_BOT_TOKEN
         self.app = None
 
     def build(self) -> None:
@@ -22,6 +24,9 @@ class TelegramApplication:
         self.app.add_handler(CommandHandler("portfolio", self.bot.handle_update))
         self.app.add_handler(CommandHandler("help", self.bot.handle_update))
         self.app.add_handler(CommandHandler("lastsignal", self.bot.handle_update))
+
+        # Berikan Application yang sudah jadi ke service
+        self.service.set_application(self.app)
 
     async def start_polling(self) -> None:
         if not self.app:

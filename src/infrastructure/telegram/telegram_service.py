@@ -2,31 +2,15 @@
 
 from telegram.ext import Application
 
-from config.constants import TELEGRAM_BOT_TOKEN
-
 
 class TelegramService:
-    def __init__(self, token: str | None = None) -> None:
-        self.token = token or TELEGRAM_BOT_TOKEN
+    def __init__(self, token: str) -> None:
+        self.token = token
         self.app: Application | None = None
 
-    async def start_polling(self) -> None:
-        if not self.token:
-            return
-        self.app = Application.builder().token(self.token).build()
-        await self.app.initialize()
-        await self.app.start()
-        await self.app.updater.start_polling()
-
-    async def start_webhook(self, url: str) -> None:
-        # Placeholder untuk deployment
-        pass
-
-    async def stop(self) -> None:
-        if self.app:
-            await self.app.updater.stop()
-            await self.app.stop()
-            await self.app.shutdown()
+    def set_application(self, app: Application) -> None:
+        """Terima Application yang sudah dibangun oleh TelegramApplication."""
+        self.app = app
 
     async def send_message(self, chat_id: int, text: str) -> None:
         if self.app and self.app.bot:
