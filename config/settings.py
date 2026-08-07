@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     ADMIN_CHAT_ID: int
 
     # LLM
-    ANTHROPIC_API_KEY: str
+    OPENROUTER_API_KEY: str
 
     # Database
     TURSO_DATABASE_URL: str
