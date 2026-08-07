@@ -10,4 +10,5 @@ class HealthSnapshot(BaseModel):
     timestamp: datetime
     uptime_seconds: float
     last_pipeline_status: PipelineStatus
+    last_success_time: datetime | None = None
     error_count: int

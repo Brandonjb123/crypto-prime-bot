@@ -24,11 +24,18 @@ class MetricsCollector:
 
     def snapshot(self) -> RuntimeMetrics:
         avg = sum(self._runtimes) / len(self._runtimes) if self._runtimes else 0.0
+        success_rate = self.successful_runs / self.total_runs if self.total_runs > 0 else 0.0
+        peak = max(self._runtimes) if self._runtimes else 0.0
+        slowest = max(self._runtimes) if self._runtimes else 0.0
+
         return RuntimeMetrics(
             total_runs=self.total_runs,
             successful_runs=self.successful_runs,
             failed_runs=self.failed_runs,
+            success_rate=round(success_rate, 4),
             average_runtime_ms=round(avg, 2),
+            peak_runtime_ms=round(peak, 2),
+            slowest_pipeline_ms=round(slowest, 2),
             last_error=self.last_error,
             timestamp=datetime.now(UTC),
         )

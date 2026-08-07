@@ -8,6 +8,9 @@ class RuntimeMetrics(BaseModel):
     total_runs: int = 0
     successful_runs: int = 0
     failed_runs: int = 0
+    success_rate: float = 0.0
     average_runtime_ms: float = 0.0
+    peak_runtime_ms: float = 0.0
+    slowest_pipeline_ms: float = 0.0
     last_error: str | None = None
     timestamp: datetime

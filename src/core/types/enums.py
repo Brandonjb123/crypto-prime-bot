@@ -222,6 +222,7 @@ class AuditEventType(StrEnum):
     ORDER_CREATED = "order_created"
     POSITION_OPENED = "position_opened"
     POSITION_CLOSED = "position_closed"
+    PIPELINE_SKIPPED = "pipeline_skipped"
 
 
 class RuntimeStatus(StrEnum):
@@ -229,6 +230,12 @@ class RuntimeStatus(StrEnum):
     RUNNING = "running"
     STOPPING = "stopping"
     STOPPED = "stopped"
+
+class ShutdownReason(StrEnum):
+    MANUAL = "manual"
+    SIGTERM = "sigterm"
+    EXCEPTION = "exception"
+    RESTART = "restart"
 
 class PositionStatus(StrEnum):
     OPEN = "OPEN"
