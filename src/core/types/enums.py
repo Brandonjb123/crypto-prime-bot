@@ -209,6 +209,27 @@ class TelegramResponseType(StrEnum):
     ERROR = "error"
     UNKNOWN = "unknown"        
 
+class HealthStatus(StrEnum):
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
+    FAILED = "failed"
+
+
+class AuditEventType(StrEnum):
+    PIPELINE_START = "pipeline_start"
+    PIPELINE_COMPLETE = "pipeline_complete"
+    PIPELINE_FAILED = "pipeline_failed"
+    ORDER_CREATED = "order_created"
+    POSITION_OPENED = "position_opened"
+    POSITION_CLOSED = "position_closed"
+
+
+class RuntimeStatus(StrEnum):
+    STARTING = "starting"
+    RUNNING = "running"
+    STOPPING = "stopping"
+    STOPPED = "stopped"
+
 class PositionStatus(StrEnum):
     OPEN = "OPEN"
     CLOSED = "CLOSED"
