@@ -2,7 +2,7 @@
 
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 
-from config.constants import TELEGRAM_BOT_TOKEN
+from config.settings import settings
 from src.infrastructure.telegram.telegram_service import TelegramService
 from src.telegram.bot import TelegramBot
 
@@ -11,7 +11,7 @@ class TelegramApplication:
     def __init__(self, bot: TelegramBot, service: TelegramService) -> None:
         self.bot = bot
         self.service = service
-        self.token = TELEGRAM_BOT_TOKEN
+        self.token = settings.TELEGRAM_BOT_TOKEN
         self.app = None
 
     def build(self) -> None:
@@ -31,9 +31,10 @@ class TelegramApplication:
     async def start_polling(self) -> None:
         if not self.app:
             self.build()
-        await self.app.initialize()
-        await self.app.start()
-        await self.app.updater.start_polling()
+        if self.app:
+            await self.app.initialize()
+            await self.app.start()
+            await self.app.updater.start_polling()
 
     async def stop(self) -> None:
         if self.app:
