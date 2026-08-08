@@ -16,12 +16,14 @@ class PipelineRunner:
         analysis_engine=None,
         decision_engine=None,
         validation_engine=None,
+        risk_engine=None,
     ):
         self.collector = collector
         self.indicator_engine = indicator_engine
         self.analysis_engine = analysis_engine
         self.decision_engine = decision_engine
         self.validation_engine = validation_engine
+        self.risk_engine = risk_engine
 
     async def run(self, symbol: str, timeframe: str = "4h") -> PipelineResult:
         logger.info(f"Pipeline started for {symbol} ({timeframe})")
@@ -102,10 +104,30 @@ class PipelineRunner:
         try:
             if self.validation_engine and decision:
                 logger.info("Running validation...")
-                _ = self.validation_engine.validate(decision)
+                validated = self.validation_engine.validate(decision)
                 logger.info("Validation complete")
+            else:
+                validated = None
         except Exception as e:
             logger.error(f"Validation failed: {e}")
+            return PipelineResult(
+                symbol=symbol,
+                timeframe=timeframe,
+                status="failed",
+                error_message=str(e),
+                timestamp=datetime.now(UTC),
+            )
+
+        # Step 6 — Risk
+        try:
+            if self.risk_engine and validated and indicators:
+                logger.info("Running risk calculation...")
+                entry = snapshot.current_price if snapshot else 0
+                atr = indicators.atr14 or 0
+                _ = self.risk_engine.calculate(validated, entry, atr)
+                logger.info("TradePlan created")
+        except Exception as e:
+            logger.error(f"Risk calculation failed: {e}")
             return PipelineResult(
                 symbol=symbol,
                 timeframe=timeframe,
