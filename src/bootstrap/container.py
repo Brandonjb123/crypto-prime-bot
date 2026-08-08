@@ -1,6 +1,7 @@
 """Dependency Injection Container — assembles all services."""
 
 from config.constants import TELEGRAM_BOT_TOKEN
+from src.analysis.analysis_engine import AnalysisEngine
 from src.analysis.indicator_engine import IndicatorEngine
 from src.application.scheduler import SimpleScheduler
 from src.collectors.binance_collector import BinanceCollector
@@ -84,6 +85,7 @@ class Container:
         self.pipeline_runner = PipelineRunner(
             collector=BinanceCollector(),
             indicator_engine=IndicatorEngine(),
+            analysis_engine=AnalysisEngine(),
         )
 
         self.scheduler = SimpleScheduler(self.pipeline_runner, interval_seconds=14400)
