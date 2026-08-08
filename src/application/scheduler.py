@@ -7,20 +7,16 @@ from abc import ABC, abstractmethod
 class BaseScheduler(ABC):
     @abstractmethod
     async def start(self) -> None:
-        """Mulai scheduler."""
         ...
 
     @abstractmethod
     async def stop(self) -> None:
-        """Hentikan scheduler."""
         ...
 
 
 class SimpleScheduler(BaseScheduler):
-    """In-memory scheduler — tidak pakai APScheduler/Celery/Redis/cron."""
-
-    def __init__(self, orchestrator, interval_seconds: int = 14400):
-        self.orchestrator = orchestrator
+    def __init__(self, pipeline_runner, interval_seconds: int = 14400):
+        self.runner = pipeline_runner
         self.interval = interval_seconds
         self._running = False
         self._task = None
@@ -35,13 +31,12 @@ class SimpleScheduler(BaseScheduler):
             self._task.cancel()
 
     async def run_once(self, symbol: str, timeframe: str = "4h"):
-        """Jalankan pipeline satu kali."""
-        return await self.orchestrator.run(symbol, timeframe)
+        return await self.runner.run(symbol, timeframe)
 
     async def _loop(self) -> None:
         while self._running:
             try:
-                await self.orchestrator.run("BTC", "4h")
+                await self.runner.run("BTC", "4h")
             except Exception:
                 pass
             await asyncio.sleep(self.interval)

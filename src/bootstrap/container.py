@@ -1,7 +1,6 @@
 """Dependency Injection Container — assembles all services."""
 
 from config.constants import TELEGRAM_BOT_TOKEN
-from src.application.orchestrator import PipelineOrchestrator
 from src.application.scheduler import SimpleScheduler
 from src.core.types.enums import TelegramCommand
 from src.events.event_bus import EventBus
@@ -26,6 +25,7 @@ from src.notification.formatters.position_formatter import (
     PositionClosedFormatter,
     PositionOpenedFormatter,
 )
+from src.pipeline.pipeline_runner import PipelineRunner
 from src.portfolio.portfolio_manager import PortfolioManager
 from src.position.position_manager import PositionManager
 from src.storage.adapters.in_memory_order_repository import InMemoryOrderRepository
@@ -79,30 +79,12 @@ class Container:
         self.notification_dispatcher.register(PositionClosedEvent, PositionClosedFormatter())
         self.notification_dispatcher.register(PortfolioUpdatedEvent, PortfolioUpdatedFormatter())
 
-        self.orchestrator = PipelineOrchestrator(
-            asset_normalizer=None,
-            technical_engine=None,
-            trend_engine=None,
-            market_structure_engine=None,
-            volume_engine=None,
-            futures_engine=None,
-            volatility_engine=None,
-            support_resistance_engine=None,
-            sentiment_engine=None,
-            confidence_engine=None,
-            setup_detector=None,
-            validator_engine=None,
-            risk_engine=None,
-            recommendation_engine=None,
-            execution_planner=None,
-            order_executor=self.order_executor,
-            position_manager=self.position_manager,
-            portfolio_manager=self.portfolio_manager,
-            account_snapshot=None,
-            price_provider=self.price_provider,
+        self.pipeline_runner = PipelineRunner(
+            collector=None,  # Akan diisi di sprint berikutnya
+            analysis_engine=None,
         )
 
-        self.scheduler = SimpleScheduler(self.orchestrator, interval_seconds=14400)
+        self.scheduler = SimpleScheduler(self.pipeline_runner, interval_seconds=14400)
 
         self.runtime_monitor = RuntimeMonitor()
         self.health_monitor = HealthMonitor()
