@@ -2,6 +2,7 @@
 
 from config.constants import TELEGRAM_BOT_TOKEN
 from src.application.scheduler import SimpleScheduler
+from src.collectors.binance_collector import BinanceCollector
 from src.core.types.enums import TelegramCommand
 from src.events.event_bus import EventBus
 from src.events.events.order_executed import OrderExecutedEvent
@@ -80,7 +81,7 @@ class Container:
         self.notification_dispatcher.register(PortfolioUpdatedEvent, PortfolioUpdatedFormatter())
 
         self.pipeline_runner = PipelineRunner(
-            collector=None,  # Akan diisi di sprint berikutnya
+            collector=BinanceCollector(),
             analysis_engine=None,
         )
 

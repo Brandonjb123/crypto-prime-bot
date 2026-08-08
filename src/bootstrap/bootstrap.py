@@ -1,8 +1,9 @@
 """Bootstrap — startup & shutdown sequence."""
 
 import sys
-from src.config.validator import validate_config
+
 from src.bootstrap.container import Container
+from src.config.validator import validate_config
 
 
 class Bootstrap:
