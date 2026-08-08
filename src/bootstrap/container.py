@@ -48,6 +48,7 @@ from src.telegram.command_handler import (
 )
 from src.telegram.command_router import CommandRouter
 from src.telegram.notifier import TelegramNotifier
+from src.validation.validation_engine import ValidationEngine
 
 
 class Container:
@@ -95,6 +96,7 @@ class Container:
             indicator_engine=IndicatorEngine(),
             analysis_engine=AnalysisEngine(),
             decision_engine=decision_engine,
+            validation_engine=ValidationEngine(),
         )
 
         self.scheduler = SimpleScheduler(self.pipeline_runner, interval_seconds=14400)

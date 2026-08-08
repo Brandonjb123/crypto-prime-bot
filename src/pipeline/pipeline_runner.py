@@ -9,11 +9,19 @@ logger = get_logger("pipeline")
 
 
 class PipelineRunner:
-    def __init__(self, collector=None, indicator_engine=None, analysis_engine=None, decision_engine=None):
+    def __init__(
+        self,
+        collector=None,
+        indicator_engine=None,
+        analysis_engine=None,
+        decision_engine=None,
+        validation_engine=None,
+    ):
         self.collector = collector
         self.indicator_engine = indicator_engine
         self.analysis_engine = analysis_engine
         self.decision_engine = decision_engine
+        self.validation_engine = validation_engine
 
     async def run(self, symbol: str, timeframe: str = "4h") -> PipelineResult:
         logger.info(f"Pipeline started for {symbol} ({timeframe})")
@@ -76,10 +84,28 @@ class PipelineRunner:
         try:
             if self.decision_engine and analysis:
                 logger.info("Running AI decision...")
-                _ = await self.decision_engine.decide(analysis)
+                decision = await self.decision_engine.decide(analysis)
                 logger.info("DecisionResult created")
+            else:
+                decision = None
         except Exception as e:
             logger.error(f"AI decision failed: {e}")
+            return PipelineResult(
+                symbol=symbol,
+                timeframe=timeframe,
+                status="failed",
+                error_message=str(e),
+                timestamp=datetime.now(UTC),
+            )
+
+        # Step 5 — Validation
+        try:
+            if self.validation_engine and decision:
+                logger.info("Running validation...")
+                _ = self.validation_engine.validate(decision)
+                logger.info("Validation complete")
+        except Exception as e:
+            logger.error(f"Validation failed: {e}")
             return PipelineResult(
                 symbol=symbol,
                 timeframe=timeframe,
