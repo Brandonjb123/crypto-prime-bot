@@ -21,7 +21,6 @@ class TestRealCollectorPipeline:
         mock_client_class.return_value = mock_client
 
         collector = BinanceCollector()
-        runner = PipelineRunner(collector=collector, analysis_engine=None)
-
+        runner = PipelineRunner(collector=collector, indicator_engine=MagicMock())
         result = await runner.run("BTC", "4h")
         assert result.status == "completed"

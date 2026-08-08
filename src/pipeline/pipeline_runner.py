@@ -9,22 +9,22 @@ logger = get_logger("pipeline")
 
 
 class PipelineRunner:
-    def __init__(self, collector=None, analysis_engine=None):
+    def __init__(self, collector=None, indicator_engine=None):
         self.collector = collector
-        self.analysis_engine = analysis_engine
+        self.indicator_engine = indicator_engine
 
     async def run(self, symbol: str, timeframe: str = "4h") -> AnalysisResult:
         logger.info(f"Pipeline started for {symbol} ({timeframe})")
 
-        # Step 1 — Collect market data
+        # Step 1 — Collect
         try:
             logger.info("Collecting market data...")
             if self.collector:
                 snapshot = await self.collector.collect(symbol, timeframe)
-                logger.info("Market snapshot collected")
+                logger.info("MarketSnapshot created")
             else:
-                snapshot = None
                 logger.warning("No collector configured — skipping")
+                snapshot = None
         except Exception as e:
             logger.error(f"Collector failed: {e}")
             return AnalysisResult(
@@ -35,14 +35,14 @@ class PipelineRunner:
                 timestamp=datetime.now(UTC),
             )
 
-        # Step 2 — Run analysis
+        # Step 2 — Indicators
         try:
-            logger.info("Running analysis...")
-            if self.analysis_engine:
-                await self.analysis_engine.analyze(snapshot)
-                logger.info("Analysis completed")
+            if self.indicator_engine and snapshot:
+                logger.info("Calculating indicators...")
+                _ = self.indicator_engine.calculate(snapshot)
+                logger.info("IndicatorResult created")
         except Exception as e:
-            logger.error(f"Analysis failed: {e}")
+            logger.error(f"Indicator calculation failed: {e}")
             return AnalysisResult(
                 symbol=symbol,
                 timeframe=timeframe,

@@ -12,10 +12,10 @@ class TestMarketPipeline:
     async def test_scheduler_triggers_pipeline(self):
         collector = MagicMock()
         collector.collect = AsyncMock(return_value={"price": 50000})
-        analysis = MagicMock()
-        analysis.analyze = AsyncMock()
+        indicator = MagicMock()
+        indicator.calculate = MagicMock(return_value={})
 
-        runner = PipelineRunner(collector=collector, analysis_engine=analysis)
+        runner = PipelineRunner(collector=collector, indicator_engine=indicator)
         scheduler = SimpleScheduler(runner, interval_seconds=0.01)
 
         await scheduler.start()
@@ -28,10 +28,10 @@ class TestMarketPipeline:
     async def test_pipeline_runner_integration(self):
         collector = MagicMock()
         collector.collect = AsyncMock(return_value={"price": 45000})
-        analysis = MagicMock()
-        analysis.analyze = AsyncMock()
+        indicator = MagicMock()
+        indicator.calculate = MagicMock(return_value={})
 
-        runner = PipelineRunner(collector=collector, analysis_engine=analysis)
+        runner = PipelineRunner(collector=collector, indicator_engine=indicator)
         result = await runner.run("ETH", "1h")
 
         assert isinstance(result, AnalysisResult)
