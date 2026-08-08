@@ -1,6 +1,10 @@
 """Dependency Injection Container — assembles all services."""
 
 from config.constants import TELEGRAM_BOT_TOKEN
+from config.settings import settings
+from src.ai.decision_engine import DecisionEngine
+from src.ai.openrouter_client import OpenRouterClient
+from src.ai.prompt_builder import PromptBuilder
 from src.analysis.analysis_engine import AnalysisEngine
 from src.analysis.indicator_engine import IndicatorEngine
 from src.application.scheduler import SimpleScheduler
@@ -82,10 +86,15 @@ class Container:
         self.notification_dispatcher.register(PositionClosedEvent, PositionClosedFormatter())
         self.notification_dispatcher.register(PortfolioUpdatedEvent, PortfolioUpdatedFormatter())
 
+        client = OpenRouterClient(api_key=settings.OPENROUTER_API_KEY)
+        prompt_builder = PromptBuilder()
+        decision_engine = DecisionEngine(client=client, prompt_builder=prompt_builder)
+
         self.pipeline_runner = PipelineRunner(
             collector=BinanceCollector(),
             indicator_engine=IndicatorEngine(),
             analysis_engine=AnalysisEngine(),
+            decision_engine=decision_engine,
         )
 
         self.scheduler = SimpleScheduler(self.pipeline_runner, interval_seconds=14400)

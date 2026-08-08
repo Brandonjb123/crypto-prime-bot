@@ -9,10 +9,11 @@ logger = get_logger("pipeline")
 
 
 class PipelineRunner:
-    def __init__(self, collector=None, indicator_engine=None, analysis_engine=None):
+    def __init__(self, collector=None, indicator_engine=None, analysis_engine=None, decision_engine=None):
         self.collector = collector
         self.indicator_engine = indicator_engine
         self.analysis_engine = analysis_engine
+        self.decision_engine = decision_engine
 
     async def run(self, symbol: str, timeframe: str = "4h") -> PipelineResult:
         logger.info(f"Pipeline started for {symbol} ({timeframe})")
@@ -24,7 +25,6 @@ class PipelineRunner:
                 snapshot = await self.collector.collect(symbol, timeframe)
                 logger.info("MarketSnapshot created")
             else:
-                logger.warning("No collector configured — skipping")
                 snapshot = None
         except Exception as e:
             logger.error(f"Collector failed: {e}")
@@ -58,10 +58,28 @@ class PipelineRunner:
         try:
             if self.analysis_engine and indicators:
                 logger.info("Running market analysis...")
-                _ = self.analysis_engine.analyze(indicators)
+                analysis = self.analysis_engine.analyze(indicators)
                 logger.info("AnalysisResult created")
+            else:
+                analysis = None
         except Exception as e:
             logger.error(f"Analysis failed: {e}")
+            return PipelineResult(
+                symbol=symbol,
+                timeframe=timeframe,
+                status="failed",
+                error_message=str(e),
+                timestamp=datetime.now(UTC),
+            )
+
+        # Step 4 — AI Decision
+        try:
+            if self.decision_engine and analysis:
+                logger.info("Running AI decision...")
+                _ = await self.decision_engine.decide(analysis)
+                logger.info("DecisionResult created")
+        except Exception as e:
+            logger.error(f"AI decision failed: {e}")
             return PipelineResult(
                 symbol=symbol,
                 timeframe=timeframe,
