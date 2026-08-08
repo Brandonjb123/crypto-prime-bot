@@ -39,7 +39,7 @@ async def main():
     await stop_event.wait()
 
     await runner.stop()
-    bootstrap.shutdown()
+    await bootstrap.shutdown()
 
 
 if __name__ == "__main__":

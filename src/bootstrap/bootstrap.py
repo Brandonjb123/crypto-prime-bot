@@ -1,9 +1,8 @@
 """Bootstrap — startup & shutdown sequence."""
 
 import sys
-
-from src.bootstrap.container import Container
 from src.config.validator import validate_config
+from src.bootstrap.container import Container
 
 
 class Bootstrap:
@@ -23,10 +22,9 @@ class Bootstrap:
         self._step("Initializing Scheduler", self._init_scheduler)
         print("Crypto Prime Bot v2.0 started successfully.")
 
-    def shutdown(self):
+    async def shutdown(self):
         self.logger.info("Shutting down...")
-        self.container.scheduler.stop()
-        self.container.telegram_service.stop()
+        await self.container.scheduler.stop()
         self.logger.info("Shutdown complete.")
 
     def _step(self, msg, fn):
@@ -39,7 +37,7 @@ class Bootstrap:
             sys.exit(1)
 
     def _load_config(self):
-        pass  # Already loaded by import
+        pass
 
     def _init_logger(self):
         self.logger.info("Logger initialized")
@@ -57,7 +55,7 @@ class Bootstrap:
         _ = self.container.paper_exchange
 
     def _init_pipeline(self):
-        _ = self.container.orchestrator
+        _ = self.container.pipeline_runner
 
     def _init_scheduler(self):
         _ = self.container.scheduler
