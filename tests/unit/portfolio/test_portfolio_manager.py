@@ -1,159 +1,138 @@
+"""Unit tests untuk PortfolioStateManager."""
+
 from datetime import UTC, datetime
 from uuid import uuid4
 
-import pytest
-
-from src.core.models.account import AccountSnapshot
-from src.core.models.position import Position
-from src.core.types.enums import (
-    PortfolioStatus,
-    PositionCloseReason,
-    PositionStatus,
-    RiskWarning,
-    Side,
-)
-from src.market.in_memory_price_provider import InMemoryPriceProvider
-from src.portfolio.portfolio_manager import PortfolioManager
+from src.core.models.trading_signal import TradingSignal
+from src.core.types.enums import PositionStatus, Side
+from src.portfolio.portfolio_state_manager import PortfolioStateManager
 
 
-def _make_position(symbol="BTC/USDT", side=Side.LONG, status=PositionStatus.OPEN, size=0.1):
-    return Position(
-        position_id=uuid4(),
-        execution_id=uuid4(),
-        order_id=uuid4(),
-        symbol=symbol,
-        side=side,
-        status=status,
+def _make_signal(**overrides):
+    defaults = dict(
+        signal_id=uuid4(),
+        symbol="BTC",
+        side="BUY",
+        status="ACTIVE",
         entry_price=50000.0,
         stop_loss=48000.0,
         take_profit=55000.0,
-        position_size=size,
-        opened_at=datetime.now(UTC),
-        closed_at=None if status == PositionStatus.OPEN else datetime.now(UTC),
-        close_reason=PositionCloseReason.NONE
-        if status == PositionStatus.OPEN
-        else PositionCloseReason.MANUAL,
+        position_size=0.01,
+        risk_percent=2.0,
+        confidence=85,
+        risk_level="MEDIUM",
+        reasoning=["test"],
+        created_at=datetime.now(UTC),
     )
+    defaults.update(overrides)
+    return TradingSignal(**defaults)
 
 
-def _make_account(balance=10000.0):
-    return AccountSnapshot(
-        balance=balance,
-        equity=balance,
-        margin_used=0.0,
-        free_margin=balance,
-        timestamp=datetime.now(UTC),
-    )
+class TestPortfolioStateManager:
+    def test_initial_balance(self):
+        pm = PortfolioStateManager(initial_balance=10000.0)
+        state = pm.get_state()
+        assert state.account_balance == 10000.0
+        assert state.equity == 10000.0
+        assert state.peak_equity == 10000.0
+        assert state.drawdown == 0.0
 
+    def test_open_long_position(self):
+        pm = PortfolioStateManager(initial_balance=10000.0)
+        signal = _make_signal()
+        pos = pm.open_position(signal)
+        assert pos is not None
+        assert pos.status == PositionStatus.OPEN
+        assert pos.side == Side.LONG
+        assert pos.entry_price == 50000.0
+        assert pos.position_size == 0.01
 
-def _make_provider(symbol="BTC/USDT", price=50000.0):
-    p = InMemoryPriceProvider()
-    p.update_price(symbol, price)
-    return p
+    def test_open_short_position(self):
+        pm = PortfolioStateManager(initial_balance=10000.0)
+        signal = _make_signal(side="SELL")
+        pos = pm.open_position(signal)
+        assert pos is not None
+        assert pos.side == Side.SHORT
+        assert pos.entry_price == 50000.0
 
+    def test_skipped_signal_does_not_open(self):
+        pm = PortfolioStateManager(initial_balance=10000.0)
+        signal = _make_signal(status="SKIPPED")
+        pos = pm.open_position(signal)
+        assert pos is None
 
-class TestPortfolioManager:
-    def pm(self):
-        return PortfolioManager()
+    def test_invalid_signal_does_not_open(self):
+        pm = PortfolioStateManager(initial_balance=10000.0)
+        signal = _make_signal(status="INVALID")
+        pos = pm.open_position(signal)
+        assert pos is None
 
-    def test_empty_portfolio(self):
-        account = _make_account()
-        provider = _make_provider()
-        snap = self.pm().create_snapshot([], account, provider)
-        assert snap.status == PortfolioStatus.EMPTY
-        assert snap.open_positions == 0
-        assert snap.total_positions == 0
-        assert snap.equity == 10000.0
+    def test_duplicate_signal_rejected(self):
+        pm = PortfolioStateManager(initial_balance=10000.0)
+        signal = _make_signal()
+        pm.open_position(signal)
+        pos2 = pm.open_position(signal)  # same signal_id
+        assert pos2 is None
 
-    def test_active_portfolio(self):
-        positions = [_make_position()]
-        account = _make_account()
-        provider = _make_provider()
-        snap = self.pm().create_snapshot(positions, account, provider)
-        assert snap.status == PortfolioStatus.ACTIVE
-        assert snap.open_positions == 1
-        assert snap.total_positions == 1
+    def test_update_price_long_profit(self):
+        pm = PortfolioStateManager(initial_balance=10000.0)
+        signal = _make_signal()
+        pos = pm.open_position(signal)
+        pnl = pm.update_price(pos.position_id, 51000.0)
+        # (51000 - 50000) * 0.01 = 10.0
+        assert pnl == 10.0
 
-    def test_risk_limit_portfolio(self):
-        positions = [_make_position(size=350.0)]
-        account = _make_account()
-        provider = _make_provider()
-        snap = self.pm().create_snapshot(positions, account, provider)
-        assert snap.status == PortfolioStatus.RISK_LIMIT
-        assert RiskWarning.POSITION_SIZE_CAPPED in snap.warnings
+    def test_update_price_short_profit(self):
+        pm = PortfolioStateManager(initial_balance=10000.0)
+        signal = _make_signal(side="SELL")
+        pos = pm.open_position(signal)
+        pnl = pm.update_price(pos.position_id, 49000.0)
+        # (50000 - 49000) * 0.01 = 10.0
+        assert pnl == 10.0
 
-    def test_gross_exposure(self):
-        positions = [
-            _make_position("BTC/USDT", Side.LONG, PositionStatus.OPEN, 0.1),
-            _make_position("ETH/USDT", Side.LONG, PositionStatus.OPEN, 0.2),
-        ]
-        account = _make_account()
-        provider = _make_provider()
-        snap = self.pm().create_snapshot(positions, account, provider)
-        assert snap.gross_exposure == pytest.approx(0.3)
+    def test_close_position_long_profit(self):
+        pm = PortfolioStateManager(initial_balance=10000.0)
+        signal = _make_signal()
+        pos = pm.open_position(signal)
+        closed = pm.close_position(pos.position_id, 52000.0)
+        assert closed is not None
+        assert closed.status == PositionStatus.CLOSED
+        # (52000 - 50000) * 0.01 = 20.0
+        assert pm.realized_pnl == 20.0
 
-    def test_net_exposure(self):
-        positions = [
-            _make_position("BTC/USDT", Side.LONG, PositionStatus.OPEN, 0.5),
-            _make_position("ETH/USDT", Side.SHORT, PositionStatus.OPEN, 0.2),
-        ]
-        account = _make_account()
-        provider = _make_provider()
-        snap = self.pm().create_snapshot(positions, account, provider)
-        assert snap.net_exposure == 0.3  # 0.5 - 0.2
+    def test_close_position_short_loss(self):
+        pm = PortfolioStateManager(initial_balance=10000.0)
+        signal = _make_signal(side="SELL")
+        pos = pm.open_position(signal)
+        pm.close_position(pos.position_id, 51000.0)
+        # (50000 - 51000) * 0.01 = -10.0
+        assert pm.realized_pnl == -10.0
 
-    def test_equity_calculation(self):
-        positions = [_make_position(size=0.1)]
-        provider = InMemoryPriceProvider()
-        provider.update_price("BTC/USDT", 51000.0)  # harga naik → unrealized PnL
-        account = _make_account()
-        snap = self.pm().create_snapshot(positions, account, provider)
-        # unrealized = (51000-50000)*0.1 = 100, equity = 10000 + 0 + 100 = 10100
-        assert snap.unrealized_pnl == 100.0
-        assert snap.equity == 10100.0
+    def test_equity_after_close(self):
+        pm = PortfolioStateManager(initial_balance=10000.0)
+        signal = _make_signal()
+        pos = pm.open_position(signal)
+        pm.close_position(pos.position_id, 52000.0)
+        state = pm.get_state()
+        # equity = 10000 + 20 realized = 10020
+        assert state.equity == 10020.0
 
-    def test_long_count(self):
-        positions = [
-            _make_position("BTC/USDT", Side.LONG, PositionStatus.OPEN),
-            _make_position("ETH/USDT", Side.LONG, PositionStatus.OPEN),
-            _make_position("SOL/USDT", Side.SHORT, PositionStatus.OPEN),
-        ]
-        account = _make_account()
-        provider = _make_provider()
-        snap = self.pm().create_snapshot(positions, account, provider)
-        assert snap.long_positions == 2
-        assert snap.short_positions == 1
+    def test_drawdown(self):
+        pm = PortfolioStateManager(initial_balance=10000.0)
+        signal = _make_signal()
+        pos = pm.open_position(signal)
+        pm.close_position(pos.position_id, 49000.0)  # loss 10
+        state = pm.get_state()
+        # equity = 10000 - 10 = 9990, peak = 10000, drawdown = 10
+        assert state.drawdown == 10.0
+        assert state.drawdown_percent == 0.1
 
-    def test_open_closed_count(self):
-        positions = [
-            _make_position("BTC/USDT", Side.LONG, PositionStatus.OPEN),
-            _make_position("ETH/USDT", Side.LONG, PositionStatus.CLOSED),
-            _make_position("SOL/USDT", Side.SHORT, PositionStatus.CLOSED),
-        ]
-        account = _make_account()
-        provider = _make_provider()
-        snap = self.pm().create_snapshot(positions, account, provider)
-        assert snap.open_positions == 1
-        assert snap.closed_positions == 2
-        assert snap.total_positions == 3
-
-    def test_immutable_snapshot(self):
-        from pydantic import ValidationError
-
-        account = _make_account()
-        provider = _make_provider()
-        snap = self.pm().create_snapshot([], account, provider)
-        with pytest.raises(ValidationError):
-            snap.status = PortfolioStatus.ACTIVE
-
-    def test_deterministic(self):
-        positions = [_make_position()]
-        account = _make_account()
-        provider = _make_provider()
-        pm1 = PortfolioManager()
-        pm2 = PortfolioManager()
-        s1 = pm1.create_snapshot(positions, account, provider)
-        s2 = pm2.create_snapshot(positions, account, provider)
-        assert s1.status == s2.status
-        assert s1.gross_exposure == s2.gross_exposure
-        assert s1.net_exposure == s2.net_exposure
+    def test_new_equity_high_resets_drawdown(self):
+        pm = PortfolioStateManager(initial_balance=10000.0)
+        signal = _make_signal()
+        pos = pm.open_position(signal)
+        pm.close_position(pos.position_id, 55000.0)  # profit 50
+        state = pm.get_state()
+        assert state.equity == 10050.0
+        assert state.peak_equity == 10050.0
+        assert state.drawdown == 0.0
