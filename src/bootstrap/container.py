@@ -36,6 +36,7 @@ from src.pipeline.pipeline_runner import PipelineRunner
 from src.portfolio.portfolio_manager import PortfolioManager
 from src.position.position_manager import PositionManager
 from src.risk.trade_risk_engine import TradeRiskEngine
+from src.signal.signal_engine import SignalEngine
 from src.storage.adapters.in_memory_order_repository import InMemoryOrderRepository
 from src.storage.adapters.in_memory_portfolio_repository import InMemoryPortfolioRepository
 from src.storage.adapters.in_memory_position_repository import InMemoryPositionRepository
@@ -99,6 +100,7 @@ class Container:
             decision_engine=decision_engine,
             validation_engine=ValidationEngine(),
             risk_engine=TradeRiskEngine(),
+            signal_engine=SignalEngine(),
         )
 
         self.scheduler = SimpleScheduler(self.pipeline_runner, interval_seconds=14400)

@@ -17,6 +17,7 @@ class PipelineRunner:
         decision_engine=None,
         validation_engine=None,
         risk_engine=None,
+        signal_engine=None,
     ):
         self.collector = collector
         self.indicator_engine = indicator_engine
@@ -24,6 +25,7 @@ class PipelineRunner:
         self.decision_engine = decision_engine
         self.validation_engine = validation_engine
         self.risk_engine = risk_engine
+        self.signal_engine = signal_engine
 
     async def run(self, symbol: str, timeframe: str = "4h") -> PipelineResult:
         logger.info(f"Pipeline started for {symbol} ({timeframe})")
@@ -124,10 +126,28 @@ class PipelineRunner:
                 logger.info("Running risk calculation...")
                 entry = snapshot.current_price if snapshot else 0
                 atr = indicators.atr14 or 0
-                _ = self.risk_engine.calculate(validated, entry, atr)
+                trade_plan = self.risk_engine.calculate(validated, entry, atr)
                 logger.info("TradePlan created")
+            else:
+                trade_plan = None
         except Exception as e:
             logger.error(f"Risk calculation failed: {e}")
+            return PipelineResult(
+                symbol=symbol,
+                timeframe=timeframe,
+                status="failed",
+                error_message=str(e),
+                timestamp=datetime.now(UTC),
+            )
+
+        # Step 7 — Signal
+        try:
+            if self.signal_engine and trade_plan:
+                logger.info("Generating trading signal...")
+                _ = self.signal_engine.generate(trade_plan)
+                logger.info("TradingSignal created")
+        except Exception as e:
+            logger.error(f"Signal generation failed: {e}")
             return PipelineResult(
                 symbol=symbol,
                 timeframe=timeframe,
