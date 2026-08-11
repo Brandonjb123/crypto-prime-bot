@@ -19,6 +19,7 @@ class PipelineRunner:
         risk_engine=None,
         signal_engine=None,
         notification_engine=None,
+        paper_trading_engine=None,
     ):
         self.collector = collector
         self.indicator_engine = indicator_engine
@@ -28,6 +29,7 @@ class PipelineRunner:
         self.risk_engine = risk_engine
         self.signal_engine = signal_engine
         self.notification_engine = notification_engine
+        self.paper_trading_engine = paper_trading_engine
 
     async def run(self, symbol: str, timeframe: str = "4h") -> PipelineResult:
         logger.info(f"Pipeline started for {symbol} ({timeframe})")
@@ -159,6 +161,15 @@ class PipelineRunner:
                 error_message=str(e),
                 timestamp=datetime.now(UTC),
             )
+
+        # Step 8 — Paper Execution (if enabled)
+        if self.paper_trading_engine and signal and signal.status == "ACTIVE":
+            try:
+                logger.info("Executing paper trade...")
+                _ = self.paper_trading_engine.execute(signal)
+                logger.info("Paper trade executed")
+            except Exception as e:
+                logger.error(f"Paper execution failed: {e}")
 
         # Notification (side effect — tidak mempengaruhi status pipeline)
         if self.notification_engine and signal:

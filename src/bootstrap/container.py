@@ -17,6 +17,7 @@ from src.events.events.position_closed import PositionClosedEvent
 from src.events.events.position_opened import PositionOpenedEvent
 from src.exchange.adapters.paper import PaperExchangeAdapter
 from src.exchange.executor import OrderExecutor
+from src.execution.paper_trading_engine import PaperTradingEngine
 from src.infrastructure.telegram.telegram_service import TelegramService
 from src.lifecycle.trade_lifecycle_engine import TradeLifecycleEngine
 from src.logging.audit_logger import AuditLogger
@@ -35,9 +36,11 @@ from src.notification.formatters.position_formatter import (
 from src.notification.notification_engine import NotificationEngine
 from src.pipeline.pipeline_runner import PipelineRunner
 from src.portfolio.portfolio_manager import PortfolioManager
+from src.portfolio.portfolio_state_manager import PortfolioStateManager
 from src.position.position_manager import PositionManager
 from src.risk.trade_risk_engine import TradeRiskEngine
 from src.signal.signal_engine import SignalEngine
+from src.storage.adapters.in_memory_execution_repository import InMemoryExecutionRepository
 from src.storage.adapters.in_memory_order_repository import InMemoryOrderRepository
 from src.storage.adapters.in_memory_portfolio_repository import InMemoryPortfolioRepository
 from src.storage.adapters.in_memory_position_repository import InMemoryPositionRepository
@@ -69,6 +72,8 @@ class Container:
 
         self.position_manager = PositionManager(event_bus=self.event_bus)
         self.portfolio_manager = PortfolioManager(event_bus=self.event_bus)
+        # Portfolio State Manager (untuk Paper Trading)
+        self.portfolio_state_manager = PortfolioStateManager(initial_balance=10000.0)
         self.lifecycle_engine = TradeLifecycleEngine()
 
         self.paper_exchange = PaperExchangeAdapter()
@@ -95,6 +100,14 @@ class Container:
         prompt_builder = PromptBuilder()
         decision_engine = DecisionEngine(client=client, prompt_builder=prompt_builder)
 
+        execution_repo = InMemoryExecutionRepository()
+        self.paper_trading_engine = PaperTradingEngine(
+            portfolio_manager=self.portfolio_state_manager,
+            execution_repo=execution_repo,
+            notification_engine=self.notification_engine,
+            slippage=0.0,
+        )
+
         self.pipeline_runner = PipelineRunner(
             collector=BinanceCollector(),
             indicator_engine=IndicatorEngine(),
@@ -103,7 +116,8 @@ class Container:
             validation_engine=ValidationEngine(),
             risk_engine=TradeRiskEngine(),
             signal_engine=SignalEngine(),
-            notification_engine=self.notification_engine
+            notification_engine=self.notification_engine,
+            paper_trading_engine=self.paper_trading_engine
         )
 
         self.scheduler = SimpleScheduler(self.pipeline_runner, interval_seconds=14400)
