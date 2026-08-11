@@ -18,12 +18,12 @@ class BacktestConfig(BaseModel):
 class TradeRecord(BaseModel):
     trade_id: UUID = uuid4()
     symbol: str
-    side: str
+    side: str          # "BUY" or "SELL"
     entry_price: float
     exit_price: float
     position_size: float
     pnl: float
-    status: str  # WIN, LOSS, BREAKEVEN
+    status: str
 
 
 class BacktestResult(BaseModel):
