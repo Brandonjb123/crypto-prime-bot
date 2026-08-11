@@ -28,10 +28,10 @@ class PerformanceAnalyticsEngine:
         avg_win = sum(t._net_pnl for t in winning) / winning_count if winning_count > 0 else 0.0
         avg_loss = abs(sum(t._net_pnl for t in losing)) / losing_count if losing_count > 0 else 0.0
 
-        gross_profit = sum(t._net_pnl for t in winning)
-        gross_loss = abs(sum(t._net_pnl for t in losing))
+        gross_profit = sum(t.gross_pnl for t in winning)
+        gross_loss = abs(sum(t.gross_pnl for t in losing))
         profit_factor = (gross_profit / gross_loss) if gross_loss > 0 else None
-
+    
         if total_trades > 0:
             win_rate_decimal = winning_count / total_trades
             loss_rate_decimal = losing_count / total_trades
