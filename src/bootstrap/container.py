@@ -32,6 +32,7 @@ from src.notification.formatters.position_formatter import (
     PositionClosedFormatter,
     PositionOpenedFormatter,
 )
+from src.notification.notification_engine import NotificationEngine
 from src.pipeline.pipeline_runner import PipelineRunner
 from src.portfolio.portfolio_manager import PortfolioManager
 from src.position.position_manager import PositionManager
@@ -75,6 +76,7 @@ class Container:
 
         self.telegram_service = TelegramService(token=TELEGRAM_BOT_TOKEN)
         self.telegram_notifier = TelegramNotifier(self.telegram_service)
+        self.notification_engine = NotificationEngine(notifier=self.telegram_notifier)
         self.telegram_bot = TelegramBot()
         self.telegram_bot.router = CommandRouter()
         self.telegram_bot.router.register(TelegramCommand.STATUS, lambda msg: status_handler(msg))
@@ -101,6 +103,7 @@ class Container:
             validation_engine=ValidationEngine(),
             risk_engine=TradeRiskEngine(),
             signal_engine=SignalEngine(),
+            notification_engine=self.notification_engine
         )
 
         self.scheduler = SimpleScheduler(self.pipeline_runner, interval_seconds=14400)

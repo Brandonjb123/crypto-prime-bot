@@ -18,6 +18,7 @@ class PipelineRunner:
         validation_engine=None,
         risk_engine=None,
         signal_engine=None,
+        notification_engine=None,
     ):
         self.collector = collector
         self.indicator_engine = indicator_engine
@@ -26,9 +27,12 @@ class PipelineRunner:
         self.validation_engine = validation_engine
         self.risk_engine = risk_engine
         self.signal_engine = signal_engine
+        self.notification_engine = notification_engine
 
     async def run(self, symbol: str, timeframe: str = "4h") -> PipelineResult:
         logger.info(f"Pipeline started for {symbol} ({timeframe})")
+
+        signal = None
 
         # Step 1 — Collect
         try:
@@ -144,7 +148,7 @@ class PipelineRunner:
         try:
             if self.signal_engine and trade_plan:
                 logger.info("Generating trading signal...")
-                _ = self.signal_engine.generate(trade_plan)
+                signal = self.signal_engine.generate(trade_plan)
                 logger.info("TradingSignal created")
         except Exception as e:
             logger.error(f"Signal generation failed: {e}")
@@ -155,6 +159,13 @@ class PipelineRunner:
                 error_message=str(e),
                 timestamp=datetime.now(UTC),
             )
+
+        # Notification (side effect — tidak mempengaruhi status pipeline)
+        if self.notification_engine and signal:
+            try:
+                self.notification_engine.notify_signal(signal)
+            except Exception as e:
+                logger.error(f"Notification failed: {e}")
 
         logger.info(f"Pipeline finished for {symbol}")
         return PipelineResult(

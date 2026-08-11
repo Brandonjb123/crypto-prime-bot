@@ -1,5 +1,6 @@
 """Notification Dispatcher — registry-based, pilih formatter otomatis."""
 
+from src.core.models.notification import NotificationMessage
 from src.events.base_event import BaseDomainEvent
 from src.notification.base_notifier import BaseNotifier
 
@@ -20,3 +21,7 @@ class NotificationDispatcher:
             message = formatter.format(event)
             self.notifier.notify(message)
         # Unknown event → ignore silently (no exception)
+
+    def dispatch_message(self, message: NotificationMessage) -> None:
+        """Kirim NotificationMessage langsung ke notifier."""
+        self.notifier.notify(message)    
