@@ -2,9 +2,14 @@
 
 from datetime import datetime
 from uuid import UUID, uuid4
-
 from pydantic import BaseModel
 
+
+class EquityPoint(BaseModel):
+    timestamp: datetime
+    equity: float
+    drawdown: float = 0.0
+    drawdown_percent: float = 0.0
 
 class BacktestConfig(BaseModel):
     symbol: str = "BTC"
@@ -24,6 +29,15 @@ class TradeRecord(BaseModel):
     position_size: float
     pnl: float
     status: str
+    entry_timestamp: datetime | None = None
+    exit_timestamp: datetime | None = None
+    gross_pnl: float = 0.0
+    fees: float = 0.0
+    net_pnl: float = 0.0
+    signal_id: UUID | None = None
+    execution_id: UUID | None = None
+    stop_loss: float | None = None
+    take_profit: float | None = None
 
 
 class BacktestResult(BaseModel):
@@ -44,3 +58,8 @@ class BacktestResult(BaseModel):
     trades: list[TradeRecord] = []
     start_time: datetime
     end_time: datetime
+    equity_curve: list[EquityPoint] = []
+    total_fees: float = 0.0
+    gross_profit: float = 0.0
+    gross_loss: float = 0.0
+

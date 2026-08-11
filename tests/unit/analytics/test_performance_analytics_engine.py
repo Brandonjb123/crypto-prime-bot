@@ -18,6 +18,9 @@ def _make_trade(pnl: float, side: str = "BUY") -> TradeRecord:
         exit_price=50000.0 + pnl,
         position_size=1.0,
         pnl=pnl,
+        net_pnl=pnl,        # ← tambahkan
+        gross_pnl=pnl,      # ← tambahkan
+        fees=0.0,           # ← tambahkan
         status=status,
     )
 

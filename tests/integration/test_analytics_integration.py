@@ -18,17 +18,20 @@ class TestAnalyticsIntegration:
             TradeRecord(
                 trade_id=uuid4(), symbol="BTC", side="BUY",
                 entry_price=50000.0, exit_price=51000.0,
-                position_size=1.0, pnl=1000.0, status="WIN",
+                position_size=1.0, pnl=1000.0,
+                net_pnl=1000.0, gross_pnl=1000.0, fees=0.0, status="WIN",
             ),
             TradeRecord(
                 trade_id=uuid4(), symbol="BTC", side="SELL",
                 entry_price=50000.0, exit_price=49000.0,
-                position_size=1.0, pnl=1000.0, status="WIN",
+                position_size=1.0, pnl=1000.0,
+                net_pnl=1000.0, gross_pnl=1000.0, fees=0.0, status="WIN",
             ),
             TradeRecord(
                 trade_id=uuid4(), symbol="BTC", side="BUY",
                 entry_price=50000.0, exit_price=49500.0,
-                position_size=1.0, pnl=-500.0, status="LOSS",
+                position_size=1.0, pnl=-500.0,
+                net_pnl=-500.0, gross_pnl=-500.0, fees=0.0, status="LOSS",
             ),
         ]
 
