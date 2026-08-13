@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from src.core.models.analysis_result import AnalysisResult as PipelineResult
 from src.logging.logger import get_logger
 
-logger = get_logger("pipeline")
+logger = get_logger("pipeline.runner")
 
 
 class PipelineRunner:

@@ -8,7 +8,7 @@ import httpx
 from src.core.models.market_snapshot import MarketSnapshot
 from src.logging.logger import get_logger
 
-logger = get_logger("binance_collector")
+logger = get_logger("collectors.binance")
 
 BINANCE_BASE_URL = "https://api.binance.com/api/v3"
 MAX_RETRIES = 3

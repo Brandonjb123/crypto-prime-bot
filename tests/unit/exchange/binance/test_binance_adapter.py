@@ -146,7 +146,7 @@ class TestBinanceFuturesAdapter:
         adapter = BinanceFuturesAdapter(client)
         plan = _make_plan()
         result = await adapter.place_order(plan)
-        assert result.status == OrderStatus.REJECTED
+        assert result.status == OrderStatus.FAILED
         assert result.reject_reason == OrderRejectReason.UNKNOWN
 
     async def test_auth_error(self):
@@ -188,3 +188,24 @@ class TestBinanceFuturesAdapter:
         r2 = await adapter2.place_order(plan)
         assert r1.status == r2.status
         assert r1.side == r2.side
+
+
+    async def test_http_4xx_rejected(self):
+        client = MagicMock(spec=BinanceClient)
+        client.place_order = AsyncMock(
+            side_effect=BinanceAPIError("HTTP 400", ExchangeErrorType.INVALID_ORDER)
+        )
+        adapter = BinanceFuturesAdapter(client)
+        plan = _make_plan()
+        result = await adapter.place_order(plan)
+        assert result.status == OrderStatus.REJECTED
+
+    async def test_http_5xx_failed(self):
+        client = MagicMock(spec=BinanceClient)
+        client.place_order = AsyncMock(
+            side_effect=BinanceAPIError("HTTP 500", ExchangeErrorType.NETWORK_ERROR)
+        )
+        adapter = BinanceFuturesAdapter(client)
+        plan = _make_plan()
+        result = await adapter.place_order(plan)
+        assert result.status == OrderStatus.FAILED

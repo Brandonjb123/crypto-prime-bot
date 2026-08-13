@@ -128,6 +128,8 @@ class ExecutionAction(StrEnum):
 class ExecutionType(StrEnum):
     MARKET = "MARKET"
     LIMIT = "LIMIT"
+    PAPER = "PAPER"
+    LIVE = "LIVE"
 
 
 class ExecutionStatus(StrEnum):
@@ -136,11 +138,15 @@ class ExecutionStatus(StrEnum):
 
 
 class OrderStatus(StrEnum):
+    NEW = "NEW"
     PENDING = "PENDING"
     SUBMITTED = "SUBMITTED"
+    PARTIALLY_FILLED = "PARTIALLY_FILLED"
     FILLED = "FILLED"
     REJECTED = "REJECTED"
     CANCELLED = "CANCELLED"
+    FAILED = "FAILED"
+    UNKNOWN = "UNKNOWN"
 
 
 class OrderRejectReason(StrEnum):
@@ -290,3 +296,8 @@ class PositionEvent(StrEnum):
     STOP_LOSS_HIT = "STOP_LOSS_HIT"
     TAKE_PROFIT_HIT = "TAKE_PROFIT_HIT"
     HOLD = "HOLD"
+
+
+class TradingMode(StrEnum):
+    PAPER = "PAPER"
+    LIVE = "LIVE"

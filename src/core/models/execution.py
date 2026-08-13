@@ -37,3 +37,4 @@ class ExecutionPlan(BaseModel):
     validation_reasons: list[ValidationReason]
     warnings: list[RiskWarning]
     timestamp: datetime
+    client_order_id: str | None = None

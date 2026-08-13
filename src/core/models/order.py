@@ -24,3 +24,9 @@ class OrderResult(BaseModel):
     stop_loss: float
     take_profit: float
     timestamp: datetime
+
+    # Partial fill tracking (default: full fill)
+    requested_quantity: float = 0.0
+    filled_quantity: float = 0.0
+    remaining_quantity: float = 0.0
+    average_fill_price: float | None = None

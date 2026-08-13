@@ -15,8 +15,13 @@ from src.events.events.order_executed import OrderExecutedEvent
 from src.events.events.portfolio_updated import PortfolioUpdatedEvent
 from src.events.events.position_closed import PositionClosedEvent
 from src.events.events.position_opened import PositionOpenedEvent
+from src.exchange.adapters.binance.binance_futures_adapter import BinanceFuturesAdapter
+from src.exchange.adapters.binance.client import BinanceClient
 from src.exchange.adapters.paper import PaperExchangeAdapter
 from src.exchange.executor import OrderExecutor
+from src.execution.exchange.mock_client import MockExchangeClient
+from src.execution.execution_router import ExecutionRouter
+from src.execution.live_trading_engine import LiveTradingEngine
 from src.execution.paper_trading_engine import PaperTradingEngine
 from src.infrastructure.telegram.telegram_service import TelegramService
 from src.lifecycle.trade_lifecycle_engine import TradeLifecycleEngine
@@ -72,7 +77,6 @@ class Container:
 
         self.position_manager = PositionManager(event_bus=self.event_bus)
         self.portfolio_manager = PortfolioManager(event_bus=self.event_bus)
-        # Portfolio State Manager (untuk Paper Trading)
         self.portfolio_state_manager = PortfolioStateManager(initial_balance=10000.0)
         self.lifecycle_engine = TradeLifecycleEngine()
 
@@ -108,6 +112,34 @@ class Container:
             slippage=0.0,
         )
 
+        # Live trading engine (TESTNET only, default PAPER)
+        trading_mode = getattr(settings, "TRADING_MODE", "PAPER").upper()
+        live_enabled = getattr(settings, "LIVE_TRADING_ENABLED", False)
+        exchange_env = getattr(settings, "EXCHANGE_ENV", "TESTNET").upper()
+
+        if trading_mode == "LIVE" and live_enabled:
+            if exchange_env == "TESTNET":
+                live_client = BinanceClient(
+                    api_key=getattr(settings, "EXCHANGE_API_KEY", ""),
+                    api_secret=getattr(settings, "EXCHANGE_API_SECRET", ""),
+                    testnet=True,
+                )
+                live_exchange = BinanceFuturesAdapter(live_client)
+            else:
+                self.logger.error("Production live trading is not allowed in Sprint 12B")
+                live_exchange = MockExchangeClient(behavior="fill_immediately")
+        else:
+            live_exchange = MockExchangeClient(behavior="fill_immediately")
+
+        self.live_trading_engine = LiveTradingEngine(exchange=live_exchange)
+
+        # Execution Router — default PAPER
+        self.execution_router = ExecutionRouter(
+            paper_engine=self.paper_trading_engine,
+            live_engine=self.live_trading_engine,
+            settings=settings,
+        )
+
         self.pipeline_runner = PipelineRunner(
             collector=BinanceCollector(),
             indicator_engine=IndicatorEngine(),
@@ -117,7 +149,7 @@ class Container:
             risk_engine=TradeRiskEngine(),
             signal_engine=SignalEngine(),
             notification_engine=self.notification_engine,
-            paper_trading_engine=self.paper_trading_engine
+            paper_trading_engine=self.paper_trading_engine,
         )
 
         self.scheduler = SimpleScheduler(self.pipeline_runner, interval_seconds=14400)

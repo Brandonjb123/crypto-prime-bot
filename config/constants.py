@@ -24,6 +24,7 @@ BINANCE_FUTURES_URL = "https://fapi.binance.com"
 COINGECKO_API_URL = "https://api.coingecko.com/api/v3"
 FEAR_GREED_API_URL = "https://api.alternative.me"
 GOOGLE_NEWS_RSS_URL = "https://news.google.com/rss/search"
+BINANCE_TESTNET_BASE_URL = "https://testnet.binancefuture.com"
 
 # API Timeouts & Limits
 BINANCE_TIMEOUT = 10.0
