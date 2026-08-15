@@ -135,3 +135,7 @@ class PortfolioStateManager:
             drawdown_percent=round(drawdown_pct, 2),
             timestamp=datetime.now(UTC),
         )
+
+    def get_snapshot(self) -> PortfolioState:
+        """Alias untuk get_state() — memudahkan Telegram dashboard."""
+        return self.get_state()

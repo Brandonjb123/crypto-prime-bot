@@ -105,15 +105,27 @@ def format_portfolio(snapshot: Any) -> str:
     if snapshot is None:
         return "No portfolio snapshot"
 
+    equity = getattr(snapshot, "equity", 0.0)
+    realized = getattr(snapshot, "realized_pnl", 0.0)
+    unrealized = getattr(snapshot, "unrealized_pnl", 0.0)
+    total_pnl = getattr(snapshot, "total_pnl", 0.0)
+    balance = getattr(snapshot, "account_balance", 0.0)
+    drawdown = getattr(snapshot, "drawdown", 0.0)
+    drawdown_pct = getattr(snapshot, "drawdown_percent", 0.0)
+    open_positions = getattr(snapshot, "open_positions", 0)
+    closed_positions = getattr(snapshot, "closed_positions", 0)
+
     return (
         "💼 *Portfolio*\n\n"
-        f"Equity: ${snapshot.equity:.2f}\n"
-        f"Realized PnL: ${snapshot.realized_pnl:.2f}\n"
-        f"Unrealized PnL: ${snapshot.unrealized_pnl:.2f}\n"
-        f"Open Positions: {snapshot.open_positions}\n"
-        f"Net Exposure: ${snapshot.net_exposure:.2f}\n"
-        f"Gross Exposure: ${snapshot.gross_exposure:.2f}\n"
-        f"Status: {snapshot.status}"
+        f"Balance: ${balance:.2f}\n"
+        f"Equity: ${equity:.2f}\n"
+        f"Realized PnL: ${realized:.2f}\n"
+        f"Unrealized PnL: ${unrealized:.2f}\n"
+        f"Total PnL: ${total_pnl:.2f}\n"
+        f"Open Positions: {open_positions}\n"
+        f"Closed Positions: {closed_positions}\n"
+        f"Drawdown: ${drawdown:.2f} ({drawdown_pct}%)\n"
+        "Mode: PAPER"
     )
 
 

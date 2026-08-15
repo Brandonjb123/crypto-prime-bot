@@ -60,7 +60,11 @@ def market_handler(message: TelegramMessage | None, context: dict | None = None)
 
 def last_signal_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
     ctx = _ctx(context)
-    signal = ctx.get("last_signal")
+    pipeline_runner = ctx.get("pipeline_runner")
+    if pipeline_runner is not None:
+        signal = getattr(pipeline_runner, "last_signal", None)
+    else:
+        signal = ctx.get("last_signal")
     return TelegramResponse(
         response_type=TelegramResponseType.TEXT,
         text=format_signal(signal),
