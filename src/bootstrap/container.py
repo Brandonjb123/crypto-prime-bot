@@ -88,11 +88,11 @@ class Container:
         self.notification_engine = NotificationEngine(notifier=self.telegram_notifier)
         self.telegram_bot = TelegramBot()
         self.telegram_bot.router = CommandRouter()
-        self.telegram_bot.router.register(TelegramCommand.STATUS, lambda msg: status_handler(msg))
-        self.telegram_bot.router.register(TelegramCommand.POSITIONS, lambda msg: positions_handler(msg))
-        self.telegram_bot.router.register(TelegramCommand.PORTFOLIO, lambda msg: portfolio_handler(msg))
-        self.telegram_bot.router.register(TelegramCommand.HELP, lambda msg: help_handler(msg))
-        self.telegram_bot.router.register(TelegramCommand.LAST_SIGNAL, lambda msg: last_signal_handler(msg))
+        self.telegram_bot.router.register(TelegramCommand.STATUS, lambda msg, ctx=None: status_handler(msg, ctx))
+        self.telegram_bot.router.register(TelegramCommand.POSITIONS, lambda msg, ctx=None: positions_handler(msg, ctx))
+        self.telegram_bot.router.register(TelegramCommand.PORTFOLIO, lambda msg, ctx=None: portfolio_handler(msg, ctx))
+        self.telegram_bot.router.register(TelegramCommand.HELP, lambda msg, ctx=None: help_handler(msg, ctx))
+        self.telegram_bot.router.register(TelegramCommand.LAST_SIGNAL, lambda msg, ctx=None: last_signal_handler(msg, ctx))
 
         self.notification_dispatcher = NotificationDispatcher(self.telegram_notifier)
         self.notification_dispatcher.register(OrderExecutedEvent, OrderExecutedFormatter())
@@ -140,6 +140,9 @@ class Container:
             settings=settings,
         )
 
+        # Health monitor harus ada sebelum dipakai pipeline_runner
+        self.health_monitor = HealthMonitor()
+
         self.pipeline_runner = PipelineRunner(
             collector=BinanceCollector(),
             indicator_engine=IndicatorEngine(),
@@ -150,15 +153,17 @@ class Container:
             signal_engine=SignalEngine(),
             notification_engine=self.notification_engine,
             paper_trading_engine=self.paper_trading_engine,
+            health_monitor=self.health_monitor,
         )
 
         self.scheduler = SimpleScheduler(self.pipeline_runner, interval_seconds=14400)
 
         self.runtime_monitor = RuntimeMonitor()
-        self.health_monitor = HealthMonitor()
         self.metrics_collector = MetricsCollector()
+
+        # Context untuk Telegram dashboard
         self.telegram_bot.set_context({
-            "health_monitor": self.health_monitor,
             "pipeline_runner": self.pipeline_runner,
+            "health_monitor": self.health_monitor,
             "portfolio_state_manager": self.portfolio_state_manager,
         })

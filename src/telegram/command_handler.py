@@ -70,7 +70,14 @@ def last_signal_handler(message: TelegramMessage | None, context: dict | None = 
 
 def positions_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
     ctx = _ctx(context)
-    positions = ctx.get("positions", [])
+    portfolio_manager = ctx.get("portfolio_state_manager")
+    positions = []
+    if portfolio_manager:
+        get_positions = getattr(portfolio_manager, "get_open_positions", None)
+        if get_positions:
+            positions = get_positions()
+    else:
+        positions = ctx.get("positions", [])
     return TelegramResponse(
         response_type=TelegramResponseType.TEXT,
         text=format_positions(positions),
@@ -80,7 +87,14 @@ def positions_handler(message: TelegramMessage | None, context: dict | None = No
 
 def portfolio_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
     ctx = _ctx(context)
-    snapshot = ctx.get("portfolio_snapshot")
+    portfolio_manager = ctx.get("portfolio_state_manager")
+    snapshot = None
+    if portfolio_manager:
+        get_snapshot = getattr(portfolio_manager, "get_snapshot", None)
+        if get_snapshot:
+            snapshot = get_snapshot()
+    if snapshot is None:
+        snapshot = ctx.get("portfolio_snapshot")
     return TelegramResponse(
         response_type=TelegramResponseType.TEXT,
         text=format_portfolio(snapshot),

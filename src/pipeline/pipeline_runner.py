@@ -3,6 +3,7 @@
 from datetime import UTC, datetime
 
 from src.core.models.analysis_result import AnalysisResult as PipelineResult
+from src.core.types.enums import PipelineStatus
 from src.logging.logger import get_logger
 
 logger = get_logger("pipeline.runner")
@@ -20,6 +21,7 @@ class PipelineRunner:
         signal_engine=None,
         notification_engine=None,
         paper_trading_engine=None,
+        health_monitor=None,
     ):
         self.collector = collector
         self.indicator_engine = indicator_engine
@@ -30,17 +32,23 @@ class PipelineRunner:
         self.signal_engine = signal_engine
         self.notification_engine = notification_engine
         self.paper_trading_engine = paper_trading_engine
-        self.last_pipeline_status = "IDLE"
-        self.last_signal = None
-        self.last_market_snapshot = None
+        self.health_monitor = health_monitor
 
-        # State untuk Telegram UX
+        # Runtime state untuk Telegram
+        self.last_pipeline_status = "IDLE"
+        self.last_pipeline_started_at: datetime | None = None
+        self.last_pipeline_completed_at: datetime | None = None
+        self.last_pipeline_error: str | None = None
         self.last_signal = None
         self.last_market_snapshot = None
 
     async def run(self, symbol: str, timeframe: str = "4h") -> PipelineResult:
         logger.info(f"Pipeline started for {symbol} ({timeframe})")
+
+        # Update status
         self.last_pipeline_status = "RUNNING"
+        self.last_pipeline_started_at = datetime.now(UTC)
+        self._record_pipeline_status(PipelineStatus.RUNNING)
 
         signal = None
 
@@ -55,6 +63,7 @@ class PipelineRunner:
                 snapshot = None
         except Exception as e:
             logger.error(f"Collector failed: {e}")
+            self._set_failed(str(e))
             return PipelineResult(
                 symbol=symbol,
                 timeframe=timeframe,
@@ -73,6 +82,7 @@ class PipelineRunner:
                 indicators = None
         except Exception as e:
             logger.error(f"Indicator calculation failed: {e}")
+            self._set_failed(str(e))
             return PipelineResult(
                 symbol=symbol,
                 timeframe=timeframe,
@@ -91,6 +101,7 @@ class PipelineRunner:
                 analysis = None
         except Exception as e:
             logger.error(f"Analysis failed: {e}")
+            self._set_failed(str(e))
             return PipelineResult(
                 symbol=symbol,
                 timeframe=timeframe,
@@ -109,6 +120,7 @@ class PipelineRunner:
                 decision = None
         except Exception as e:
             logger.error(f"AI decision failed: {e}")
+            self._set_failed(str(e))
             return PipelineResult(
                 symbol=symbol,
                 timeframe=timeframe,
@@ -127,6 +139,7 @@ class PipelineRunner:
                 validated = None
         except Exception as e:
             logger.error(f"Validation failed: {e}")
+            self._set_failed(str(e))
             return PipelineResult(
                 symbol=symbol,
                 timeframe=timeframe,
@@ -147,6 +160,7 @@ class PipelineRunner:
                 trade_plan = None
         except Exception as e:
             logger.error(f"Risk calculation failed: {e}")
+            self._set_failed(str(e))
             return PipelineResult(
                 symbol=symbol,
                 timeframe=timeframe,
@@ -164,6 +178,7 @@ class PipelineRunner:
                 logger.info("TradingSignal created")
         except Exception as e:
             logger.error(f"Signal generation failed: {e}")
+            self._set_failed(str(e))
             return PipelineResult(
                 symbol=symbol,
                 timeframe=timeframe,
@@ -173,7 +188,7 @@ class PipelineRunner:
             )
 
         # Step 8 — Paper Execution (if enabled)
-        if self.paper_trading_engine and signal and signal.status == "ACTIVE":
+        if self.paper_trading_engine and signal and getattr(signal, "status", None) == "ACTIVE":
             try:
                 logger.info("Executing paper trade...")
                 _ = self.paper_trading_engine.execute(signal)
@@ -181,7 +196,7 @@ class PipelineRunner:
             except Exception as e:
                 logger.error(f"Paper execution failed: {e}")
 
-        # Notification (side effect — tidak mempengaruhi status pipeline)
+        # Notification
         if self.notification_engine and signal:
             try:
                 self.notification_engine.notify_signal(signal)
@@ -189,9 +204,28 @@ class PipelineRunner:
                 logger.error(f"Notification failed: {e}")
 
         logger.info(f"Pipeline finished for {symbol}")
+
+        # Success
+        self.last_pipeline_status = "COMPLETED"
+        self.last_pipeline_completed_at = datetime.now(UTC)
+        self._record_pipeline_status(PipelineStatus.COMPLETED)
+
         return PipelineResult(
             symbol=symbol,
             timeframe=timeframe,
             status="completed",
             timestamp=datetime.now(UTC),
         )
+
+    def _set_failed(self, error: str) -> None:
+        self.last_pipeline_status = "FAILED"
+        self.last_pipeline_error = error
+        self.last_pipeline_completed_at = datetime.now(UTC)
+        self._record_pipeline_status(PipelineStatus.FAILED)
+
+    def _record_pipeline_status(self, status: PipelineStatus) -> None:
+        if self.health_monitor:
+            try:
+                self.health_monitor.record_pipeline_status(status)
+            except Exception:
+                pass
