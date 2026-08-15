@@ -30,6 +30,9 @@ class PipelineRunner:
         self.signal_engine = signal_engine
         self.notification_engine = notification_engine
         self.paper_trading_engine = paper_trading_engine
+        self.last_pipeline_status = "IDLE"
+        self.last_signal = None
+        self.last_market_snapshot = None
 
         # State untuk Telegram UX
         self.last_signal = None
@@ -37,6 +40,7 @@ class PipelineRunner:
 
     async def run(self, symbol: str, timeframe: str = "4h") -> PipelineResult:
         logger.info(f"Pipeline started for {symbol} ({timeframe})")
+        self.last_pipeline_status = "RUNNING"
 
         signal = None
 

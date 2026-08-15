@@ -21,10 +21,25 @@ def _ctx(context: dict | None) -> dict:
 
 def start_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
     ctx = _ctx(context)
-    health = ctx.get("health_status") or ctx.get("orchestrator_status", "UNKNOWN")
+
+    # Ambil dari objek runtime jika tersedia
+    pipeline_runner = ctx.get("pipeline_runner")
+    health_monitor = ctx.get("health_monitor")
+
+    if pipeline_runner is not None:
+        pipeline_status = getattr(pipeline_runner, "last_pipeline_status", "IDLE")
+    else:
+        pipeline_status = ctx.get("pipeline_status", "IDLE")
+
+    if health_monitor is not None:
+        health = health_monitor.get_health()
+        health_status = health.status.value if hasattr(health.status, "value") else str(health.status)
+    else:
+        health_status = ctx.get("orchestrator_status") or ctx.get("health_status", "UNKNOWN")
+
     return TelegramResponse(
         response_type=TelegramResponseType.TEXT,
-        text=format_status(health, ctx.get("pipeline_status", "IDLE")),
+        text=format_status(health_status, pipeline_status),
         timestamp=datetime.now(UTC),
     )
 

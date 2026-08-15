@@ -157,3 +157,8 @@ class Container:
         self.runtime_monitor = RuntimeMonitor()
         self.health_monitor = HealthMonitor()
         self.metrics_collector = MetricsCollector()
+        self.telegram_bot.set_context({
+            "health_monitor": self.health_monitor,
+            "pipeline_runner": self.pipeline_runner,
+            "portfolio_state_manager": self.portfolio_state_manager,
+        })
