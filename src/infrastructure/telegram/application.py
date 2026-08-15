@@ -1,6 +1,12 @@
 """Telegram Application — entry point untuk Bot."""
 
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
+from telegram.ext import (
+    ApplicationBuilder,
+    CallbackQueryHandler,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
 
 from config.settings import settings
 from src.infrastructure.telegram.telegram_service import TelegramService
@@ -18,14 +24,15 @@ class TelegramApplication:
         if not self.token:
             return
         self.app = ApplicationBuilder().token(self.token).build()
+        self.app.add_handler(CommandHandler("start", self.bot.handle_update))
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.bot.handle_update))
         self.app.add_handler(CommandHandler("status", self.bot.handle_update))
         self.app.add_handler(CommandHandler("positions", self.bot.handle_update))
         self.app.add_handler(CommandHandler("portfolio", self.bot.handle_update))
         self.app.add_handler(CommandHandler("help", self.bot.handle_update))
         self.app.add_handler(CommandHandler("lastsignal", self.bot.handle_update))
+        self.app.add_handler(CallbackQueryHandler(self.bot.handle_callback))
 
-        # Berikan Application yang sudah jadi ke service
         self.service.set_application(self.app)
 
     async def start_polling(self) -> None:

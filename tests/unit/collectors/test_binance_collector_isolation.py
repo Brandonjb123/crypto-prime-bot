@@ -23,10 +23,10 @@ async def test_telegram_exception_does_not_affect_collector():
 
     # Mock Binance API dengan respx
     with respx.mock:
-        respx.get("https://api.binance.com/api/v3/klines").mock(
+        respx.get("https://data-api.binance.vision/api/v3/klines").mock(
             return_value=httpx.Response(200, json=mock_klines)
         )
-        respx.get("https://api.binance.com/api/v3/ticker/price").mock(
+        respx.get("https://data-api.binance.vision/api/v3/ticker/price").mock(
             return_value=httpx.Response(200, json=mock_price)
         )
 

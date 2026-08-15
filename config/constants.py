@@ -21,6 +21,7 @@ MAX_CONCURRENT_API_CALLS = 5
 
 # API Base URLs
 BINANCE_FUTURES_URL = "https://fapi.binance.com"
+BINANCE_MARKET_DATA_BASE_URL = "https://data-api.binance.vision"
 COINGECKO_API_URL = "https://api.coingecko.com/api/v3"
 FEAR_GREED_API_URL = "https://api.alternative.me"
 GOOGLE_NEWS_RSS_URL = "https://news.google.com/rss/search"

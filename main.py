@@ -14,20 +14,20 @@ async def main():
 
     container = bootstrap.container
 
-    # Telegram
+    # Start scheduler dulu (jangan block)
+    scheduler = container.scheduler
+    await scheduler.start()
+
+    # Telegram polling sebagai task terpisah
     telegram_app = TelegramApplication(
         bot=container.telegram_bot,
         service=container.telegram_service,
     )
     telegram_app.build()
     runner = PollingRunner(telegram_app)
-    await runner.run()
+    telegram_task = asyncio.create_task(runner.run())
 
-    # Scheduler — sekarang memicu PipelineRunner
-    scheduler = container.scheduler
-    await scheduler.start()
-
-    # Wait for shutdown
+    # Graceful shutdown
     stop_event = asyncio.Event()
 
     def signal_handler():
@@ -38,7 +38,8 @@ async def main():
 
     await stop_event.wait()
 
-    await runner.stop()
+    telegram_task.cancel()
+    await scheduler.stop()
     await bootstrap.shutdown()
 
 

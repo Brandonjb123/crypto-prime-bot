@@ -31,6 +31,10 @@ class PipelineRunner:
         self.notification_engine = notification_engine
         self.paper_trading_engine = paper_trading_engine
 
+        # State untuk Telegram UX
+        self.last_signal = None
+        self.last_market_snapshot = None
+
     async def run(self, symbol: str, timeframe: str = "4h") -> PipelineResult:
         logger.info(f"Pipeline started for {symbol} ({timeframe})")
 
@@ -41,6 +45,7 @@ class PipelineRunner:
             logger.info("Collecting market data...")
             if self.collector:
                 snapshot = await self.collector.collect(symbol, timeframe)
+                self.last_market_snapshot = snapshot
                 logger.info("MarketSnapshot created")
             else:
                 snapshot = None
@@ -151,6 +156,7 @@ class PipelineRunner:
             if self.signal_engine and trade_plan:
                 logger.info("Generating trading signal...")
                 signal = self.signal_engine.generate(trade_plan)
+                self.last_signal = signal
                 logger.info("TradingSignal created")
         except Exception as e:
             logger.error(f"Signal generation failed: {e}")

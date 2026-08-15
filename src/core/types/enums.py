@@ -219,6 +219,7 @@ class TelegramCommand(StrEnum):
     PORTFOLIO = "portfolio"
     LAST_SIGNAL = "last_signal"
     HELP = "help"
+    START = "start"
 
 
 class TelegramResponseType(StrEnum):

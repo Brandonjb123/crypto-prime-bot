@@ -13,7 +13,7 @@ class CommandRouter:
     def register(self, command: TelegramCommand, handler: callable) -> None:
         self._handlers[command] = handler
 
-    def route(self, message: TelegramMessage) -> TelegramResponse:
+    def route(self, message: TelegramMessage, context: dict | None = None) -> TelegramResponse:
         handler = self._handlers.get(message.command)
         if handler is None:
             return TelegramResponse(
@@ -21,4 +21,9 @@ class CommandRouter:
                 text=f"Unknown command: {message.command.value}",
                 timestamp=datetime.now(UTC),
             )
+
+        import inspect
+        params = inspect.signature(handler).parameters
+        if len(params) >= 2:
+            return handler(message, context)
         return handler(message)
