@@ -12,14 +12,17 @@ class Settings(BaseSettings):
     # Exchange Testnet
     EXCHANGE_API_KEY: str = ""
     EXCHANGE_API_SECRET: str = ""
-    EXCHANGE_ENV: str = "TESTNET"  # TESTNET | PRODUCTION
+    EXCHANGE_ENV: str = "TESTNET"
 
     # Trading Mode
-    TRADING_MODE: str = "PAPER"  # PAPER | LIVE
+    TRADING_MODE: str = "PAPER"
     LIVE_TRADING_ENABLED: bool = False
 
     # LLM
-    OPENROUTER_API_KEY: str
+    LLM_PROVIDER: str = "openrouter"  # openrouter | groq
+    OPENROUTER_API_KEY: str = ""
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     # Database
     TURSO_DATABASE_URL: str
@@ -45,21 +48,25 @@ class Settings(BaseSettings):
     model_config = {"env_file": ".env", "case_sensitive": True}
 
     @model_validator(mode="after")
-    def _validate_live_trading_config(self):
-        """Strict validation untuk LIVE mode."""
+    def _validate_runtime_config(self):
+        # LIVE trading validation
         if self.TRADING_MODE.upper() == "LIVE":
             if not self.LIVE_TRADING_ENABLED:
-                raise ValueError(
-                    "TRADING_MODE=LIVE requires LIVE_TRADING_ENABLED=true"
-                )
+                raise ValueError("TRADING_MODE=LIVE requires LIVE_TRADING_ENABLED=true")
             if self.EXCHANGE_ENV.upper() != "TESTNET":
-                raise ValueError(
-                    "Sprint 12B only supports EXCHANGE_ENV=TESTNET"
-                )
+                raise ValueError("Sprint 12B only supports EXCHANGE_ENV=TESTNET")
             if not self.EXCHANGE_API_KEY or not self.EXCHANGE_API_SECRET:
-                raise ValueError(
-                    "EXCHANGE_API_KEY and EXCHANGE_API_SECRET are required for LIVE mode"
-                )
+                raise ValueError("EXCHANGE_API_KEY and EXCHANGE_API_SECRET are required for LIVE mode")
+
+        # LLM provider validation
+        provider = self.LLM_PROVIDER.lower()
+        if provider not in ("openrouter", "groq"):
+            raise ValueError(f"Invalid LLM_PROVIDER: {self.LLM_PROVIDER}. Must be 'openrouter' or 'groq'")
+        if provider == "openrouter" and not self.OPENROUTER_API_KEY:
+            raise ValueError("OPENROUTER_API_KEY is required when LLM_PROVIDER=openrouter")
+        if provider == "groq" and not self.GROQ_API_KEY:
+            raise ValueError("GROQ_API_KEY is required when LLM_PROVIDER=groq")
+
         return self
 
 

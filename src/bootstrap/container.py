@@ -3,8 +3,8 @@
 from config.constants import TELEGRAM_BOT_TOKEN
 from config.settings import settings
 from src.ai.decision_engine import DecisionEngine
-from src.ai.openrouter_client import OpenRouterClient
 from src.ai.prompt_builder import PromptBuilder
+from src.ai.provider_factory import create_llm_client
 from src.analysis.analysis_engine import AnalysisEngine
 from src.analysis.indicator_engine import IndicatorEngine
 from src.application.scheduler import SimpleScheduler
@@ -100,7 +100,7 @@ class Container:
         self.notification_dispatcher.register(PositionClosedEvent, PositionClosedFormatter())
         self.notification_dispatcher.register(PortfolioUpdatedEvent, PortfolioUpdatedFormatter())
 
-        client = OpenRouterClient(api_key=settings.OPENROUTER_API_KEY)
+        client = create_llm_client()
         prompt_builder = PromptBuilder()
         decision_engine = DecisionEngine(client=client, prompt_builder=prompt_builder)
 
