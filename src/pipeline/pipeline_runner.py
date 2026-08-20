@@ -179,6 +179,11 @@ class PipelineRunner:
             if self.signal_engine and trade_plan:
                 logger.info("Generating trading signal...")
                 signal = self.signal_engine.generate(trade_plan)
+
+                # Pertahankan confidence dari DecisionResult
+                if decision is not None:
+                    signal.confidence = getattr(decision, "confidence", 0)
+
                 self.last_signal = signal
                 logger.info("TradingSignal created")
         except Exception as e:
