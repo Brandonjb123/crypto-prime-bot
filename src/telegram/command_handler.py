@@ -19,6 +19,21 @@ def _ctx(context: dict | None) -> dict:
     return context or {}
 
 
+def _sync_price(portfolio_manager, pipeline_runner) -> None:
+    """Update harga terbaru dari pipeline ke price_provider portfolio."""
+    if not portfolio_manager or not pipeline_runner:
+        return
+
+    price_provider = getattr(portfolio_manager, "price_provider", None)
+    market_snapshot = getattr(pipeline_runner, "last_market_snapshot", None)
+
+    if price_provider and market_snapshot:
+        try:
+            price_provider.update_price(market_snapshot.symbol, market_snapshot.current_price)
+        except Exception:
+            pass
+
+
 def start_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
     ctx = _ctx(context)
 
@@ -78,6 +93,11 @@ def last_signal_handler(message: TelegramMessage | None, context: dict | None = 
 def positions_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
     ctx = _ctx(context)
     portfolio_manager = ctx.get("portfolio_state_manager")
+    pipeline_runner = ctx.get("pipeline_runner")
+
+    # Pastikan harga terbaru masuk ke price provider sebelum menghitung posisi
+    _sync_price(portfolio_manager, pipeline_runner)
+
     positions = []
     if portfolio_manager:
         get_positions = getattr(portfolio_manager, "get_open_positions", None)
@@ -85,6 +105,7 @@ def positions_handler(message: TelegramMessage | None, context: dict | None = No
             positions = get_positions()
     else:
         positions = ctx.get("positions", [])
+
     return TelegramResponse(
         response_type=TelegramResponseType.TEXT,
         text=format_positions(positions),
@@ -95,13 +116,20 @@ def positions_handler(message: TelegramMessage | None, context: dict | None = No
 def portfolio_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
     ctx = _ctx(context)
     portfolio_manager = ctx.get("portfolio_state_manager")
+    pipeline_runner = ctx.get("pipeline_runner")
+
+    # Pastikan harga terbaru masuk sebelum mengambil state portfolio
+    _sync_price(portfolio_manager, pipeline_runner)
+
     snapshot = None
     if portfolio_manager:
         get_snapshot = getattr(portfolio_manager, "get_state", None)
         if get_snapshot:
             snapshot = get_snapshot()
+
     if snapshot is None:
         snapshot = ctx.get("portfolio_snapshot")
+
     return TelegramResponse(
         response_type=TelegramResponseType.TEXT,
         text=format_portfolio(snapshot),

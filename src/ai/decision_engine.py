@@ -24,6 +24,7 @@ class DecisionEngine:
         try:
             response = await self.client.complete(prompt)
             logger.info("AI response received")
+            logger.info(f"Decision response={response}")
         except Exception as e:
             logger.error(f"OpenRouter failed: {e}")
             # Fallback ke WAIT
