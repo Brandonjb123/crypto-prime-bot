@@ -77,7 +77,10 @@ class Container:
 
         self.position_manager = PositionManager(event_bus=self.event_bus)
         self.portfolio_manager = PortfolioManager(event_bus=self.event_bus)
-        self.portfolio_state_manager = PortfolioStateManager(initial_balance=10000.0)
+        self.portfolio_state_manager = PortfolioStateManager(
+            initial_balance=10000.0,
+            price_provider=self.price_provider,
+        )
         self.lifecycle_engine = TradeLifecycleEngine()
 
         self.paper_exchange = PaperExchangeAdapter()
@@ -154,6 +157,7 @@ class Container:
             notification_engine=self.notification_engine,
             paper_trading_engine=self.paper_trading_engine,
             health_monitor=self.health_monitor,
+            price_provider=self.price_provider,
         )
 
         self.scheduler = SimpleScheduler(self.pipeline_runner, interval_seconds=14400)

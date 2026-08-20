@@ -22,7 +22,6 @@ def _ctx(context: dict | None) -> dict:
 def start_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
     ctx = _ctx(context)
 
-    # Ambil dari objek runtime jika tersedia
     pipeline_runner = ctx.get("pipeline_runner")
     health_monitor = ctx.get("health_monitor")
 
@@ -50,7 +49,11 @@ def status_handler(message: TelegramMessage | None, context: dict | None = None)
 
 def market_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
     ctx = _ctx(context)
-    market_snapshot = ctx.get("market_snapshot")
+    pipeline_runner = ctx.get("pipeline_runner")
+    if pipeline_runner is not None:
+        market_snapshot = getattr(pipeline_runner, "last_market_snapshot", None)
+    else:
+        market_snapshot = ctx.get("market_snapshot")
     return TelegramResponse(
         response_type=TelegramResponseType.TEXT,
         text=format_market(market_snapshot),
@@ -94,7 +97,7 @@ def portfolio_handler(message: TelegramMessage | None, context: dict | None = No
     portfolio_manager = ctx.get("portfolio_state_manager")
     snapshot = None
     if portfolio_manager:
-        get_snapshot = getattr(portfolio_manager, "get_snapshot", None)
+        get_snapshot = getattr(portfolio_manager, "get_state", None)
         if get_snapshot:
             snapshot = get_snapshot()
     if snapshot is None:

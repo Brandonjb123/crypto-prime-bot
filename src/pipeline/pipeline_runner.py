@@ -22,6 +22,7 @@ class PipelineRunner:
         notification_engine=None,
         paper_trading_engine=None,
         health_monitor=None,
+        price_provider=None,
     ):
         self.collector = collector
         self.indicator_engine = indicator_engine
@@ -33,6 +34,7 @@ class PipelineRunner:
         self.notification_engine = notification_engine
         self.paper_trading_engine = paper_trading_engine
         self.health_monitor = health_monitor
+        self.price_provider = price_provider
 
         # Runtime state untuk Telegram
         self.last_pipeline_status = "IDLE"
@@ -58,6 +60,9 @@ class PipelineRunner:
             if self.collector:
                 snapshot = await self.collector.collect(symbol, timeframe)
                 self.last_market_snapshot = snapshot
+
+                if self.price_provider and snapshot:
+                    self.price_provider.update_price(symbol, snapshot.current_price)
                 logger.info("MarketSnapshot created")
             else:
                 snapshot = None
