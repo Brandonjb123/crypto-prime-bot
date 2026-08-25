@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 
 from src.core.models.analysis_result import AnalysisResult as PipelineResult
-from src.core.types.enums import PipelineStatus
+from src.core.types.enums import PipelineStatus, PositionStatus
 from src.logging.logger import get_logger
 
 logger = get_logger("pipeline.runner")
@@ -23,6 +23,7 @@ class PipelineRunner:
         paper_trading_engine=None,
         health_monitor=None,
         price_provider=None,
+        lifecycle_engine=None,
     ):
         self.collector = collector
         self.indicator_engine = indicator_engine
@@ -35,6 +36,7 @@ class PipelineRunner:
         self.paper_trading_engine = paper_trading_engine
         self.health_monitor = health_monitor
         self.price_provider = price_provider
+        self.lifecycle_engine = lifecycle_engine
 
         # Runtime state untuk Telegram
         self.last_pipeline_status = "IDLE"
@@ -64,6 +66,8 @@ class PipelineRunner:
                 if self.price_provider and snapshot:
                     self.price_provider.update_price(symbol, snapshot.current_price)
                 logger.info("MarketSnapshot created")
+                if self.lifecycle_engine and snapshot:
+                    await self._evaluate_positions(symbol, snapshot.current_price)
             else:
                 snapshot = None
         except Exception as e:
@@ -239,3 +243,26 @@ class PipelineRunner:
                 self.health_monitor.record_pipeline_status(status)
             except Exception:
                 pass
+
+    async def _evaluate_positions(self, symbol: str, current_price: float) -> None:
+        """Evaluasi TP/SL untuk semua posisi open terkait symbol."""
+        if not self.paper_trading_engine:
+            return
+
+        portfolio = getattr(self.paper_trading_engine, "portfolio_manager", None)
+        if not portfolio:
+            return
+
+        positions = portfolio.get_open_positions()
+        for pos in positions:
+            if pos.symbol != symbol:
+                continue
+
+            updated = self.lifecycle_engine.evaluate(pos, current_price)
+            if updated.status != PositionStatus.OPEN:
+                reason = updated.close_reason
+                self.paper_trading_engine.close_position(
+                    pos.position_id,
+                    current_price,
+                    reason,
+                )        

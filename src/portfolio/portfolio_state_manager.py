@@ -101,7 +101,19 @@ class PortfolioStateManager:
     def get_open_positions(self) -> list[Position]:
         return self.repo.get_open()
 
-    def close_position(self, position_id: UUID, exit_price: float) -> Position | None:
+    def has_open_position(self, symbol: str, side: Side) -> bool:
+        """Cek apakah sudah ada posisi open dengan symbol+side yang sama."""
+        return any(
+            p.symbol == symbol and p.side == side and p.status == PositionStatus.OPEN
+            for p in self.repo.get_open()
+        )
+
+    def close_position(
+        self,
+        position_id: UUID,
+        exit_price: float,
+        close_reason: PositionCloseReason = PositionCloseReason.MANUAL,
+    ) -> Position | None:
         pos = self.repo.get_by_id(position_id)
         if not pos or pos.status != PositionStatus.OPEN:
             logger.warning(f"Position {position_id} not found or already closed")
@@ -128,7 +140,7 @@ class PortfolioStateManager:
             position_size=pos.position_size,
             opened_at=pos.opened_at,
             closed_at=datetime.now(UTC),
-            close_reason=PositionCloseReason.MANUAL,
+            close_reason=close_reason,
             last_price=exit_price,
             last_updated=datetime.now(UTC),
         )

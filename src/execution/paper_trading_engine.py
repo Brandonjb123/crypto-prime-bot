@@ -4,7 +4,9 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from src.core.models.execution_result import ExecutionResult
+from src.core.models.position import Position
 from src.core.models.trading_signal import TradingSignal
+from src.core.types.enums import PositionCloseReason, Side
 from src.logging.logger import get_logger
 from src.notification.notification_engine import NotificationEngine
 from src.portfolio.portfolio_state_manager import PortfolioStateManager
@@ -44,6 +46,27 @@ class PaperTradingEngine:
                 timestamp=datetime.now(UTC),
             )
 
+        # Cegah stacking: maksimal 1 posisi open per symbol + direction
+        side = Side.LONG if signal.side == "BUY" else Side.SHORT
+        if self.portfolio_manager.has_open_position(signal.symbol, side):
+            logger.warning(
+                f"Execution blocked: existing {side.value} position for {signal.symbol}"
+            )
+            result = ExecutionResult(
+                execution_id=uuid4(),
+                signal_id=signal.signal_id,
+                symbol=signal.symbol,
+                side=signal.side,
+                status="SKIPPED",
+                requested_price=signal.entry_price or 0.0,
+                position_size=signal.position_size,
+                stop_loss=signal.stop_loss,
+                take_profit=signal.take_profit,
+                slippage=0.0,
+                timestamp=datetime.now(UTC),
+            )
+            self.execution_repo.save(result)
+            return result
         # Hanya proses sinyal ACTIVE
         if signal.status != "ACTIVE":
             status = "SKIPPED" if signal.status == "SKIPPED" else "REJECTED"
@@ -95,10 +118,15 @@ class PaperTradingEngine:
 
         return result
 
-    def close_position(self, position_id: UUID, exit_price: float):
-        pos = self.portfolio_manager.close_position(position_id, exit_price)
+    def close_position(
+        self,
+        position_id: UUID,
+        exit_price: float,
+        close_reason: PositionCloseReason = PositionCloseReason.MANUAL,
+    ) -> Position | None:
+        pos = self.portfolio_manager.close_position(position_id, exit_price, close_reason)
         if pos and self.notification_engine:
-            if pos.side == "LONG":
+            if pos.side == Side.LONG:
                 pnl = (exit_price - pos.entry_price) * pos.position_size
             else:
                 pnl = (pos.entry_price - exit_price) * pos.position_size

@@ -145,6 +145,7 @@ class Container:
 
         # Health monitor harus ada sebelum dipakai pipeline_runner
         self.health_monitor = HealthMonitor()
+        self.lifecycle_engine = TradeLifecycleEngine()
 
         self.pipeline_runner = PipelineRunner(
             collector=BinanceCollector(),
@@ -158,6 +159,7 @@ class Container:
             paper_trading_engine=self.paper_trading_engine,
             health_monitor=self.health_monitor,
             price_provider=self.price_provider,
+            lifecycle_engine=self.lifecycle_engine,
         )
 
         self.scheduler = SimpleScheduler(self.pipeline_runner, interval_seconds=14400)
