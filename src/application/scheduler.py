@@ -1,7 +1,20 @@
-"""Scheduler — trigger pipeline secara berkala."""
+"""Scheduler — trigger pipeline secara berkala untuk multi-asset."""
 
 import asyncio
 from abc import ABC, abstractmethod
+
+# Universe simulasi paper trading
+DEFAULT_SYMBOLS = [
+    "BTC",
+    "ETH",
+    "BNB",
+    "SOL",
+    "XRP",
+    "DOGE",
+    "ADA",
+    "AVAX",
+    "LINK",
+]
 
 
 class BaseScheduler(ABC):
@@ -15,9 +28,15 @@ class BaseScheduler(ABC):
 
 
 class SimpleScheduler(BaseScheduler):
-    def __init__(self, pipeline_runner, interval_seconds: int = 14400):
+    def __init__(
+        self,
+        pipeline_runner,
+        interval_seconds: int = 14400,
+        symbols: list[str] | None = None,
+    ):
         self.runner = pipeline_runner
         self.interval = interval_seconds
+        self.symbols = symbols or DEFAULT_SYMBOLS
         self._running = False
         self._task = None
 
@@ -35,8 +54,11 @@ class SimpleScheduler(BaseScheduler):
 
     async def _loop(self) -> None:
         while self._running:
-            try:
-                await self.runner.run("BTC", "4h")
-            except Exception:
-                pass
+            for symbol in self.symbols:
+                if not self._running:
+                    break
+                try:
+                    await self.runner.run(symbol, "4h")
+                except Exception:
+                    pass
             await asyncio.sleep(self.interval)
