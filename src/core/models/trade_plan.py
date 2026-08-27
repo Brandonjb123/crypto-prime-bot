@@ -14,6 +14,8 @@ class TradePlan(BaseModel):
     account_balance: float = 0.0
     stop_loss: float | None = None
     take_profit: float | None = None
+    take_profit_1: float | None = None
+    take_profit_2: float | None = None
     risk_reward_ratio: float = 0.0
     estimated_loss: float = 0.0
     estimated_profit: float = 0.0

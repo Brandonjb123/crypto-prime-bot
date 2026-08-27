@@ -14,7 +14,6 @@ class SignalEngine:
     def generate(self, trade_plan: TradePlan) -> TradingSignal:
         logger.info("Generating trading signal...")
 
-        # Default status
         if trade_plan.decision == "WAIT":
             logger.info("Signal status: SKIPPED (WAIT decision)")
             return TradingSignal(
@@ -25,6 +24,8 @@ class SignalEngine:
                 entry_price=None,
                 stop_loss=None,
                 take_profit=None,
+                take_profit_1=None,
+                take_profit_2=None,
                 position_size=0.0,
                 risk_percent=trade_plan.risk_percent,
                 confidence=0,
@@ -33,7 +34,6 @@ class SignalEngine:
                 created_at=datetime.now(UTC),
             )
 
-        # Validate position size
         if trade_plan.position_size <= 0:
             logger.info("Signal status: INVALID (position size)")
             return TradingSignal(
@@ -44,6 +44,8 @@ class SignalEngine:
                 entry_price=trade_plan.entry_price,
                 stop_loss=trade_plan.stop_loss,
                 take_profit=trade_plan.take_profit,
+                take_profit_1=trade_plan.take_profit_1,
+                take_profit_2=trade_plan.take_profit_2,
                 position_size=0.0,
                 risk_percent=trade_plan.risk_percent,
                 confidence=0,
@@ -52,7 +54,6 @@ class SignalEngine:
                 created_at=datetime.now(UTC),
             )
 
-        # Validate SL/TP
         if trade_plan.stop_loss is None or trade_plan.take_profit is None:
             logger.info("Signal status: INVALID (missing SL/TP)")
             return TradingSignal(
@@ -63,6 +64,8 @@ class SignalEngine:
                 entry_price=trade_plan.entry_price,
                 stop_loss=None,
                 take_profit=None,
+                take_profit_1=None,
+                take_profit_2=None,
                 position_size=0.0,
                 risk_percent=trade_plan.risk_percent,
                 confidence=0,
@@ -71,7 +74,6 @@ class SignalEngine:
                 created_at=datetime.now(UTC),
             )
 
-        # All valid → ACTIVE
         logger.info("Signal status: ACTIVE")
         return TradingSignal(
             signal_id=uuid4(),
@@ -81,9 +83,11 @@ class SignalEngine:
             entry_price=trade_plan.entry_price,
             stop_loss=trade_plan.stop_loss,
             take_profit=trade_plan.take_profit,
+            take_profit_1=trade_plan.take_profit_1,
+            take_profit_2=trade_plan.take_profit_2,
             position_size=trade_plan.position_size,
             risk_percent=trade_plan.risk_percent,
-            confidence=0,  # will be set by caller if needed
+            confidence=0,
             risk_level="MEDIUM",
             reasoning=[],
             created_at=datetime.now(UTC),

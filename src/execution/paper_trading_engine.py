@@ -133,6 +133,17 @@ class PaperTradingEngine:
             self.notification_engine.notify_position_closed(pos, pnl)
         return pos
 
+    def apply_lifecycle_action(self, position_id: UUID, action: str, exit_price: float, fraction: float) -> Position | None:
+        """Eksekusi aksi dari lifecycle engine."""
+        if action == "SL" or action == "TP2":
+            reason = PositionCloseReason.STOP_LOSS if action == "SL" else PositionCloseReason.TAKE_PROFIT
+            return self.close_position(position_id, exit_price, reason)
+        elif action == "TP1":
+            self.portfolio_manager.partial_close(position_id, exit_price, fraction)
+            # Ambil posisi tersisa untuk update notifikasi jika perlu
+            return self.portfolio_manager.repo.get_by_id(position_id)
+        return None
+
     def _notify_paper_execution(self, result: ExecutionResult) -> None:
         """Kirim notifikasi eksekusi paper trading."""
         if not self.notification_engine:

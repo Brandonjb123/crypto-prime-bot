@@ -14,6 +14,8 @@ class TradingSignal(BaseModel):
     entry_price: float | None = None
     stop_loss: float | None = None
     take_profit: float | None = None
+    take_profit_1: float | None = None
+    take_profit_2: float | None = None
     position_size: float = 0.0
     risk_percent: float = 0.0
     confidence: int = 0

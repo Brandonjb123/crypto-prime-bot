@@ -49,6 +49,8 @@ class PortfolioStateManager:
             entry_price=signal.entry_price or 0.0,
             stop_loss=signal.stop_loss or 0.0,
             take_profit=signal.take_profit or 0.0,
+            tp1_price=getattr(signal, "take_profit_1", None),
+            tp2_price=getattr(signal, "take_profit_2", None),
             position_size=signal.position_size,
             opened_at=datetime.now(UTC),
             closed_at=None,
@@ -77,6 +79,8 @@ class PortfolioStateManager:
             entry_price=pos.entry_price,
             stop_loss=pos.stop_loss,
             take_profit=pos.take_profit,
+            tp1_price=pos.tp1_price,
+            tp2_price=pos.tp2_price,
             position_size=pos.position_size,
             opened_at=pos.opened_at,
             closed_at=pos.closed_at,
@@ -91,22 +95,67 @@ class PortfolioStateManager:
         else:
             pnl = (pos.entry_price - current_price) * pos.position_size
 
-        logger.debug(f"Unrealized PnL for {position_id}: {pnl:.2f}")
         return pnl
 
     def update_price(self, position_id: UUID, current_price: float) -> float:
-        """Alias backward-compatible untuk update_position_price."""
         return self.update_position_price(position_id, current_price)
 
     def get_open_positions(self) -> list[Position]:
         return self.repo.get_open()
 
     def has_open_position(self, symbol: str, side: Side) -> bool:
-        """Cek apakah sudah ada posisi open dengan symbol+side yang sama."""
         return any(
             p.symbol == symbol and p.side == side and p.status == PositionStatus.OPEN
             for p in self.repo.get_open()
         )
+
+    def partial_close(
+        self,
+        position_id: UUID,
+        exit_price: float,
+        fraction: float,
+    ) -> tuple[Position | None, float]:
+        """Partial close sebagian posisi. Return (sisa posisi, realized pnl)."""
+        pos = self.repo.get_by_id(position_id)
+        if not pos or pos.status != PositionStatus.OPEN:
+            logger.warning(f"Position {position_id} not found or not open")
+            return None, 0.0
+
+        if fraction <= 0 or fraction >= 1:
+            return None, 0.0
+
+        if pos.side == Side.LONG:
+            pnl = (exit_price - pos.entry_price) * (pos.position_size * fraction)
+        else:
+            pnl = (pos.entry_price - exit_price) * (pos.position_size * fraction)
+
+        self.realized_pnl += pnl
+
+        new_size = pos.position_size * (1 - fraction)
+        new_position = Position(
+            position_id=pos.position_id,
+            execution_id=pos.execution_id,
+            order_id=pos.order_id,
+            symbol=pos.symbol,
+            side=pos.side,
+            status=PositionStatus.OPEN,
+            entry_price=pos.entry_price,
+            stop_loss=pos.stop_loss,
+            take_profit=pos.take_profit,
+            tp1_price=pos.tp1_price,
+            tp2_price=pos.tp2_price,
+            position_size=new_size,
+            opened_at=pos.opened_at,
+            closed_at=None,
+            close_reason=PositionCloseReason.NONE,
+            last_price=exit_price,
+            last_updated=datetime.now(UTC),
+        )
+        self.repo.save(new_position)
+        logger.info(
+            f"Partial close {fraction*100:.0f}% of position {position_id}: realized ${pnl:.2f}"
+        )
+        return new_position, pnl
 
     def close_position(
         self,
@@ -137,6 +186,8 @@ class PortfolioStateManager:
             entry_price=pos.entry_price,
             stop_loss=pos.stop_loss,
             take_profit=pos.take_profit,
+            tp1_price=pos.tp1_price,
+            tp2_price=pos.tp2_price,
             position_size=pos.position_size,
             opened_at=pos.opened_at,
             closed_at=datetime.now(UTC),

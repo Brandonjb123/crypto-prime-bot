@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 
 from src.core.models.analysis_result import AnalysisResult as PipelineResult
-from src.core.types.enums import PipelineStatus, PositionStatus
+from src.core.types.enums import PipelineStatus
 from src.logging.logger import get_logger
 
 logger = get_logger("pipeline.runner")
@@ -245,8 +245,8 @@ class PipelineRunner:
                 pass
 
     async def _evaluate_positions(self, symbol: str, current_price: float) -> None:
-        """Evaluasi TP/SL untuk semua posisi open terkait symbol."""
-        if not self.paper_trading_engine:
+        """Evaluasi TP/SL untuk posisi open terkait symbol."""
+        if not self.paper_trading_engine or not self.lifecycle_engine:
             return
 
         portfolio = getattr(self.paper_trading_engine, "portfolio_manager", None)
@@ -258,11 +258,9 @@ class PipelineRunner:
             if pos.symbol != symbol:
                 continue
 
-            updated = self.lifecycle_engine.evaluate(pos, current_price)
-            if updated.status != PositionStatus.OPEN:
-                reason = updated.close_reason
-                self.paper_trading_engine.close_position(
-                    pos.position_id,
-                    current_price,
-                    reason,
+            action, fraction = self.lifecycle_engine.evaluate(pos, current_price)
+            if action != "HOLD":
+                logger.info(f"Lifecycle action={action} for {pos.symbol} {pos.side}")
+                self.paper_trading_engine.apply_lifecycle_action(
+                    pos.position_id, action, current_price, fraction
                 )        

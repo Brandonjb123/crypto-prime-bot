@@ -20,6 +20,8 @@ class Position(BaseModel):
     entry_price: float
     stop_loss: float
     take_profit: float
+    tp1_price: float | None = None
+    tp2_price: float | None = None
     position_size: float
     opened_at: datetime
     closed_at: datetime | None

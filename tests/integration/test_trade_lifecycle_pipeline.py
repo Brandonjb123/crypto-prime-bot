@@ -8,7 +8,6 @@ from src.core.types.enums import (
     ExecutionType,
     OrderRejectReason,
     OrderStatus,
-    PositionCloseReason,
     PositionStatus,
     Side,
 )
@@ -41,12 +40,11 @@ class TestTradeLifecyclePipeline:
         engine = TradeLifecycleEngine()
 
         # HOLD
-        pos = engine.evaluate(pos, 51000.0)
-        assert pos.status == PositionStatus.OPEN
-        assert pos.last_price == 51000.0
+        action, fraction = engine.evaluate(pos, 51000.0)
+        assert action == "HOLD"
+        assert fraction == 0.0
 
-        # HIT TP
-        pos = engine.evaluate(pos, 55000.0)
-        assert pos.status == PositionStatus.TAKE_PROFIT
-        assert pos.close_reason == PositionCloseReason.TAKE_PROFIT
-        assert pos.closed_at is not None
+        # HIT TP2 (karena tidak ada tp1/tp2 spesifik, take_profit lama dianggap TP2)
+        action, fraction = engine.evaluate(pos, 55000.0)
+        assert action == "TP2"
+        assert fraction == 1.0

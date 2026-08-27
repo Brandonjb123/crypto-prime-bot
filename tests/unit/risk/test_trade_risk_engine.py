@@ -79,15 +79,17 @@ class TestTradeRiskEngine:
         assert plan.position_size == pytest.approx(0.013333, rel=0.01)
         assert plan.estimated_loss == pytest.approx(20.0, rel=0.1)
 
-    def test_risk_reward_ratio(self):
-        engine = TradeRiskEngine(risk_reward=2.0)
+    def test_risk_reward_ratio_baseline_3(self):
+        engine = TradeRiskEngine(risk_percent=2.0)
         validated = _make_validated(decision="BUY")
         plan = engine.calculate(validated, entry_price=50000.0, atr=1000.0)
 
-        # tp_distance = 1000 * 3.0 = 3000
-        # sl_distance = 1000 * 1.5 = 1500
-        # rr = 3000 / 1500 = 2.0
-        assert plan.risk_reward_ratio == 2.0
+        # risk = 1000 * 1.5 = 1500
+        # tp2 = entry + 3*risk = 50000 + 4500 = 54500
+        # reward = 4500
+        # rr = 4500 / 1500 = 3.0
+        assert plan.risk_reward_ratio == pytest.approx(3.0, rel=0.01)
+        assert plan.take_profit == pytest.approx(54500.0, rel=0.01)
 
     def test_zero_balance(self):
         engine = TradeRiskEngine()
@@ -97,12 +99,14 @@ class TestTradeRiskEngine:
         assert plan.position_size == 0.0
         assert plan.estimated_loss == 0.0
 
-    def test_configurable_multipliers(self):
-        engine = TradeRiskEngine(atr_sl_multiplier=2.0, atr_tp_multiplier=4.0)
+    def test_configurable_atr_sl_multiplier(self):
+        engine = TradeRiskEngine(risk_percent=2.0, atr_sl_multiplier=2.0)
         validated = _make_validated(decision="BUY")
         plan = engine.calculate(validated, entry_price=50000.0, atr=1000.0)
 
         # sl_distance = 1000 * 2.0 = 2000
-        # tp_distance = 1000 * 4.0 = 4000
-        assert plan.stop_loss == 48000.0
-        assert plan.take_profit == 54000.0
+        # entry = 50000, sl = 48000, risk = 2000
+        # tp2 = 50000 + 3*2000 = 56000
+        assert plan.stop_loss == pytest.approx(48000.0, rel=0.01)
+        assert plan.take_profit == pytest.approx(56000.0, rel=0.01)
+        assert plan.risk_reward_ratio == pytest.approx(3.0, rel=0.01)
