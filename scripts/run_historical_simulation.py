@@ -1,11 +1,17 @@
 """Script untuk menjalankan simulasi historis dengan data real dari Binance Vision."""
 
 import asyncio
+import sys
+from pathlib import Path
 
 import httpx
 
-from src.bootstrap.container import Container
-from src.simulation.historical_simulation import HistoricalSimulationRunner
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from src.bootstrap.container import Container  # noqa: E402
+from src.simulation.historical_simulation import HistoricalSimulationRunner  # noqa: E402
 
 SYMBOLS = ["BTC", "ETH", "BNB", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK"]
 BINANCE_KLINE_URL = "https://data-api.binance.vision/api/v3/klines"

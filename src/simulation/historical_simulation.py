@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 from src.core.models.market_snapshot import MarketSnapshot
 from src.core.models.position import Position
-from src.core.types.enums import PositionStatus
+from src.core.types.enums import PositionStatus, Side
 from src.lifecycle.trade_lifecycle_engine import TradeLifecycleEngine
 from src.logging.logger import get_logger
 
@@ -100,18 +100,23 @@ class HistoricalSimulationRunner:
 
         # Kumpulkan closed trades
         for pos in portfolio.repo.get_all():
-            if pos.status != PositionStatus.OPEN:
-                result.closed_trades.append(pos)
-                if pos.side.value == "LONG":
-                    pnl = (pos.last_price or pos.entry_price - pos.entry_price) * pos.position_size
-                else:
-                    pnl = (pos.entry_price - (pos.last_price or pos.entry_price)) * pos.position_size
+            if pos.status != PositionStatus.CLOSED:
+                continue
 
-                result.total_pnl += pnl
-                if pnl > 0:
-                    result.win_count += 1
-                else:
-                    result.loss_count += 1
+            result.closed_trades.append(pos)
+
+            # Hitung PnL dengan benar
+            exit_price = pos.last_price if pos.last_price is not None else pos.entry_price
+            if pos.side == Side.LONG:
+                pnl = (exit_price - pos.entry_price) * pos.position_size
+            else:  # SHORT
+                pnl = (pos.entry_price - exit_price) * pos.position_size
+
+            result.total_pnl += pnl
+            if pnl > 0:
+                result.win_count += 1
+            else:
+                result.loss_count += 1
 
         return result
 
