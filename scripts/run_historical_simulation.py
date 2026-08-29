@@ -39,18 +39,21 @@ async def main():
         validation_engine=container.pipeline_runner.validation_engine,
         risk_engine=container.pipeline_runner.risk_engine,
         signal_engine=container.pipeline_runner.signal_engine,
-        paper_trading_engine=container.paper_trading_engine,
-        lifecycle_engine=container.lifecycle_engine,
-        price_provider=container.price_provider,
+        initial_balance=10000.0,
     )
 
     for sym in SYMBOLS:
         print(f"Running simulation for {sym}...")
         candles = await fetch_klines(sym)
         result = await runner.run_asset(sym, candles)
+
         print(
-            f"{sym}: closed={len(result.closed_trades)}, wins={result.win_count}, "
-            f"losses={result.loss_count}, pnl={result.total_pnl:.2f}"
+            f"{sym}: closed={len(result.closed_trades)}, "
+            f"wins={result.win_count}, losses={result.loss_count}, "
+            f"pnl={result.total_pnl:.2f}, "
+            f"valid_decisions={result.valid_decision_count}, "
+            f"ai_unavailable={result.ai_unavailable_count}, "
+            f"buys={result.buy_signals}, sells={result.sell_signals}, waits={result.wait_signals}"
         )
 
 

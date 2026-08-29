@@ -17,6 +17,10 @@ MAX_429_ATTEMPTS = 2
 RETRY_DELAY_SECONDS = 1.0
 
 
+class GroqRateLimitError(Exception):
+    """Raised saat rate limit TPD/TPM tercapai."""
+
+
 class GroqClient:
     def __init__(self, api_key: str, model: str = "llama-3.3-70b-versatile"):
         if not api_key:
@@ -48,20 +52,17 @@ class GroqClient:
 
                 status = response.status_code
 
-                # 4xx non-transient → fail fast, no retry
                 if status in (400, 401, 403):
                     self._log_http_error(response, status)
                     raise ValueError(f"Groq API error: HTTP {status}")
 
-                # 429 → bounded retry (max 2 attempts)
                 if status == 429:
                     if attempt >= MAX_429_ATTEMPTS:
                         self._log_http_error(response, status)
-                        raise ValueError("Groq rate limit retry exhausted")
+                        raise GroqRateLimitError("Groq rate limit retry exhausted")
                     await asyncio.sleep(RETRY_DELAY_SECONDS * attempt)
                     continue
 
-                # 5xx → bounded retry (max 3 attempts)
                 if 500 <= status < 600:
                     if attempt >= MAX_5XX_ATTEMPTS:
                         self._log_http_error(response, status)
@@ -69,7 +70,6 @@ class GroqClient:
                     await asyncio.sleep(RETRY_DELAY_SECONDS * attempt)
                     continue
 
-                # Status selain 200 → unexpected error
                 if status != 200:
                     self._log_http_error(response, status)
                     raise ValueError(f"Groq API error: HTTP {status}")
@@ -78,18 +78,17 @@ class GroqClient:
                 content = data["choices"][0]["message"]["content"]
                 return json.loads(content)
 
+            except GroqRateLimitError:
+                raise
             except json.JSONDecodeError:
                 raise
-
             except ValueError:
                 raise
-
             except (httpx.TimeoutException, httpx.ConnectError, httpx.NetworkError) as e:
                 if attempt >= MAX_5XX_ATTEMPTS:
                     logger.error(f"Groq network/timeout retry exhausted: {type(e).__name__}")
                     raise
                 await asyncio.sleep(RETRY_DELAY_SECONDS * attempt)
-
             except Exception as e:
                 if attempt >= MAX_5XX_ATTEMPTS:
                     logger.error(f"Groq unexpected error: {type(e).__name__}: {e}")
