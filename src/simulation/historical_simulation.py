@@ -25,6 +25,9 @@ class HistoricalSimulationResult:
         self.buy_signals = 0
         self.sell_signals = 0
         self.wait_signals = 0
+        self.tp1_count = 0
+        self.tp2_count = 0
+        self.sl_count = 0
 
 
 class HistoricalSimulationRunner:
@@ -46,6 +49,7 @@ class HistoricalSimulationRunner:
         self.signal_engine = signal_engine
         self.initial_balance = initial_balance
         self.lifecycle_engine = TradeLifecycleEngine()
+        self.min_candles = 50  # minimal candle untuk indikator
 
     async def run_asset(
         self,
@@ -53,21 +57,31 @@ class HistoricalSimulationRunner:
         raw_candles: list[list],
         timeframe: str = "4h",
     ) -> HistoricalSimulationResult:
-        """Jalankan pipeline untuk satu aset dengan portfolio terisolasi."""
+        """
+        Jalankan pipeline untuk satu aset.
+        Entry hanya setelah candle T closes.
+        Exit dievaluasi mulai T+1 menggunakan high/low candle.
+        """
         result = HistoricalSimulationResult()
 
         portfolio = PortfolioStateManager(initial_balance=self.initial_balance)
         engine = PaperTradingEngine(portfolio_manager=portfolio)
+        entry_iteration: dict = {}
 
-        for i in range(50, len(raw_candles)):
-            candle_window = raw_candles[: i + 1]
+        for i in range(self.min_candles, len(raw_candles)):
+            high_price = float(raw_candles[i][2])
+            low_price = float(raw_candles[i][3])
+
+            # Evaluasi posisi open yang sudah boleh dievaluasi (entry < i)
+            self._evaluate_positions(engine, symbol, high_price, low_price)
+
+            # Proses sinyal & entry hanya jika posisi belum ada
             close_price = float(raw_candles[i][4])
-
             snapshot = MarketSnapshot(
                 symbol=symbol,
                 timeframe=timeframe,
                 current_price=close_price,
-                candles=candle_window,
+                candles=raw_candles[: i + 1],
                 timestamp=datetime.now(UTC),
             )
 
@@ -87,14 +101,16 @@ class HistoricalSimulationRunner:
                 validated = self.validation_engine.validate(decision)
                 atr = indicators.atr14 or 0.0
                 trade_plan = self.risk_engine.calculate(
-                    validated, snapshot.current_price, atr, self.initial_balance
+                    validated, close_price, atr, self.initial_balance
                 )
                 signal = self.signal_engine.generate(trade_plan)
                 if decision is not None:
                     signal.confidence = getattr(decision, "confidence", 0)
 
                 if signal.status == "ACTIVE":
-                    engine.execute(signal)
+                    position = engine.execute(signal)
+                    if position:
+                        entry_iteration[position.position_id] = i
 
             except GroqRateLimitError:
                 result.ai_unavailable_count += 1
@@ -103,8 +119,7 @@ class HistoricalSimulationRunner:
             except Exception as e:
                 logger.warning(f"Pipeline error at index {i} for {symbol}: {e}")
 
-            self._evaluate_positions(engine, symbol, close_price)
-
+        # Kumpulkan closed trades khusus aset ini
         for pos in portfolio.repo.get_all():
             if pos.symbol != symbol:
                 continue
@@ -125,18 +140,56 @@ class HistoricalSimulationRunner:
             else:
                 result.loss_count += 1
 
+            # Hitung TP/SL counts
+            if pos.close_reason.value == "TAKE_PROFIT":
+                result.tp2_count += 1  # final TP dianggap TP2
+            elif pos.close_reason.value == "STOP_LOSS":
+                result.sl_count += 1
+
         return result
 
-    def _evaluate_positions(self, engine: PaperTradingEngine, symbol: str, current_price: float) -> None:
-        """Evaluasi TP/SL untuk posisi open aset ini."""
+    def _evaluate_positions(self, engine: PaperTradingEngine, symbol: str, high_price: float, low_price: float) -> None:
+        """
+        Evaluasi posisi open menggunakan high/low candle.
+        SL priority: jika SL tersentuh, SL dieksekusi lebih dulu.
+        """
         portfolio = engine.portfolio_manager
         for pos in portfolio.get_open_positions():
             if pos.symbol != symbol:
                 continue
 
-            action, fraction = self.lifecycle_engine.evaluate(pos, current_price)
+            action, fraction, exit_price = self._check_touch(pos, high_price, low_price)
             if action != "HOLD":
                 logger.info(f"Simulation lifecycle action={action} for {pos.symbol} {pos.side}")
                 engine.apply_lifecycle_action(
-                    pos.position_id, action, current_price, fraction
+                    pos.position_id, action, exit_price, fraction
                 )
+
+    def _check_touch(self, pos: Position, high_price: float, low_price: float) -> tuple[str, float, float]:
+        """Tentukan aksi berdasarkan sentuhan SL/TP1/TP2 menggunakan high/low.
+
+        Returns:
+            action: "HOLD", "SL", "TP1", "TP2"
+            fraction: fraksi posisi yang ditutup (1.0 untuk SL/TP2, 0.5 untuk TP1)
+            exit_price: harga eksekusi (SL price atau TP price)
+        """
+        tp2_price = pos.tp2_price or pos.take_profit
+        tp1_price = pos.tp1_price
+
+        if pos.side == Side.LONG:
+            # SL priority
+            if low_price <= pos.stop_loss:
+                return "SL", 1.0, pos.stop_loss
+            if tp2_price and high_price >= tp2_price:
+                return "TP2", 1.0, tp2_price
+            if tp1_price and high_price >= tp1_price:
+                return "TP1", 0.5, tp1_price
+        else:  # SHORT
+            if high_price >= pos.stop_loss:
+                return "SL", 1.0, pos.stop_loss
+            if tp2_price and low_price <= tp2_price:
+                return "TP2", 1.0, tp2_price
+            if tp1_price and low_price <= tp1_price:
+                return "TP1", 0.5, tp1_price
+
+        return "HOLD", 0.0, 0.0
