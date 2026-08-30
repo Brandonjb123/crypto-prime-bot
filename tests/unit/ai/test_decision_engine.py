@@ -1,6 +1,8 @@
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from src.ai.decision_engine import DecisionEngine
 from src.ai.prompt_builder import PromptBuilder
 from src.core.models.decision_result import DecisionResult
@@ -38,12 +40,12 @@ async def test_decision_engine_success():
 
 
 async def test_decision_engine_fallback():
-    client = MagicMock()
-    client.complete = AsyncMock(side_effect=Exception("fail"))
-    builder = PromptBuilder()
-    engine = DecisionEngine(client=client, prompt_builder=builder)
-    result = await engine.decide(_make_analysis())
+        from src.ai.groq_client import AIDecisionUnavailableError
 
-    assert result.decision == "WAIT"
-    assert result.confidence == 0
-    assert "Invalid AI response" in result.reasoning
+        client = MagicMock()
+        client.complete = AsyncMock(side_effect=Exception("fail"))
+        builder = PromptBuilder()
+        engine = DecisionEngine(client=client, prompt_builder=builder)
+
+        with pytest.raises(AIDecisionUnavailableError):
+            await engine.decide(_make_analysis())

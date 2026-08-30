@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from src.ai.groq_client import GroqRateLimitError
+from src.ai.groq_client import AIDecisionUnavailableError, GroqRateLimitError
 from src.core.models.market_snapshot import MarketSnapshot
 from src.core.models.position import Position
 from src.core.types.enums import PositionStatus, Side
@@ -49,7 +49,7 @@ class HistoricalSimulationRunner:
         self.signal_engine = signal_engine
         self.initial_balance = initial_balance
         self.lifecycle_engine = TradeLifecycleEngine()
-        self.min_candles = 50  # minimal candle untuk indikator
+        self.min_candles = 50
 
     async def run_asset(
         self,
@@ -57,11 +57,6 @@ class HistoricalSimulationRunner:
         raw_candles: list[list],
         timeframe: str = "4h",
     ) -> HistoricalSimulationResult:
-        """
-        Jalankan pipeline untuk satu aset.
-        Entry hanya setelah candle T closes.
-        Exit dievaluasi mulai T+1 menggunakan high/low candle.
-        """
         result = HistoricalSimulationResult()
 
         portfolio = PortfolioStateManager(initial_balance=self.initial_balance)
@@ -72,10 +67,9 @@ class HistoricalSimulationRunner:
             high_price = float(raw_candles[i][2])
             low_price = float(raw_candles[i][3])
 
-            # Evaluasi posisi open yang sudah boleh dievaluasi (entry < i)
+            # Evaluasi posisi open yang entry-nya sebelum candle ini
             self._evaluate_positions(engine, symbol, high_price, low_price)
 
-            # Proses sinyal & entry hanya jika posisi belum ada
             close_price = float(raw_candles[i][4])
             snapshot = MarketSnapshot(
                 symbol=symbol,
@@ -91,6 +85,7 @@ class HistoricalSimulationRunner:
 
                 decision = await self.decision_engine.decide(analysis)
                 result.valid_decision_count += 1
+
                 if decision.decision == "BUY":
                     result.buy_signals += 1
                 elif decision.decision == "SELL":
@@ -113,6 +108,10 @@ class HistoricalSimulationRunner:
                         entry_iteration[position.position_id] = i
 
             except GroqRateLimitError:
+                result.ai_unavailable_count += 1
+                continue
+
+            except AIDecisionUnavailableError:
                 result.ai_unavailable_count += 1
                 continue
 
@@ -140,19 +139,14 @@ class HistoricalSimulationRunner:
             else:
                 result.loss_count += 1
 
-            # Hitung TP/SL counts
             if pos.close_reason.value == "TAKE_PROFIT":
-                result.tp2_count += 1  # final TP dianggap TP2
+                result.tp2_count += 1
             elif pos.close_reason.value == "STOP_LOSS":
                 result.sl_count += 1
 
         return result
 
-    def _evaluate_positions(self, engine: PaperTradingEngine, symbol: str, high_price: float, low_price: float) -> None:
-        """
-        Evaluasi posisi open menggunakan high/low candle.
-        SL priority: jika SL tersentuh, SL dieksekusi lebih dulu.
-        """
+    def _evaluate_positions(self, engine, symbol, high_price, low_price):
         portfolio = engine.portfolio_manager
         for pos in portfolio.get_open_positions():
             if pos.symbol != symbol:
@@ -165,26 +159,18 @@ class HistoricalSimulationRunner:
                     pos.position_id, action, exit_price, fraction
                 )
 
-    def _check_touch(self, pos: Position, high_price: float, low_price: float) -> tuple[str, float, float]:
-        """Tentukan aksi berdasarkan sentuhan SL/TP1/TP2 menggunakan high/low.
-
-        Returns:
-            action: "HOLD", "SL", "TP1", "TP2"
-            fraction: fraksi posisi yang ditutup (1.0 untuk SL/TP2, 0.5 untuk TP1)
-            exit_price: harga eksekusi (SL price atau TP price)
-        """
+    def _check_touch(self, pos, high_price, low_price):
         tp2_price = pos.tp2_price or pos.take_profit
         tp1_price = pos.tp1_price
 
         if pos.side == Side.LONG:
-            # SL priority
             if low_price <= pos.stop_loss:
                 return "SL", 1.0, pos.stop_loss
             if tp2_price and high_price >= tp2_price:
                 return "TP2", 1.0, tp2_price
             if tp1_price and high_price >= tp1_price:
                 return "TP1", 0.5, tp1_price
-        else:  # SHORT
+        else:
             if high_price >= pos.stop_loss:
                 return "SL", 1.0, pos.stop_loss
             if tp2_price and low_price <= tp2_price:
