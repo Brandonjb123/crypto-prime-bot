@@ -103,9 +103,17 @@ class HistoricalSimulationRunner:
                     signal.confidence = getattr(decision, "confidence", 0)
 
                 if signal.status == "ACTIVE":
-                    position = engine.execute(signal)
-                    if position:
-                        entry_iteration[position.position_id] = i
+                    before_ids = {
+                        p.position_id
+                        for p in portfolio.get_open_positions()
+                        if p.symbol == symbol
+                    }
+
+                    engine.execute(signal)
+
+                    for p in portfolio.get_open_positions():
+                        if p.symbol == symbol and p.position_id not in before_ids:
+                            entry_iteration[p.position_id] = i
 
             except GroqRateLimitError:
                 result.ai_unavailable_count += 1
