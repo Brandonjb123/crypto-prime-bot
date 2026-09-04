@@ -228,6 +228,12 @@ class PortfolioStateManager:
                 price = self.price_provider.get_price(pos.symbol)
                 logger.info(f"DEBUG unrealized {pos.symbol=} {price=} {pos.entry_price=} {pos.position_size=}")
 
+        logger.info(f"DEBUG get_state: open={len(open_positions)} price_provider={self.price_provider is not None}")
+        if self.price_provider:
+            for pos in open_positions:
+                price = self.price_provider.get_price(pos.symbol)
+                logger.info(f"DEBUG unrealized {pos.symbol=} {price=} {pos.entry_price=} {pos.position_size=}")
+
         return PortfolioState(
             account_balance=self.initial_balance,
             equity=equity,
