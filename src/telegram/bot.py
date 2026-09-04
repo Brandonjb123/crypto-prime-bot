@@ -126,7 +126,6 @@ class TelegramBot:
 
     def _parse_command(self, text: str) -> TelegramCommand | None:
         text = text.strip().lower()
-        # Alias: /lastsignal → /last_signal (enum menggunakan underscore)
         if text == "/lastsignal":
             text = "/last_signal"
         try:
