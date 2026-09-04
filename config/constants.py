@@ -80,7 +80,7 @@ TELEGRAM_BOT_TOKEN = ""
 TELEGRAM_WEBHOOK_URL = ""
 TELEGRAM_MODE = "polling"  # polling | webhook
 
-ADMIN_CHAT_ID = 123456789  # Ganti dengan chat ID asli
+ADMIN_CHAT_ID = 7175294180  # Ganti dengan chat ID asli
 
 LOG_LEVEL = "INFO"
 MAX_PIPELINE_FAILURES = 5
