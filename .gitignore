@@ -1,6 +1,24 @@
-*.txt
-data/
-logs/
-.env
+# Python cache
 __pycache__/
 *.pyc
+
+# Environment
+.env
+.env.example
+
+# Runtime artifacts
+logs/
+data/
+*.txt
+!requirements.txt
+
+# Script cache
+scripts/__pycache__/
+tests/__pycache__/
+
+# Output validasi
+oos_*.txt
+btc_*.txt
+simulation_*.txt
+small_validation_*.txt
+controlled_*.txt
