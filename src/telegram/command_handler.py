@@ -1,4 +1,4 @@
-"""Command Handlers — menampilkan data dari context."""
+"""Command handlers untuk Telegram."""
 
 from datetime import UTC, datetime
 
@@ -10,12 +10,9 @@ from src.commercial.telegram_disclaimer import (
     RISK_DISCLAIMER,
     TERMS_OF_SERVICE,
 )
-from src.core.models.telegram import TelegramMessage, TelegramResponse
+from src.core.models.telegram import TelegramResponse
 from src.core.types.enums import TelegramResponseType
 from src.telegram.formatter import (
-    format_help,
-    format_market,
-    format_performance,
     format_portfolio,
     format_positions,
     format_signal,
@@ -23,155 +20,108 @@ from src.telegram.formatter import (
 )
 
 
-def _ctx(context: dict | None) -> dict:
-    return context or {}
+def _text_response(text: str) -> TelegramResponse:
+    return TelegramResponse(
+        text=text,
+        response_type=TelegramResponseType.TEXT,
+        timestamp=datetime.now(UTC),
+    )
 
 
-def _sync_price(portfolio_manager, pipeline_runner) -> None:
-    """Update harga terbaru dari pipeline ke price_provider portfolio."""
-    if not portfolio_manager or not pipeline_runner:
-        return
-
-    price_provider = getattr(portfolio_manager, "price_provider", None)
-    market_snapshot = getattr(pipeline_runner, "last_market_snapshot", None)
-
-    if price_provider and market_snapshot:
-        try:
-            price_provider.update_price(market_snapshot.symbol, market_snapshot.current_price)
-        except Exception:
-            pass
+def start_handler(msg=None, ctx=None):
+    text = (
+        "👋 *Selamat datang di Crypto Prime*\n\n"
+        "AI-powered crypto intelligence & paper trading.\n"
+        "Gunakan menu di bawah untuk menjelajah fitur.\n\n"
+        f"{EARLY_TRACK_RECORD}\n\n"
+        "Pilih salah satu tombol di bawah ini."
+    )
+    return _text_response(text)
 
 
-def start_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
-    ctx = _ctx(context)
+def help_handler(msg=None, ctx=None):
+    text = (
+        "🤖 *Crypto Prime Bot — Menu Bantuan*\n\n"
+        "📊 *Data & Sinyal*\n"
+        "/signals — Sinyal terbaru\n"
+        "/positions — Posisi aktif\n"
+        "/portfolio — Ringkasan portfolio\n"
+        "/history — Riwayat trading\n"
+        "/trackrecord — Track record paper trading\n\n"
+        "⭐ *Early Access*\n"
+        "/subscribe — Info langganan\n"
+        "/checkout — Mulai pembayaran\n"
+        "/status — Status langganan\n\n"
+        "📜 *Legal*\n"
+        "/terms — Terms of Service\n"
+        "/privacy — Privacy Policy\n"
+        "/risk — Risk Disclaimer\n\n"
+        "ℹ️ Bisa juga pakai menu utama untuk navigasi."
+    )
+    return _text_response(text)
 
-    pipeline_runner = ctx.get("pipeline_runner")
-    health_monitor = ctx.get("health_monitor")
 
-    if pipeline_runner is not None:
-        pipeline_status = getattr(pipeline_runner, "last_pipeline_status", "IDLE")
+def last_signal_handler(msg=None, ctx=None):
+    signal = ctx.get("signal") if ctx else None
+    if signal is None:
+        text = "📡 *Sinyal Terkini*\n\nBelum ada sinyal aktif yang tersedia."
     else:
-        pipeline_status = ctx.get("pipeline_status", "IDLE")
+        text = format_signal(signal)
+    return _text_response(text)
 
-    if health_monitor is not None:
-        health = health_monitor.get_health()
-        health_status = health.status.value if hasattr(health.status, "value") else str(health.status)
+
+def signals_handler(msg=None, ctx=None):
+    return last_signal_handler(msg, ctx)
+
+
+def portfolio_handler(msg=None, ctx=None):
+    snapshot = ctx.get("portfolio_snapshot") if ctx else None
+    text = format_portfolio(snapshot)
+    return _text_response(text)
+
+
+def positions_handler(msg=None, ctx=None):
+    positions = ctx.get("positions") if ctx else None
+    if positions is None:
+        text = "📈 *Posisi Aktif*\n\nBelum ada posisi open."
     else:
-        health_status = ctx.get("orchestrator_status") or ctx.get("health_status", "UNKNOWN")
+        text = format_positions(positions)
+    return _text_response(text)
 
-    return TelegramResponse(
-        response_type=TelegramResponseType.TEXT,
-        text=format_status(health_status, pipeline_status),
-        timestamp=datetime.now(UTC),
+
+def history_handler(msg=None, ctx=None):
+    text = (
+        "📜 *Riwayat Trading Paper*\n\n"
+        "Belum ada closed trade."
     )
+    return _text_response(text)
 
 
-def status_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
-    return start_handler(message, context)
-
-
-def market_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
-    ctx = _ctx(context)
-    pipeline_runner = ctx.get("pipeline_runner")
-    if pipeline_runner is not None:
-        market_snapshot = getattr(pipeline_runner, "last_market_snapshot", None)
-    else:
-        market_snapshot = ctx.get("market_snapshot")
-    return TelegramResponse(
-        response_type=TelegramResponseType.TEXT,
-        text=format_market(market_snapshot),
-        timestamp=datetime.now(UTC),
+def trackrecord_handler(msg=None, ctx=None):
+    text = (
+        "📋 *Track Record — Paper Trading*\n\n"
+        "Closed trades: 0\n"
+        "Win rate: 0%\n"
+        "Total PnL: $0,00\n\n"
+        f"{EARLY_TRACK_RECORD}"
     )
+    return _text_response(text)
 
 
-def last_signal_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
-    ctx = _ctx(context)
-    pipeline_runner = ctx.get("pipeline_runner")
-    if pipeline_runner is not None:
-        signal = getattr(pipeline_runner, "last_signal", None)
-    else:
-        signal = ctx.get("last_signal")
-    return TelegramResponse(
-        response_type=TelegramResponseType.TEXT,
-        text=format_signal(signal),
-        timestamp=datetime.now(UTC),
-    )
+def status_handler(msg=None, ctx=None):
+    health = ctx.get("orchestrator_status") if ctx else "UNKNOWN"
+    pipeline = ctx.get("pipeline_status") if ctx else "IDLE"
+    text = format_status(health, pipeline)
+    return _text_response(text)
 
 
-def positions_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
-    ctx = _ctx(context)
-    portfolio_manager = ctx.get("portfolio_state_manager")
-    pipeline_runner = ctx.get("pipeline_runner")
-
-    # Pastikan harga terbaru masuk ke price provider sebelum menghitung posisi
-    _sync_price(portfolio_manager, pipeline_runner)
-
-    positions = []
-    if portfolio_manager:
-        get_positions = getattr(portfolio_manager, "get_open_positions", None)
-        if get_positions:
-            positions = get_positions()
-    else:
-        positions = ctx.get("positions", [])
-
-    return TelegramResponse(
-        response_type=TelegramResponseType.TEXT,
-        text=format_positions(positions),
-        timestamp=datetime.now(UTC),
-    )
-
-
-def portfolio_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
-    ctx = _ctx(context)
-    portfolio_manager = ctx.get("portfolio_state_manager")
-    pipeline_runner = ctx.get("pipeline_runner")
-
-    # Pastikan harga terbaru masuk sebelum mengambil state portfolio
-    _sync_price(portfolio_manager, pipeline_runner)
-
-    snapshot = None
-    if portfolio_manager:
-        get_snapshot = getattr(portfolio_manager, "get_state", None)
-        if get_snapshot:
-            snapshot = get_snapshot()
-
-    if snapshot is None:
-        snapshot = ctx.get("portfolio_snapshot")
-
-    return TelegramResponse(
-        response_type=TelegramResponseType.TEXT,
-        text=format_portfolio(snapshot),
-        timestamp=datetime.now(UTC),
-    )
-
-
-def performance_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
-    ctx = _ctx(context)
-    performance_report = ctx.get("performance_report")
-    return TelegramResponse(
-        response_type=TelegramResponseType.TEXT,
-        text=format_performance(performance_report),
-        timestamp=datetime.now(UTC),
-    )
-
-
-def help_handler(message: TelegramMessage | None, context: dict | None = None) -> TelegramResponse:
-    return TelegramResponse(
-        response_type=TelegramResponseType.TEXT,
-        text=format_help(),
-        timestamp=datetime.now(UTC),
-    )
-
-async def subscribe_handler(msg, ctx=None):
-    chat_id = int(msg.chat_id)
+def subscribe_handler(msg=None, ctx=None):
+    chat_id = int(msg.chat_id) if msg else 0
     svc = SubscriptionService()
-    sub = await svc.get(chat_id)
+    sub = svc.get(chat_id)
 
     if sub.status.value == "active":
-        return TelegramResponse(
-            "✅ Kamu sudah menjadi subscriber aktif.",
-            response_type=TelegramResponseType.SUCCESS,
-        )
+        return _text_response("✅ Kamu sudah menjadi subscriber aktif.")
 
     text = (
         "🚀 *Crypto Prime Early Access*\n\n"
@@ -183,15 +133,15 @@ async def subscribe_handler(msg, ctx=None):
         "💰 Harga: Rp 250.000/bulan\n\n"
         "Ketik /checkout untuk mulai pembayaran."
     )
-    return TelegramResponse(text, response_type=TelegramResponseType.SUCCESS)
+    return _text_response(text)
 
 
-async def checkout_handler(msg, ctx=None):
-    chat_id = int(msg.chat_id)
+def checkout_handler(msg=None, ctx=None):
+    chat_id = int(msg.chat_id) if msg else 0
     gateway = PaymentGateway(None)
 
     try:
-        checkout = await gateway.create_checkout(chat_id, "early_access", 250_000)
+        checkout = gateway.create_checkout(chat_id, "early_access", 250_000)
         url = checkout.get("url", "Payment link belum tersedia")
         text = (
             "🔗 Lanjutkan pembayaran di sini:\n\n"
@@ -205,25 +155,25 @@ async def checkout_handler(msg, ctx=None):
             "Tim admin akan mengaktifkan akses manual."
         )
 
-    return TelegramResponse(text, response_type=TelegramResponseType.SUCCESS)
+    return _text_response(text)
 
 
-async def terms_handler(msg, ctx=None):
-    return TelegramResponse(TERMS_OF_SERVICE, response_type=TelegramResponseType.SUCCESS)
+def terms_handler(msg=None, ctx=None):
+    return _text_response(TERMS_OF_SERVICE)
 
 
-async def privacy_handler(msg, ctx=None):
-    return TelegramResponse(PRIVACY_POLICY, response_type=TelegramResponseType.SUCCESS)
+def privacy_handler(msg=None, ctx=None):
+    return _text_response(PRIVACY_POLICY)
 
 
-async def risk_handler(msg, ctx=None):
-    return TelegramResponse(RISK_DISCLAIMER, response_type=TelegramResponseType.SUCCESS)
+def risk_handler(msg=None, ctx=None):
+    return _text_response(RISK_DISCLAIMER)
 
 
-async def subscription_status_handler(msg, ctx=None):
-    chat_id = int(msg.chat_id)
+def subscription_status_handler(msg=None, ctx=None):
+    chat_id = int(msg.chat_id) if msg else 0
     svc = SubscriptionService()
-    sub = await svc.check_and_update(chat_id)
+    sub = svc.check_and_update(chat_id)
 
     status_emoji = {
         "free": "🆓",
@@ -240,4 +190,4 @@ async def subscription_status_handler(msg, ctx=None):
     if sub.expiry_date:
         text += f"Berlaku sampai: {sub.expiry_date.strftime('%d %b %Y')}\n"
 
-    return TelegramResponse(text, response_type=TelegramResponseType.SUCCESS)
+    return _text_response(text)

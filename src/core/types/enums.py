@@ -214,17 +214,20 @@ class TradeOutcome(StrEnum):
 
 
 class TelegramCommand(StrEnum):
+    START = "start"
     STATUS = "status"
+    HELP = "help"
     POSITIONS = "positions"
     PORTFOLIO = "portfolio"
     LAST_SIGNAL = "last_signal"
-    HELP = "help"
-    START = "start"
     SUBSCRIBE = "subscribe"
     CHECKOUT = "checkout"
     TERMS = "terms"
     PRIVACY = "privacy"
     RISK = "risk"
+    SIGNALS = "signals"
+    HISTORY = "history"
+    TRACKRECORD = "trackrecord"
     SUBSCRIPTION_STATUS = "substatus"
 
 

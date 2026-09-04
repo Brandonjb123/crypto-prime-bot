@@ -8,19 +8,22 @@ from src.core.types.enums import TelegramCommand, TelegramResponseType
 from src.telegram.command_handler import (
     checkout_handler,
     help_handler,
+    history_handler,
     last_signal_handler,
     portfolio_handler,
     positions_handler,
     privacy_handler,
     risk_handler,
+    signals_handler,
     start_handler,
     status_handler,
     subscribe_handler,
     subscription_status_handler,
     terms_handler,
+    trackrecord_handler,
 )
 from src.telegram.command_router import CommandRouter
-from src.telegram.keyboards import BACK_MENU, MAIN_MENU
+from src.telegram.keyboards import BACK_MENU, MAIN_MENU, SIGNALS_MENU
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -79,7 +82,6 @@ class TelegramBot:
         data = query.data
 
         if data == "menu_back":
-            from src.telegram.command_handler import start_handler
             resp = start_handler(None, self.context)
             await query.edit_message_text(
                 resp.text,
@@ -88,47 +90,39 @@ class TelegramBot:
             )
             return
 
-        # Map callback ke response text
+        # Map callback ke handler
         handler_map = {
-            "menu_market": "market_handler",
-            "menu_signals": "last_signal_handler",
-            "menu_portfolio": "portfolio_handler",
-            "menu_positions": "positions_handler",
-            "menu_performance": "performance_handler",
-            "menu_status": "status_handler",
-            "menu_help": "help_handler",
+            "menu_signals": signals_handler,
+            "menu_portfolio": portfolio_handler,
+            "menu_positions": positions_handler,
+            "menu_history": history_handler,
+            "menu_trackrecord": trackrecord_handler,
+            "menu_subscribe": subscribe_handler,
+            "menu_status": subscription_status_handler,
+            "menu_help": help_handler,
         }
 
-        handler_name = handler_map.get(data)
-        if handler_name:
-            # Panggil handler yang sesuai
-            if handler_name == "market_handler":
-                from src.telegram.command_handler import market_handler
-                resp = market_handler(None, self.context)
-            elif handler_name == "last_signal_handler":
-                from src.telegram.command_handler import last_signal_handler
-                resp = last_signal_handler(None, self.context)
-            elif handler_name == "portfolio_handler":
-                from src.telegram.command_handler import portfolio_handler
-                resp = portfolio_handler(None, self.context)
-            elif handler_name == "positions_handler":
-                from src.telegram.command_handler import positions_handler
-                resp = positions_handler(None, self.context)
-            elif handler_name == "performance_handler":
-                from src.telegram.command_handler import performance_handler
-                resp = performance_handler(None, self.context)
-            elif handler_name == "status_handler":
-                from src.telegram.command_handler import status_handler
-                resp = status_handler(None, self.context)
-            elif handler_name == "help_handler":
-                from src.telegram.command_handler import help_handler
-                resp = help_handler(None, self.context)
-
+        handler = handler_map.get(data)
+        if handler:
+            resp = await handler(None, self.context)
             await query.edit_message_text(
                 resp.text,
                 parse_mode="Markdown",
                 reply_markup=BACK_MENU,
             )
+            return
+
+        # Untuk callback refresh_signals tetap pakai logika lama
+        if data == "refresh_signals":
+            resp = last_signal_handler(None, self.context)
+            await query.edit_message_text(
+                resp.text,
+                parse_mode="Markdown",
+                reply_markup=SIGNALS_MENU,
+            )
+            return
+
+        await query.answer("❌ Tombol tidak dikenali.")
 
     def _parse_command(self, text: str) -> TelegramCommand | None:
         text = text.strip().lower()
@@ -146,11 +140,14 @@ class TelegramBot:
         router.register(TelegramCommand.POSITIONS, lambda msg, ctx=None: positions_handler(msg, ctx))
         router.register(TelegramCommand.PORTFOLIO, lambda msg, ctx=None: portfolio_handler(msg, ctx))
         router.register(TelegramCommand.LAST_SIGNAL, lambda msg, ctx=None: last_signal_handler(msg, ctx))
-        router.register(TelegramCommand.HELP, lambda msg, ctx=None: help_handler(msg, ctx))
+        router.register(TelegramCommand.SIGNALS, lambda msg, ctx=None: signals_handler(msg, ctx))
+        router.register(TelegramCommand.HISTORY, lambda msg, ctx=None: history_handler(msg, ctx))
+        router.register(TelegramCommand.TRACKRECORD, lambda msg, ctx=None: trackrecord_handler(msg, ctx))
         router.register(TelegramCommand.SUBSCRIBE, lambda msg, ctx=None: subscribe_handler(msg, ctx))
         router.register(TelegramCommand.CHECKOUT, lambda msg, ctx=None: checkout_handler(msg, ctx))
         router.register(TelegramCommand.TERMS, lambda msg, ctx=None: terms_handler(msg, ctx))
         router.register(TelegramCommand.PRIVACY, lambda msg, ctx=None: privacy_handler(msg, ctx))
         router.register(TelegramCommand.RISK, lambda msg, ctx=None: risk_handler(msg, ctx))
         router.register(TelegramCommand.SUBSCRIPTION_STATUS, lambda msg, ctx=None: subscription_status_handler(msg, ctx))
+        router.register(TelegramCommand.HELP, lambda msg, ctx=None: help_handler(msg, ctx))
         return router
