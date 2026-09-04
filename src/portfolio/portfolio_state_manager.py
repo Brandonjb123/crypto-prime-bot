@@ -236,3 +236,9 @@ class PortfolioStateManager:
             drawdown_percent=round(drawdown_pct, 2),
             timestamp=datetime.now(UTC),
         )
+
+    def get_context(self) -> dict:
+        return {
+            "positions": self.repo.get_open(),
+            "portfolio_snapshot": self.get_state(),
+        }

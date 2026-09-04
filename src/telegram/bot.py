@@ -53,6 +53,9 @@ class TelegramBot:
             await update.message.reply_text("Unknown command. Type /help")
             return
 
+        if hasattr(self, "runtime_provider") and self.runtime_provider:
+            self.context = self.runtime_provider.get_context()
+
         if command == TelegramCommand.START:
             response = start_handler(None, self.context)
             await update.message.reply_text(
@@ -148,3 +151,6 @@ class TelegramBot:
         router.register(TelegramCommand.SUBSCRIPTION_STATUS, lambda msg, ctx=None: subscription_status_handler(msg, ctx))
         router.register(TelegramCommand.HELP, lambda msg, ctx=None: help_handler(msg, ctx))
         return router
+
+    def set_runtime_provider(self, provider):
+        self.runtime_provider = provider

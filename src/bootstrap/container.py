@@ -9,7 +9,6 @@ from src.analysis.analysis_engine import AnalysisEngine
 from src.analysis.indicator_engine import IndicatorEngine
 from src.application.scheduler import SimpleScheduler
 from src.collectors.binance_collector import BinanceCollector
-from src.core.types.enums import TelegramCommand
 from src.events.event_bus import EventBus
 from src.events.events.order_executed import OrderExecutedEvent
 from src.events.events.portfolio_updated import PortfolioUpdatedEvent
@@ -50,14 +49,6 @@ from src.storage.adapters.in_memory_order_repository import InMemoryOrderReposit
 from src.storage.adapters.in_memory_portfolio_repository import InMemoryPortfolioRepository
 from src.storage.adapters.in_memory_position_repository import InMemoryPositionRepository
 from src.telegram.bot import TelegramBot
-from src.telegram.command_handler import (
-    help_handler,
-    last_signal_handler,
-    portfolio_handler,
-    positions_handler,
-    status_handler,
-)
-from src.telegram.command_router import CommandRouter
 from src.telegram.notifier import TelegramNotifier
 from src.validation.validation_engine import ValidationEngine
 
@@ -90,13 +81,7 @@ class Container:
         self.telegram_notifier = TelegramNotifier(self.telegram_service)
         self.notification_engine = NotificationEngine(notifier=self.telegram_notifier)
         self.telegram_bot = TelegramBot()
-        self.telegram_bot.router = CommandRouter()
-        self.telegram_bot.router.register(TelegramCommand.STATUS, lambda msg, ctx=None: status_handler(msg, ctx))
-        self.telegram_bot.router.register(TelegramCommand.POSITIONS, lambda msg, ctx=None: positions_handler(msg, ctx))
-        self.telegram_bot.router.register(TelegramCommand.PORTFOLIO, lambda msg, ctx=None: portfolio_handler(msg, ctx))
-        self.telegram_bot.router.register(TelegramCommand.HELP, lambda msg, ctx=None: help_handler(msg, ctx))
-        self.telegram_bot.router.register(TelegramCommand.LAST_SIGNAL, lambda msg, ctx=None: last_signal_handler(msg, ctx))
-
+        self.telegram_bot.set_runtime_provider(self.portfolio_state_manager)
         self.notification_dispatcher = NotificationDispatcher(self.telegram_notifier)
         self.notification_dispatcher.register(OrderExecutedEvent, OrderExecutedFormatter())
         self.notification_dispatcher.register(PositionOpenedEvent, PositionOpenedFormatter())
