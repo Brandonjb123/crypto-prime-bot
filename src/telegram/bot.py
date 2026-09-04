@@ -74,7 +74,6 @@ class TelegramBot:
             await update.message.reply_text(f"❌ {response.text}")
         else:
             await update.message.reply_text(response.text, parse_mode="Markdown")
-    
 
     async def handle_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         query = update.callback_query
@@ -90,7 +89,6 @@ class TelegramBot:
             )
             return
 
-        # Map callback ke handler
         handler_map = {
             "menu_signals": signals_handler,
             "menu_portfolio": portfolio_handler,
@@ -104,7 +102,7 @@ class TelegramBot:
 
         handler = handler_map.get(data)
         if handler:
-            resp = await handler(None, self.context)
+            resp = handler(None, self.context)
             await query.edit_message_text(
                 resp.text,
                 parse_mode="Markdown",
@@ -112,7 +110,6 @@ class TelegramBot:
             )
             return
 
-        # Untuk callback refresh_signals tetap pakai logika lama
         if data == "refresh_signals":
             resp = last_signal_handler(None, self.context)
             await query.edit_message_text(
@@ -126,6 +123,7 @@ class TelegramBot:
 
     def _parse_command(self, text: str) -> TelegramCommand | None:
         text = text.strip().lower()
+        # Alias /lastsignal -> /last_signal (enum menggunakan underscore)
         if text == "/lastsignal":
             text = "/last_signal"
         try:
