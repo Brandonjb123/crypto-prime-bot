@@ -26,3 +26,8 @@ class InMemoryPriceProvider:
         """Dapatkan harga terbaru, atau None jika tidak tersedia."""
         key = self._normalize(symbol)
         return self._prices.get(key)
+
+    def update_price(self, symbol: str, price: float) -> None:
+        print(f"DEBUG price update: {symbol} -> {price}")
+        key = self._normalize(symbol)
+        self._prices[key] = price
