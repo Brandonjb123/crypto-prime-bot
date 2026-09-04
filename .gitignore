@@ -1,8 +1,6 @@
+*.txt
+data/
+logs/
+.env
 __pycache__/
 *.pyc
-.env
-logs/
-data/
-oos_*.txt
-scripts/__pycache__/
-tests/__pycache__/
