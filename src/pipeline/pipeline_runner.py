@@ -62,7 +62,7 @@ class PipelineRunner:
             if self.collector:
                 snapshot = await self.collector.collect(symbol, timeframe)
                 self.last_market_snapshot = snapshot
-
+    
                 if self.price_provider and snapshot:
                     self.price_provider.update_price(symbol, snapshot.current_price)
                 logger.info("MarketSnapshot created")
