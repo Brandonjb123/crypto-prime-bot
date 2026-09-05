@@ -4,6 +4,7 @@ import sys
 
 from src.bootstrap.container import Container
 from src.config.validator import validate_config
+from src.market.price_refresh_service import PriceRefreshService
 
 
 class Bootstrap:
@@ -21,12 +22,18 @@ class Bootstrap:
         self._step("Initializing Exchange", self._init_exchange)
         self._step("Initializing Pipeline", self._init_pipeline)
         self._step("Initializing Scheduler", self._init_scheduler)
+        self.price_refresh = PriceRefreshService(
+            price_provider=self.container.price_provider,
+            interval_seconds=60,
+        )
         print("Crypto Prime Bot v2.0 started successfully.")
 
     async def shutdown(self):
         self.logger.info("Shutting down...")
         await self.container.scheduler.stop()
         self.logger.info("Shutdown complete.")
+        if hasattr(self, "price_refresh"):
+            await self.price_refresh.stop()
 
     def _step(self, msg, fn):
         print(msg, end="... ")

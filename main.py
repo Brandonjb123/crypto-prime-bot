@@ -11,6 +11,7 @@ from src.infrastructure.telegram.polling_runner import PollingRunner
 async def main():
     bootstrap = Bootstrap()
     bootstrap.startup()
+    bootstrap.price_refresh.start()
 
     container = bootstrap.container
 
@@ -40,6 +41,7 @@ async def main():
 
     telegram_task.cancel()
     await scheduler.stop()
+    await bootstrap.price_refresh.stop()
     await bootstrap.shutdown()
 
 
