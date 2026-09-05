@@ -251,5 +251,6 @@ class PortfolioStateManager:
     def get_context(self) -> dict:
         return {
             "positions": self.repo.get_open(),
+            "closed_positions": self.repo.get_closed(),
             "portfolio_snapshot": self.get_state(),
         }

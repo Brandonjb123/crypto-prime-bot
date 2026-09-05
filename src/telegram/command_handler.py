@@ -90,19 +90,69 @@ def positions_handler(msg=None, ctx=None):
 
 
 def history_handler(msg=None, ctx=None):
-    text = (
-        "📜 *Riwayat Trading Paper*\n\n"
-        "Belum ada closed trade."
-    )
-    return _text_response(text)
+    closed = ctx.get("closed_positions") if ctx else []
+
+    if not closed:
+        return _text_response("📜 *Riwayat Trading Paper*\n\nBelum ada closed trade.")
+
+    lines = ["📜 *Riwayat Trading Paper*\n"]
+    for p in closed:
+        symbol = getattr(p, "symbol", "N/A")
+        side = getattr(p, "side", "N/A")
+        entry = getattr(p, "entry_price", 0.0)
+        exit_price = getattr(p, "last_price", 0.0)
+        size = getattr(p, "position_size", 0.0)
+        reason = getattr(p, "close_reason", "MANUAL")
+
+        if side == "LONG":
+            pnl = (exit_price - entry) * size
+        else:
+            pnl = (entry - exit_price) * size
+
+        lines.append(
+            f"{symbol} {side}\n"
+            f"Entry: ${entry:.2f}\n"
+            f"Exit: ${exit_price:.2f}\n"
+            f"Reason: {reason}\n"
+            f"PnL: ${pnl:.2f}\n"
+        )
+    return _text_response("\n".join(lines))
 
 
 def trackrecord_handler(msg=None, ctx=None):
+    closed = ctx.get("closed_positions") if ctx else []
+
+    total_closed = len(closed)
+    wins = 0
+    losses = 0
+    total_pnl = 0.0
+
+    for p in closed:
+        side = getattr(p, "side", "N/A")
+        entry = getattr(p, "entry_price", 0.0)
+        exit_price = getattr(p, "last_price", 0.0)
+        size = getattr(p, "position_size", 0.0)
+
+        if side == "LONG":
+            pnl = (exit_price - entry) * size
+        else:
+            pnl = (entry - exit_price) * size
+
+        total_pnl += pnl
+        if pnl > 0:
+            wins += 1
+        elif pnl < 0:
+            losses += 1
+
+    win_rate = (wins / total_closed * 100) if total_closed else 0.0
+
     text = (
         "📋 *Track Record — Paper Trading*\n\n"
-        "Closed trades: 0\n"
-        "Win rate: 0%\n"
-        "Total PnL: $0,00\n\n"
+        f"Closed trades: {total_closed}\n"
+        f"Wins: {wins}\n"
+        f"Losses: {losses}\n"
+        f"Win rate: {win_rate:.1f}%\n"
+        f"Total PnL: ${total_pnl:.2f}\n\n"
         f"{EARLY_TRACK_RECORD}"
     )
     return _text_response(text)
