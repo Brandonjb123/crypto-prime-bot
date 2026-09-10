@@ -101,13 +101,8 @@ def history_handler(msg=None, ctx=None):
         side = getattr(p, "side", "N/A")
         entry = getattr(p, "entry_price", 0.0)
         exit_price = getattr(p, "last_price", 0.0)
-        size = getattr(p, "position_size", 0.0)
         reason = getattr(p, "close_reason", "MANUAL")
-
-        if side == "LONG":
-            pnl = (exit_price - entry) * size
-        else:
-            pnl = (entry - exit_price) * size
+        pnl = getattr(p, "realized_pnl", 0.0)
 
         lines.append(
             f"{symbol} {side}\n"
@@ -123,27 +118,9 @@ def trackrecord_handler(msg=None, ctx=None):
     closed = ctx.get("closed_positions") if ctx else []
 
     total_closed = len(closed)
-    wins = 0
-    losses = 0
-    total_pnl = 0.0
-
-    for p in closed:
-        side = getattr(p, "side", "N/A")
-        entry = getattr(p, "entry_price", 0.0)
-        exit_price = getattr(p, "last_price", 0.0)
-        size = getattr(p, "position_size", 0.0)
-
-        if side == "LONG":
-            pnl = (exit_price - entry) * size
-        else:
-            pnl = (entry - exit_price) * size
-
-        total_pnl += pnl
-        if pnl > 0:
-            wins += 1
-        elif pnl < 0:
-            losses += 1
-
+    wins = sum(1 for p in closed if getattr(p, "realized_pnl", 0.0) > 0)
+    losses = sum(1 for p in closed if getattr(p, "realized_pnl", 0.0) < 0)
+    total_pnl = sum(getattr(p, "realized_pnl", 0.0) for p in closed)
     win_rate = (wins / total_closed * 100) if total_closed else 0.0
 
     text = (

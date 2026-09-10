@@ -59,6 +59,7 @@ class PortfolioStateManager:
             close_reason=PositionCloseReason.NONE,
             last_price=signal.entry_price,
             last_updated=datetime.now(UTC),
+            realized_pnl=0.0
         )
 
         self._used_signal_ids.add(str(signal.signal_id))
@@ -152,6 +153,7 @@ class PortfolioStateManager:
             close_reason=PositionCloseReason.NONE,
             last_price=exit_price,
             last_updated=datetime.now(UTC),
+            realized_pnl=pos.realized_pnl + pnl,
         )
         self.repo.save(new_position)
         logger.info(
@@ -196,6 +198,7 @@ class PortfolioStateManager:
             close_reason=close_reason,
             last_price=exit_price,
             last_updated=datetime.now(UTC),
+            realized_pnl=pos.realized_pnl + pnl,
         )
         self.repo.save(closed_pos)
         logger.info(f"Position closed: {closed_pos.position_id}")

@@ -28,3 +28,4 @@ class Position(BaseModel):
     close_reason: PositionCloseReason
     last_price: float | None = None
     last_updated: datetime | None = None
+    realized_pnl: float = 0.0

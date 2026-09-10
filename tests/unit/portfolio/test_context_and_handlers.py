@@ -28,6 +28,7 @@ def _make_closed_position(symbol="BTC", pnl=100.0):
         close_reason=PositionCloseReason.TAKE_PROFIT,
         last_price=exit_price,
         last_updated=datetime.now(UTC),
+        realized_pnl=pnl,
     )
 
 
