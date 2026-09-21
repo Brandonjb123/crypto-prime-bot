@@ -24,7 +24,6 @@ class PortfolioStateManager:
         self.initial_balance = initial_balance
         self.repo = position_repository or InMemoryPositionRepository()
         self.price_provider = price_provider
-        self.realized_pnl = 0.0
         self._unrealized_pnl = 0.0
         self.peak_equity = initial_balance
         self.drawdown = 0.0
@@ -132,7 +131,6 @@ class PortfolioStateManager:
         else:
             pnl = (pos.entry_price - exit_price) * (pos.position_size * fraction)
 
-        self.realized_pnl += pnl
 
         new_size = pos.position_size * (1 - fraction)
         new_position = Position(
@@ -177,7 +175,6 @@ class PortfolioStateManager:
         else:
             pnl = (pos.entry_price - exit_price) * pos.position_size
 
-        self.realized_pnl += pnl
         logger.info(f"Realized PnL for {position_id}: {pnl:.2f}")
 
         closed_pos = Position(
@@ -203,6 +200,13 @@ class PortfolioStateManager:
         self.repo.save(closed_pos)
         logger.info(f"Position closed: {closed_pos.position_id}")
         return closed_pos
+
+    @property
+    def realized_pnl(self) -> float:
+        """Derived aggregate — sum of realized_pnl from all closed positions."""
+        return sum(
+            getattr(p, "realized_pnl", 0.0) for p in self.repo.get_closed()
+        )
 
     def set_unrealized_pnl(self, total_unrealized: float) -> None:
         """Set nilai unrealized PnL untuk perhitungan equity/drawdown."""
@@ -257,3 +261,5 @@ class PortfolioStateManager:
             "closed_positions": self.repo.get_closed(),
             "portfolio_snapshot": self.get_state(),
         }
+
+    
