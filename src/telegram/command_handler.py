@@ -27,6 +27,15 @@ def _text_response(text: str) -> TelegramResponse:
         timestamp=datetime.now(UTC),
     )
 
+def _md_safe(value) -> str:
+    """Return string aman untuk Telegram legacy Markdown.
+
+    Mengganti '_' dengan ' ' agar tidak diinterpretasi sebagai italic marker
+    oleh parser Markdown Telegram V1. Nilai enum seperti STOP_LOSS akan
+    tampil sebagai 'STOP LOSS'.
+    """
+    raw = getattr(value, "value", value)
+    return str(raw).replace("_", " ")
 
 def start_handler(msg=None, ctx=None):
     text = (
@@ -101,7 +110,7 @@ def history_handler(msg=None, ctx=None):
         side = getattr(p, "side", "N/A")
         entry = getattr(p, "entry_price", 0.0)
         exit_price = getattr(p, "last_price", 0.0)
-        reason = getattr(p, "close_reason", "MANUAL")
+        reason = _md_safe(getattr(p, "close_reason", "MANUAL"))
         pnl = getattr(p, "realized_pnl", 0.0)
 
         lines.append(

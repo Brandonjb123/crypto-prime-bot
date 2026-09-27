@@ -2,6 +2,8 @@
 
 from datetime import UTC, datetime
 
+from loguru import logger
+
 from config.constants import TELEGRAM_ALLOWED_USERS
 from src.core.models.telegram import TelegramMessage
 from src.core.types.enums import TelegramCommand, TelegramResponseType
@@ -25,6 +27,7 @@ from src.telegram.command_handler import (
 from src.telegram.command_router import CommandRouter
 from src.telegram.keyboards import BACK_MENU, MAIN_MENU, SIGNALS_MENU
 from telegram import Update
+from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
 
@@ -74,9 +77,20 @@ class TelegramBot:
         response = self.router.route(message, self.context)
 
         if response.response_type == TelegramResponseType.ERROR:
-            await update.message.reply_text(f"❌ {response.text}")
+            try:
+                await update.message.reply_text(f"❌ {response.text}")
+            except BadRequest as e:
+                logger.warning(f"Markdown parse failed on error response, falling back: {e}")
+                await update.message.reply_text(f"❌ {response.text}")
         else:
-            await update.message.reply_text(response.text, parse_mode="Markdown")
+            try:
+                await update.message.reply_text(response.text, parse_mode="Markdown")
+            except BadRequest as e:
+                logger.warning(
+                    f"Markdown parse failed (command={command}), "
+                    f"falling back to plain text: {e}"
+                )
+                await update.message.reply_text(response.text)
 
     async def handle_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         query = update.callback_query
