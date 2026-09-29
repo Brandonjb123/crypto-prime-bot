@@ -48,6 +48,8 @@ from src.storage.adapters.in_memory_execution_repository import InMemoryExecutio
 from src.storage.adapters.in_memory_order_repository import InMemoryOrderRepository
 from src.storage.adapters.in_memory_portfolio_repository import InMemoryPortfolioRepository
 from src.storage.adapters.in_memory_position_repository import InMemoryPositionRepository
+from src.storage.adapters.in_memory_signal_repository import InMemorySignalRepository
+from src.storage.repositories.signal_repository import SignalRepository
 from src.telegram.bot import TelegramBot
 from src.telegram.notifier import TelegramNotifier
 from src.validation.validation_engine import ValidationEngine
@@ -61,6 +63,7 @@ class Container:
         self.event_bus = EventBus()
 
         self.position_repo = InMemoryPositionRepository()
+        self.signal_repository: SignalRepository = InMemorySignalRepository()
         self.order_repo = InMemoryOrderRepository()
         self.portfolio_repo = InMemoryPortfolioRepository()
 
@@ -82,6 +85,7 @@ class Container:
         self.notification_engine = NotificationEngine(notifier=self.telegram_notifier)
         self.telegram_bot = TelegramBot()
         self.telegram_bot.set_runtime_provider(self.portfolio_state_manager)
+        self.telegram_bot.set_signal_repository(self.signal_repository)
         self.notification_dispatcher = NotificationDispatcher(self.telegram_notifier)
         self.notification_dispatcher.register(OrderExecutedEvent, OrderExecutedFormatter())
         self.notification_dispatcher.register(PositionOpenedEvent, PositionOpenedFormatter())
@@ -145,6 +149,7 @@ class Container:
             health_monitor=self.health_monitor,
             price_provider=self.price_provider,
             lifecycle_engine=self.lifecycle_engine,
+            signal_repository=self.signal_repository,
         )
 
         self.scheduler = SimpleScheduler(self.pipeline_runner, interval_seconds=14400)

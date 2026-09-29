@@ -14,6 +14,7 @@ class Position(BaseModel):
     position_id: UUID
     execution_id: UUID
     order_id: UUID
+    signal_id: UUID | None = None
     symbol: str
     side: Side
     status: PositionStatus

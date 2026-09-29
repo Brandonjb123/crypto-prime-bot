@@ -145,3 +145,38 @@ def format_performance(report: Any) -> str:
         f"Long Win Rate: {report.long_win_rate}%\n"
         f"Short Win Rate: {report.short_win_rate}%"
     )
+
+def format_signals_summary(signals: list) -> str:
+    """Format latest signal per symbol — compact list view.
+
+    Setiap entry satu baris ringkas. Dipakai oleh /signals untuk
+    menampilkan signal terbaru dari setiap tracked symbol.
+    """
+    if not signals:
+        return "📡 *Sinyal Terkini*\n\nBelum ada sinyal tersedia."
+
+    lines = [f"📡 *Sinyal Terkini — {len(signals)} symbol*\n"]
+
+    for sig in signals:
+        symbol = getattr(sig, "symbol", "N/A")
+        side = getattr(sig, "side", "N/A")
+        status = getattr(sig, "status", "N/A")
+        confidence = getattr(sig, "confidence", 0)
+        risk_level = getattr(sig, "risk_level", "MEDIUM")
+
+        if status == "ACTIVE":
+            emoji = "🟢" if side == "BUY" else "🔴"
+            entry = getattr(sig, "entry_price", 0) or 0
+            sl = getattr(sig, "stop_loss", 0) or 0
+            tp = getattr(sig, "take_profit", 0) or 0
+            lines.append(
+                f"{emoji} *{symbol}* {side}\n"
+                f"   Entry: ${entry:,.2f} | SL: ${sl:,.2f} | TP: ${tp:,.2f}\n"
+                f"   Conf: {confidence}% | Risk: {risk_level}\n"
+            )
+        elif status == "SKIPPED":
+            lines.append(f"🟡 *{symbol}* WAIT (SKIPPED)\n")
+        else:  # INVALID
+            lines.append(f"⚠️ *{symbol}* INVALID\n")
+
+    return "\n".join(lines)

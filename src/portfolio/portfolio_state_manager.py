@@ -44,6 +44,7 @@ class PortfolioStateManager:
             position_id=uuid4(),
             execution_id=uuid4(),
             order_id=uuid4(),
+            signal_id=getattr(signal, "signal_id", None),
             symbol=signal.symbol,
             side=Side.LONG if signal.side == "BUY" else Side.SHORT,
             status=PositionStatus.OPEN,

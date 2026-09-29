@@ -24,6 +24,7 @@ class PipelineRunner:
         health_monitor=None,
         price_provider=None,
         lifecycle_engine=None,
+        signal_repository=None,
     ):
         self.collector = collector
         self.indicator_engine = indicator_engine
@@ -36,6 +37,7 @@ class PipelineRunner:
         self.paper_trading_engine = paper_trading_engine
         self.health_monitor = health_monitor
         self.price_provider = price_provider
+        self.signal_repository = signal_repository
         self.lifecycle_engine = lifecycle_engine
 
         # Runtime state untuk Telegram
@@ -43,7 +45,6 @@ class PipelineRunner:
         self.last_pipeline_started_at: datetime | None = None
         self.last_pipeline_completed_at: datetime | None = None
         self.last_pipeline_error: str | None = None
-        self.last_signal = None
         self.last_market_snapshot = None
 
     async def run(self, symbol: str, timeframe: str = "4h") -> PipelineResult:
@@ -182,14 +183,12 @@ class PipelineRunner:
         try:
             if self.signal_engine and trade_plan:
                 logger.info("Generating trading signal...")
-                signal = self.signal_engine.generate(trade_plan)
-
-                # Pertahankan confidence dari DecisionResult
-                if decision is not None:
-                    signal.confidence = getattr(decision, "confidence", 0)
-
-                self.last_signal = signal
+                signal = self.signal_engine.generate(trade_plan, decision)
                 logger.info("TradingSignal created")
+
+                if self.signal_repository is not None:
+                    self.signal_repository.append(signal)
+                    logger.info(f"Signal appended to repository: {signal.signal_id}")
         except Exception as e:
             logger.error(f"Signal generation failed: {e}")
             self._set_failed(str(e))

@@ -1,16 +1,18 @@
-"""Trading Signal model — output akhir pipeline analisis."""
+"""Trading Signal model — output akhir pipeline analisis. Immutable."""
 
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class TradingSignal(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     signal_id: UUID
     symbol: str
-    side: str             # BUY / SELL / WAIT
-    status: str           # ACTIVE / SKIPPED / INVALID
+    side: str
+    status: str
     entry_price: float | None = None
     stop_loss: float | None = None
     take_profit: float | None = None

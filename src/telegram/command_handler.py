@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime
 
+from src.application.scheduler import DEFAULT_SYMBOLS
 from src.commercial.payment_gateway import PaymentGateway, PaymentNotConfiguredError
 from src.commercial.subscription_service import SubscriptionService
 from src.commercial.telegram_disclaimer import (
@@ -16,6 +17,7 @@ from src.telegram.formatter import (
     format_portfolio,
     format_positions,
     format_signal,
+    format_signals_summary,
     format_status,
 )
 
@@ -71,16 +73,37 @@ def help_handler(msg=None, ctx=None):
 
 
 def last_signal_handler(msg=None, ctx=None):
-    signal = ctx.get("signal") if ctx else None
-    if signal is None:
-        text = "📡 *Sinyal Terkini*\n\nBelum ada sinyal aktif yang tersedia."
-    else:
-        text = format_signal(signal)
-    return _text_response(text)
+    """Ambil signal terbaru dari SignalRepository (source of truth)."""
+    repo = ctx.get("signal_repository") if ctx else None
+    if repo is None:
+        return _text_response("📡 *Sinyal Terkini*\n\nBelum ada sinyal aktif yang tersedia.")
+
+    # Ambil history, signal terbaru = yang pertama (sorted desc by created_at)
+    history = repo.history()
+    if not history:
+        return _text_response("📡 *Sinyal Terkini*\n\nBelum ada sinyal aktif yang tersedia.")
+
+    latest = history[0]
+    return _text_response(format_signal(latest))
 
 
 def signals_handler(msg=None, ctx=None):
-    return last_signal_handler(msg, ctx)
+    """Return latest signal per tracked symbol dari SignalRepository.
+
+    Berbeda dengan /lastsignal (single newest global), /signals menampilkan
+    signal terbaru untuk SETIAP symbol yang di-track oleh scheduler.
+    """
+    repo = ctx.get("signal_repository") if ctx else None
+    if repo is None:
+        return _text_response("📡 *Sinyal Terkini*\n\nBelum ada sinyal tersedia.")
+
+    signals = []
+    for symbol in DEFAULT_SYMBOLS:
+        sig = repo.latest_by_symbol(symbol)
+        if sig is not None:
+            signals.append(sig)
+
+    return _text_response(format_signals_summary(signals))
 
 
 def portfolio_handler(msg=None, ctx=None):

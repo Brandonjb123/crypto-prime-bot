@@ -1,8 +1,9 @@
-"""Signal Engine — mengubah TradePlan menjadi TradingSignal."""
+"""Signal Engine — mengubah TradePlan + DecisionResult menjadi TradingSignal (immutable)."""
 
 from datetime import UTC, datetime
 from uuid import uuid4
 
+from src.core.models.decision_result import DecisionResult
 from src.core.models.trade_plan import TradePlan
 from src.core.models.trading_signal import TradingSignal
 from src.logging.logger import get_logger
@@ -11,9 +12,19 @@ logger = get_logger("signal_engine")
 
 
 class SignalEngine:
-    def generate(self, trade_plan: TradePlan) -> TradingSignal:
+    def generate(
+        self,
+        trade_plan: TradePlan,
+        decision: DecisionResult | None = None,
+    ) -> TradingSignal:
         logger.info("Generating trading signal...")
 
+        # Extract decision metadata (default values jika decision None)
+        confidence = getattr(decision, "confidence", 0) if decision else 0
+        reasoning = list(getattr(decision, "reasoning", []) or []) if decision else []
+        risk_level = getattr(decision, "risk_level", "MEDIUM") if decision else "MEDIUM"
+
+        # WAIT
         if trade_plan.decision == "WAIT":
             logger.info("Signal status: SKIPPED (WAIT decision)")
             return TradingSignal(
@@ -28,12 +39,13 @@ class SignalEngine:
                 take_profit_2=None,
                 position_size=0.0,
                 risk_percent=trade_plan.risk_percent,
-                confidence=0,
-                risk_level="MEDIUM",
-                reasoning=[],
+                confidence=confidence,
+                risk_level=risk_level,
+                reasoning=reasoning,
                 created_at=datetime.now(UTC),
             )
 
+        # INVALID (position size)
         if trade_plan.position_size <= 0:
             logger.info("Signal status: INVALID (position size)")
             return TradingSignal(
@@ -48,12 +60,13 @@ class SignalEngine:
                 take_profit_2=trade_plan.take_profit_2,
                 position_size=0.0,
                 risk_percent=trade_plan.risk_percent,
-                confidence=0,
-                risk_level="MEDIUM",
-                reasoning=[],
+                confidence=confidence,
+                risk_level=risk_level,
+                reasoning=reasoning,
                 created_at=datetime.now(UTC),
             )
 
+        # INVALID (missing SL/TP)
         if trade_plan.stop_loss is None or trade_plan.take_profit is None:
             logger.info("Signal status: INVALID (missing SL/TP)")
             return TradingSignal(
@@ -68,12 +81,13 @@ class SignalEngine:
                 take_profit_2=None,
                 position_size=0.0,
                 risk_percent=trade_plan.risk_percent,
-                confidence=0,
-                risk_level="MEDIUM",
-                reasoning=[],
+                confidence=confidence,
+                risk_level=risk_level,
+                reasoning=reasoning,
                 created_at=datetime.now(UTC),
             )
 
+        # ACTIVE
         logger.info("Signal status: ACTIVE")
         return TradingSignal(
             signal_id=uuid4(),
@@ -87,8 +101,8 @@ class SignalEngine:
             take_profit_2=trade_plan.take_profit_2,
             position_size=trade_plan.position_size,
             risk_percent=trade_plan.risk_percent,
-            confidence=0,
-            risk_level="MEDIUM",
-            reasoning=[],
+            confidence=confidence,
+            risk_level=risk_level,
+            reasoning=reasoning,
             created_at=datetime.now(UTC),
         )

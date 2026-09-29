@@ -59,6 +59,9 @@ class TelegramBot:
         if hasattr(self, "runtime_provider") and self.runtime_provider:
             self.context = self.runtime_provider.get_context()
 
+        if hasattr(self, "signal_repository") and self.signal_repository:
+            self.context["signal_repository"] = self.signal_repository    
+
         if command == TelegramCommand.START:
             response = start_handler(None, self.context)
             await update.message.reply_text(
@@ -168,3 +171,6 @@ class TelegramBot:
 
     def set_runtime_provider(self, provider):
         self.runtime_provider = provider
+
+    def set_signal_repository(self, signal_repository) -> None:
+        self.signal_repository = signal_repository    
