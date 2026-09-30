@@ -11,7 +11,7 @@ from src.core.types.enums import PositionCloseReason, PositionStatus, Side
 from src.storage.adapters.turso_position_repository import TursoPositionRepository
 
 SCHEMA = """
-CREATE TABLE IF NOT EXISTS positions (
+CREATE TABLE IF NOT EXISTS trading_positions (
     position_id     TEXT PRIMARY KEY,
     execution_id    TEXT NOT NULL,
     order_id        TEXT NOT NULL,

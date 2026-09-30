@@ -39,7 +39,7 @@ SCHEMA_SQL = [
     ON trading_signals(symbol, created_at DESC)
     """,
     """
-    CREATE TABLE IF NOT EXISTS positions (
+    CREATE TABLE IF NOT EXISTS trading_positions (
         position_id     TEXT PRIMARY KEY,
         execution_id    TEXT NOT NULL,
         order_id        TEXT NOT NULL,
@@ -62,12 +62,12 @@ SCHEMA_SQL = [
     )
     """,
     """
-    CREATE INDEX IF NOT EXISTS idx_positions_status
-    ON positions(status)
+    CREATE INDEX IF NOT EXISTS idx_trading_positions_status
+    ON trading_positions(status)
     """,
     """
-    CREATE INDEX IF NOT EXISTS idx_positions_symbol_status
-    ON positions(symbol, status)
+    CREATE INDEX IF NOT EXISTS idx_trading_positions_symbol_status
+    ON trading_positions(symbol, status)
     """,
 ]
 

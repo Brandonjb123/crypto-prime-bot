@@ -20,7 +20,7 @@ class TursoPositionRepository(PositionRepository):
     def save(self, position: Position) -> None:
         """UPSERT berdasarkan position_id — satu row per lifecycle."""
         sql = """
-        INSERT INTO positions (
+        INSERT INTO trading_positions (
             position_id, execution_id, order_id, signal_id,
             symbol, side, status,
             entry_price, stop_loss, take_profit, tp1_price, tp2_price,
@@ -63,37 +63,37 @@ class TursoPositionRepository(PositionRepository):
     # ---------- read ----------
 
     def get_open(self) -> list[Position]:
-        sql = "SELECT * FROM positions WHERE status = ? ORDER BY opened_at DESC"
+        sql = "SELECT * FROM trading_positions WHERE status = ? ORDER BY opened_at DESC"
         return self._query(sql, [PositionStatus.OPEN.value])
 
     def get_closed(self) -> list[Position]:
-        sql = "SELECT * FROM positions WHERE status != ? ORDER BY closed_at DESC"
+        sql = "SELECT * FROM trading_positions WHERE status != ? ORDER BY closed_at DESC"
         return self._query(sql, [PositionStatus.OPEN.value])
 
     def get_by_id(self, position_id: UUID) -> Position | None:
-        sql = "SELECT * FROM positions WHERE position_id = ? LIMIT 1"
+        sql = "SELECT * FROM trading_positions WHERE position_id = ? LIMIT 1"
         rows = self._query(sql, [str(position_id)])
         return rows[0] if rows else None
 
     def get_all(self) -> list[Position]:
-        sql = "SELECT * FROM positions ORDER BY opened_at DESC"
+        sql = "SELECT * FROM trading_positions ORDER BY opened_at DESC"
         return self._query(sql, [])
 
     def delete(self, position_id: UUID) -> None:
         self.client.execute(
-            "DELETE FROM positions WHERE position_id = ?",
+            "DELETE FROM trading_positions WHERE position_id = ?",
             [str(position_id)],
         )
 
     def exists(self, position_id: UUID) -> bool:
         result = self.client.execute(
-            "SELECT 1 FROM positions WHERE position_id = ? LIMIT 1",
+            "SELECT 1 FROM trading_positions WHERE position_id = ? LIMIT 1",
             [str(position_id)],
         )
         return len(result.rows) > 0
 
     def count(self) -> int:
-        result = self.client.execute("SELECT COUNT(*) FROM positions", [])
+        result = self.client.execute("SELECT COUNT(*) FROM trading_positions", [])
         return int(result.rows[0][0]) if result.rows else 0
 
     # ---------- helpers ----------

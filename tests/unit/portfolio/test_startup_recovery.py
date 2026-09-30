@@ -10,7 +10,7 @@ from src.portfolio.portfolio_state_manager import PortfolioStateManager
 from src.storage.adapters.turso_position_repository import TursoPositionRepository
 
 SCHEMA = """
-CREATE TABLE IF NOT EXISTS positions (
+CREATE TABLE IF NOT EXISTS trading_positions (
     position_id     TEXT PRIMARY KEY,
     execution_id    TEXT NOT NULL,
     order_id        TEXT NOT NULL,
