@@ -15,6 +15,7 @@ class Bootstrap:
     def startup(self):
         self._step("Loading configuration", self._load_config)
         self._step("Validating configuration", validate_config)
+        self._step("Connecting to Turso", self.container.turso_client.connect)
         self._step("Initializing logger", self._init_logger)
         self._step("Initializing Event Bus", self._init_event_bus)
         self._step("Initializing Notification Layer", self._init_notification)

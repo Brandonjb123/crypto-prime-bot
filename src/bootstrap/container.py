@@ -47,8 +47,9 @@ from src.signal.signal_engine import SignalEngine
 from src.storage.adapters.in_memory_execution_repository import InMemoryExecutionRepository
 from src.storage.adapters.in_memory_order_repository import InMemoryOrderRepository
 from src.storage.adapters.in_memory_portfolio_repository import InMemoryPortfolioRepository
-from src.storage.adapters.in_memory_position_repository import InMemoryPositionRepository
-from src.storage.adapters.in_memory_signal_repository import InMemorySignalRepository
+from src.storage.adapters.turso_client import TursoClient
+from src.storage.adapters.turso_position_repository import TursoPositionRepository
+from src.storage.adapters.turso_signal_repository import TursoSignalRepository
 from src.storage.repositories.signal_repository import SignalRepository
 from src.telegram.bot import TelegramBot
 from src.telegram.notifier import TelegramNotifier
@@ -62,8 +63,14 @@ class Container:
 
         self.event_bus = EventBus()
 
-        self.position_repo = InMemoryPositionRepository()
-        self.signal_repository: SignalRepository = InMemorySignalRepository()
+        # Turso client — connect() dipanggil di Bootstrap.startup()
+        self.turso_client = TursoClient(
+            url=settings.TURSO_DATABASE_URL,
+            auth_token=settings.TURSO_AUTH_TOKEN,
+        )
+
+        self.position_repo = TursoPositionRepository(self.turso_client)
+        self.signal_repository = TursoSignalRepository(self.turso_client)
         self.order_repo = InMemoryOrderRepository()
         self.portfolio_repo = InMemoryPortfolioRepository()
 
@@ -73,6 +80,7 @@ class Container:
         self.portfolio_manager = PortfolioManager(event_bus=self.event_bus)
         self.portfolio_state_manager = PortfolioStateManager(
             initial_balance=10000.0,
+            position_repository=self.position_repo,
             price_provider=self.price_provider,
         )
         self.lifecycle_engine = TradeLifecycleEngine()
@@ -91,6 +99,7 @@ class Container:
         self.notification_dispatcher.register(PositionOpenedEvent, PositionOpenedFormatter())
         self.notification_dispatcher.register(PositionClosedEvent, PositionClosedFormatter())
         self.notification_dispatcher.register(PortfolioUpdatedEvent, PortfolioUpdatedFormatter())
+        self.signal_repository: SignalRepository = TursoSignalRepository(self.turso_client)
 
         client = create_llm_client()
         prompt_builder = PromptBuilder()
