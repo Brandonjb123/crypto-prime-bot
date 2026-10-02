@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from loguru import logger
 
 from config.constants import TELEGRAM_ALLOWED_USERS
+from src.application.scheduler import DEFAULT_SYMBOLS
 from src.core.models.telegram import TelegramMessage
 from src.core.types.enums import TelegramCommand, TelegramResponseType
 from src.telegram.command_handler import (
@@ -25,8 +26,32 @@ from src.telegram.command_handler import (
     trackrecord_handler,
 )
 from src.telegram.command_router import CommandRouter
-from src.telegram.keyboards import BACK_MENU, MAIN_MENU, SIGNALS_MENU
-from telegram import Update
+from src.telegram.formatter import (
+    format_history_card,
+    format_portfolio_card,
+    format_positions_card,
+    format_signal_card,
+    format_signals_summary,
+    format_trackrecord_card,
+)
+from src.telegram.keyboards import (
+    BACK_MENU,
+    HISTORY_MENU,
+    MAIN_MENU,
+    PORTFOLIO_MENU,
+    POSITIONS_MENU,
+    SIGNALS_MENU,
+    TRACKRECORD_MENU,
+)
+from src.telegram.use_cases import (
+    read_history,
+    read_last_signal,
+    read_latest_signals,
+    read_portfolio,
+    read_positions_with_metrics,
+    read_trackrecord,
+)
+from telegram import InlineKeyboardMarkup, Update
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
@@ -58,6 +83,9 @@ class TelegramBot:
 
         if hasattr(self, "runtime_provider") and self.runtime_provider:
             self.context = self.runtime_provider.get_context()
+            # Expose existing price provider (same instance) to context
+            if hasattr(self.runtime_provider, "price_provider"):
+                self.context["price_provider"] = self.runtime_provider.price_provider
 
         if hasattr(self, "signal_repository") and self.signal_repository:
             self.context["signal_repository"] = self.signal_repository    
@@ -100,6 +128,16 @@ class TelegramBot:
         await query.answer()
         data = query.data
 
+        # Refresh context (Step 2 behavior, unchanged)
+        if hasattr(self, "runtime_provider") and self.runtime_provider:
+            self.context = self.runtime_provider.get_context()
+            if hasattr(self.runtime_provider, "price_provider"):
+                self.context["price_provider"] = self.runtime_provider.price_provider
+
+        if hasattr(self, "signal_repository") and self.signal_repository:
+            self.context["signal_repository"] = self.signal_repository
+
+        # Root navigation
         if data == "menu_back":
             resp = start_handler(None, self.context)
             await query.edit_message_text(
@@ -109,20 +147,38 @@ class TelegramBot:
             )
             return
 
-        handler_map = {
-            "menu_signals": signals_handler,
-            "menu_portfolio": portfolio_handler,
-            "menu_positions": positions_handler,
-            "menu_history": history_handler,
-            "menu_trackrecord": trackrecord_handler,
-            "menu_subscribe": subscribe_handler,
-            "menu_status": subscription_status_handler,
-            "menu_help": help_handler,
+        # Card views — read/use-case + card formatter + dedicated keyboard
+        view_map = {
+            "menu_portfolio": self._view_portfolio,
+            "refresh_portfolio": self._view_portfolio,
+            "menu_positions": self._view_positions,
+            "refresh_positions": self._view_positions,
+            "menu_history": self._view_history,
+            "refresh_history": self._view_history,
+            "menu_trackrecord": self._view_trackrecord,
+            "refresh_trackrecord": self._view_trackrecord,
+            "menu_signals": self._view_signals,
+            "refresh_signals": self._view_last_signal,
         }
+        view = view_map.get(data)
+        if view is not None:
+            text, keyboard = view()
+            await query.edit_message_text(
+                text,
+                parse_mode="Markdown",
+                reply_markup=keyboard,
+            )
+            return
 
-        handler = handler_map.get(data)
-        if handler:
-            resp = handler(None, self.context)
+        # Text-only callbacks — reuse existing handlers
+        text_handler_map = {
+            "menu_help": help_handler,
+            "menu_status": subscription_status_handler,
+            "menu_subscribe": subscribe_handler,
+        }
+        text_handler = text_handler_map.get(data)
+        if text_handler is not None:
+            resp = text_handler(None, self.context)
             await query.edit_message_text(
                 resp.text,
                 parse_mode="Markdown",
@@ -130,16 +186,40 @@ class TelegramBot:
             )
             return
 
-        if data == "refresh_signals":
-            resp = last_signal_handler(None, self.context)
-            await query.edit_message_text(
-                resp.text,
-                parse_mode="Markdown",
-                reply_markup=SIGNALS_MENU,
-            )
-            return
-
         await query.answer("❌ Tombol tidak dikenali.")
+
+    # ---------- Phase B card view functions ----------
+
+    def _view_portfolio(self) -> tuple[str, InlineKeyboardMarkup]:
+        snapshot = read_portfolio(self.context)
+        return format_portfolio_card(snapshot), PORTFOLIO_MENU
+
+    def _view_positions(self) -> tuple[str, InlineKeyboardMarkup]:
+        metrics_list = read_positions_with_metrics(self.context)
+        if not metrics_list:
+            return format_positions_card([]), POSITIONS_MENU
+        positions = [m["position"] for m in metrics_list]
+        metrics_map = {m["position"].position_id: m for m in metrics_list}
+        return (
+            format_positions_card(positions, metrics_map=metrics_map),
+            POSITIONS_MENU,
+        )
+
+    def _view_history(self) -> tuple[str, InlineKeyboardMarkup]:
+        closed = read_history(self.context)
+        return format_history_card(closed), HISTORY_MENU
+
+    def _view_trackrecord(self) -> tuple[str, InlineKeyboardMarkup]:
+        summary = read_trackrecord(self.context)
+        return format_trackrecord_card(summary), TRACKRECORD_MENU
+
+    def _view_signals(self) -> tuple[str, InlineKeyboardMarkup]:
+        signals = read_latest_signals(self.context, DEFAULT_SYMBOLS)
+        return format_signals_summary(signals), SIGNALS_MENU
+
+    def _view_last_signal(self) -> tuple[str, InlineKeyboardMarkup]:
+        sig = read_last_signal(self.context)
+        return format_signal_card(sig), SIGNALS_MENU
 
     def _parse_command(self, text: str) -> TelegramCommand | None:
         text = text.strip().lower()

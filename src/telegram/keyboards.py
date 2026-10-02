@@ -30,8 +30,28 @@ SIGNALS_MENU = InlineKeyboardMarkup([
     [InlineKeyboardButton("🔙 Kembali", callback_data="menu_back")],
 ])
 
+# Phase B — Portfolio card navigation
 PORTFOLIO_MENU = InlineKeyboardMarkup([
-    [InlineKeyboardButton("💼 Portfolio", callback_data="menu_portfolio")],
-    [InlineKeyboardButton("📈 Posisi", callback_data="menu_positions")],
-    [InlineKeyboardButton("🔙 Kembali", callback_data="menu_back")],
+    [InlineKeyboardButton("🔄 Refresh", callback_data="refresh_portfolio")],
+    [InlineKeyboardButton("📈 Positions", callback_data="menu_positions")],
+    [InlineKeyboardButton("📜 History", callback_data="menu_history")],
+    [InlineKeyboardButton("📋 Track Record", callback_data="menu_trackrecord")],
+    [InlineKeyboardButton("◀️ Back", callback_data="menu_back")],
+])
+
+POSITIONS_MENU = InlineKeyboardMarkup([
+    [InlineKeyboardButton("🔄 Refresh", callback_data="refresh_positions")],
+    [InlineKeyboardButton("◀️ Back", callback_data="menu_back")],
+])
+
+HISTORY_MENU = InlineKeyboardMarkup([
+    [InlineKeyboardButton("🔄 Refresh", callback_data="refresh_history")],
+    [InlineKeyboardButton("📋 Track Record", callback_data="menu_trackrecord")],
+    [InlineKeyboardButton("◀️ Back", callback_data="menu_back")],
+])
+
+TRACKRECORD_MENU = InlineKeyboardMarkup([
+    [InlineKeyboardButton("🔄 Refresh", callback_data="refresh_trackrecord")],
+    [InlineKeyboardButton("📜 History", callback_data="menu_history")],
+    [InlineKeyboardButton("◀️ Back", callback_data="menu_back")],
 ])

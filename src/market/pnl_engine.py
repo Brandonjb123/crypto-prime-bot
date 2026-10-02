@@ -29,3 +29,28 @@ def calculate_unrealized(
             total_pnl += (pos.entry_price - current_price) * pos.position_size
 
     return total_pnl
+
+
+def calculate_position_unrealized(position, provider) -> float | None:
+    """Per-position unrealized PnL.
+
+    Reuse formula sama dengan calculate_unrealized (LONG/SHORT semantics).
+    Return None jika:
+      - position bukan OPEN
+      - current price unavailable
+    Return 0.0 kalau PnL aktual nol.
+    Tidak mutate state/repository. Tidak call Binance.
+    """
+    from src.core.types.enums import PositionStatus, Side
+
+    if position.status != PositionStatus.OPEN:
+        return None
+
+    current_price = provider.get_price(position.symbol)
+    if current_price is None:
+        return None
+
+    if position.side == Side.LONG:
+        return (current_price - position.entry_price) * position.position_size
+    else:  # SHORT
+        return (position.entry_price - current_price) * position.position_size
