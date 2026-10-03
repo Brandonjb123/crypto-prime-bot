@@ -187,13 +187,28 @@ def format_signals_summary(signals: list) -> str:
 
 
 def _md_safe(value: Any) -> str:
-    """Escape underscore untuk Telegram legacy Markdown V1.
+    """Neutralize Telegram Markdown V1 dangerous characters.
 
-    Konvensi sama dengan command_handler._md_safe (tidak diimport untuk
-    menghindari circular dependency). STOP_LOSS -> STOP LOSS.
+    Telegram Markdown V1 tidak punya escape character resmi, jadi karakter
+    berbahaya di-replace dengan lookalike aman / spasi:
+
+    - `_` → ` ` (underscore, italic marker) — existing convention
+    - `*` → ` ` (asterisk, bold marker)
+    - `` ` `` → `'` (backtick, code marker)
+    - `[` → `(` dan `]` → `)` (bracket, link marker)
+
+    Tidak mengubah urutan/struktur konten — hanya neutralisasi marker
+    yang bisa mengganggu parser Markdown V1. Truncation tetap deterministic
+    dan berlaku setelah escaping.
     """
     raw = getattr(value, "value", value)
-    return str(raw).replace("_", " ")
+    s = str(raw)
+    s = s.replace("_", " ")
+    s = s.replace("*", " ")
+    s = s.replace("`", "'")
+    s = s.replace("[", "(")
+    s = s.replace("]", ")")
+    return s
 
 
 def _format_duration(opened_at: Any, closed_at: Any) -> str:
@@ -275,20 +290,21 @@ def format_signal_card(signal: Any) -> str:
 
     reasoning_block = ""
     if reasoning:
-        lines = ["", "Reasoning:"]
-        for item in reasoning:
-            lines.append(f"• {_truncate(str(item), 200)}")
-        reasoning_block = "\n".join(lines)
+            lines = ["", "Reasoning:"]
+            for item in reasoning:
+                safe_item = _md_safe(_truncate(str(item), 200))
+                lines.append(f"• {safe_item}")
+            reasoning_block = "\n".join(lines)
 
     return (
         "📈 *Signal Card*\n\n"
-        f"{emoji} *{symbol}* {side}\n"
-        f"Status: {status}\n\n"
+        f"{emoji} *{_md_safe(symbol)}* {_md_safe(side)}\n"
+        f"Status: {_md_safe(status)}\n\n"
         f"Entry: ${entry:,.2f}\n"
         f"SL: ${sl:,.2f}\n"
         f"TP: ${tp:,.2f}\n\n"
         f"Confidence: {confidence}%\n"
-        f"Risk Level: {risk_level}\n"
+        f"Risk Level: {_md_safe(risk_level)}\n"
         f"Time: {ts_str}"
         f"{reasoning_block}\n\n"
         "📝 PAPER"

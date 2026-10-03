@@ -88,7 +88,7 @@ class TelegramBot:
                 self.context["price_provider"] = self.runtime_provider.price_provider
 
         if hasattr(self, "signal_repository") and self.signal_repository:
-            self.context["signal_repository"] = self.signal_repository    
+            self.context["signal_repository"] = self.signal_repository
 
         if command == TelegramCommand.START:
             response = start_handler(None, self.context)
@@ -140,11 +140,7 @@ class TelegramBot:
         # Root navigation
         if data == "menu_back":
             resp = start_handler(None, self.context)
-            await query.edit_message_text(
-                resp.text,
-                parse_mode="Markdown",
-                reply_markup=MAIN_MENU,
-            )
+            await self._safe_edit_message(query, resp.text, MAIN_MENU)
             return
 
         # Card views — read/use-case + card formatter + dedicated keyboard
@@ -158,16 +154,12 @@ class TelegramBot:
             "menu_trackrecord": self._view_trackrecord,
             "refresh_trackrecord": self._view_trackrecord,
             "menu_signals": self._view_signals,
-            "refresh_signals": self._view_last_signal,
+            "refresh_signals": self._view_signals,
         }
         view = view_map.get(data)
         if view is not None:
             text, keyboard = view()
-            await query.edit_message_text(
-                text,
-                parse_mode="Markdown",
-                reply_markup=keyboard,
-            )
+            await self._safe_edit_message(query, text, keyboard)
             return
 
         # Text-only callbacks — reuse existing handlers
@@ -179,11 +171,7 @@ class TelegramBot:
         text_handler = text_handler_map.get(data)
         if text_handler is not None:
             resp = text_handler(None, self.context)
-            await query.edit_message_text(
-                resp.text,
-                parse_mode="Markdown",
-                reply_markup=BACK_MENU,
-            )
+            await self._safe_edit_message(query, resp.text, BACK_MENU)
             return
 
         await query.answer("❌ Tombol tidak dikenali.")
@@ -253,4 +241,21 @@ class TelegramBot:
         self.runtime_provider = provider
 
     def set_signal_repository(self, signal_repository) -> None:
-        self.signal_repository = signal_repository    
+        self.signal_repository = signal_repository
+
+    async def _safe_edit_message(self, query, text: str, reply_markup) -> None:
+        """Edit message dengan fallback plain text kalau Markdown parse gagal.
+
+        Konsisten dengan fallback di handle_update(). Jangan raise ke caller.
+        """
+        try:
+            await query.edit_message_text(
+                text,
+                parse_mode="Markdown",
+                reply_markup=reply_markup,
+            )
+        except BadRequest as e:
+            logger.warning(
+                f"Markdown parse failed on callback edit, falling back to plain text: {e}"
+            )
+            await query.edit_message_text(text, reply_markup=reply_markup)

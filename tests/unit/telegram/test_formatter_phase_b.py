@@ -187,6 +187,46 @@ class TestSignalCard:
         assert "Reason B" in out
         assert "Reason C" in out
 
+    def test_signal_card_reasoning_markdown_safe_underscore(self) -> None:
+        """Reasoning dengan underscore harus aman untuk Markdown V1."""
+        sig = _make_signal(reasoning=["RSI_14 oversold"])
+        out = format_signal_card(sig)
+        assert "_" not in out
+        assert "RSI" in out
+        assert "oversold" in out
+
+    def test_signal_card_reasoning_markdown_safe_asterisk(self) -> None:
+        sig = _make_signal(reasoning=["RSI_14 oversold *and* price < EMA_50"])
+        out = format_signal_card(sig)
+        # Header card pakai *intentional* untuk bold Markdown.
+        # Cek hanya bagian reasoning yang harus neutral dari * dan _.
+        assert "Reasoning:" in out
+        reasoning_part = out.split("Reasoning:", 1)[1]
+        assert "_" not in reasoning_part
+        assert "*" not in reasoning_part
+        # Fragmen kata tetap ada (setelah neutralisasi)
+        assert "and" in reasoning_part
+        assert "RSI" in reasoning_part
+
+    def test_signal_card_reasoning_markdown_safe_backtick(self) -> None:
+        sig = _make_signal(reasoning=["Price near `support` zone"])
+        out = format_signal_card(sig)
+        assert "`" not in out
+        assert "support" in out
+
+    def test_signal_card_reasoning_markdown_safe_bracket(self) -> None:
+        sig = _make_signal(reasoning=["Level [S1] retest"])
+        out = format_signal_card(sig)
+        assert "[" not in out
+        assert "]" not in out
+        assert "S1" in out
+
+    def test_signal_card_symbol_markdown_safe(self) -> None:
+        """Symbol dengan underscore juga di-escape."""
+        sig = _make_signal(symbol="BTC_USD")
+        out = format_signal_card(sig)
+        assert "BTC" in out
+
 
 # ---------- format_portfolio_card ----------
 
