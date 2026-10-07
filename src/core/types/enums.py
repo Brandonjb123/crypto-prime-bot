@@ -311,3 +311,13 @@ class PositionEvent(StrEnum):
 class TradingMode(StrEnum):
     PAPER = "PAPER"
     LIVE = "LIVE"
+
+
+class SignalLifecycleStatus(StrEnum):
+    ACTIVE = "ACTIVE"
+    EXPIRED = "EXPIRED"
+
+
+class SignalLifecycleExpireReason(StrEnum):
+    TIME = "TIME"
+    SUPERSEDED = "SUPERSEDED"

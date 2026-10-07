@@ -69,6 +69,28 @@ SCHEMA_SQL = [
     CREATE INDEX IF NOT EXISTS idx_trading_positions_symbol_status
     ON trading_positions(symbol, status)
     """,
+    """
+    CREATE TABLE IF NOT EXISTS signal_lifecycle (
+        signal_id       TEXT PRIMARY KEY,
+        symbol          TEXT NOT NULL,
+        status          TEXT NOT NULL CHECK (status IN ('ACTIVE', 'EXPIRED')),
+        expire_reason   TEXT CHECK (expire_reason IN ('TIME', 'SUPERSEDED')),
+        created_at      TEXT NOT NULL,
+        expires_at      TEXT NOT NULL,
+        zone_low        REAL NOT NULL,
+        zone_high       REAL NOT NULL,
+        terminal_at     TEXT
+    )
+    """,
+    """
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_signal_lifecycle_active_per_symbol
+    ON signal_lifecycle(symbol)
+    WHERE status = 'ACTIVE'
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_signal_lifecycle_symbol_created
+    ON signal_lifecycle(symbol, created_at DESC)
+    """,
 ]
 
 
