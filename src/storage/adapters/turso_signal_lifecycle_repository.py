@@ -36,6 +36,24 @@ class TursoSignalLifecycleRepository(SignalLifecycleRepository):
         row = dict(zip(result.columns, result.rows[0], strict=False))
         return self._row_to_lifecycle(row)
 
+    def get_all_active(self) -> list[SignalLifecycle]:
+        sql = """
+        SELECT * FROM signal_lifecycle
+        WHERE status = ?
+        """
+        result = self.client.execute(sql, [SignalLifecycleStatus.ACTIVE.value])
+        lifecycles: list[SignalLifecycle] = []
+        for row in result.rows:
+            try:
+                lifecycles.append(
+                    self._row_to_lifecycle(
+                        dict(zip(result.columns, row, strict=False))
+                    )
+                )
+            except Exception as e:
+                logger.error(f"Failed to deserialize lifecycle row: {e}, row={row}")
+        return lifecycles
+
     # ---------- write ----------
 
     def create_with_supersede(

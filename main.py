@@ -12,6 +12,7 @@ async def main():
     bootstrap = Bootstrap()
     bootstrap.startup()
     bootstrap.price_refresh.start()
+    bootstrap.container.lifecycle_evaluation_service.start()
 
     container = bootstrap.container
 
@@ -43,6 +44,7 @@ async def main():
     await scheduler.stop()
     await bootstrap.price_refresh.stop()
     await bootstrap.shutdown()
+    await bootstrap.container.lifecycle_evaluation_service.stop()
 
 
 if __name__ == "__main__":

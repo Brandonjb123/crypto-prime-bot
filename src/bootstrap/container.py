@@ -43,6 +43,8 @@ from src.portfolio.portfolio_manager import PortfolioManager
 from src.portfolio.portfolio_state_manager import PortfolioStateManager
 from src.position.position_manager import PositionManager
 from src.risk.trade_risk_engine import TradeRiskEngine
+from src.signal.actionability_evaluator import ActionabilityEvaluator
+from src.signal.lifecycle_evaluation_service import LifecycleEvaluationService
 from src.signal.signal_engine import SignalEngine
 from src.storage.adapters.in_memory_execution_repository import InMemoryExecutionRepository
 from src.storage.adapters.in_memory_order_repository import InMemoryOrderRepository
@@ -79,6 +81,17 @@ class Container:
         self.portfolio_repo = InMemoryPortfolioRepository()
 
         self.price_provider = InMemoryPriceProvider()
+
+        self.actionability_evaluator = ActionabilityEvaluator(
+            repository=self.signal_lifecycle_repository,
+            price_provider=self.price_provider,
+        )
+        self.lifecycle_evaluation_service = LifecycleEvaluationService(
+            evaluator=self.actionability_evaluator,
+            interval_seconds=60,
+        )
+
+        self.position_manager = PositionManager(event_bus=self.event_bus)
 
         self.position_manager = PositionManager(event_bus=self.event_bus)
         self.portfolio_manager = PortfolioManager(event_bus=self.event_bus)

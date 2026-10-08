@@ -355,3 +355,36 @@ class TestMarkExpired:
     def test_mark_expired_nonexistent_is_noop(self, repo):
         # Signal tidak ada → UPDATE tidak match, tidak raise
         repo.mark_expired(uuid4(), SignalLifecycleExpireReason.TIME)
+
+
+class TestGetAllActive:
+    def test_get_all_active_returns_active_only(self, repo):
+        active1 = _make_lifecycle(symbol="BTC")
+        active2 = _make_lifecycle(symbol="ETH")
+        repo.create_with_supersede(active1)
+        repo.create_with_supersede(active2)
+
+        result = repo.get_all_active()
+        assert len(result) == 2
+        symbols = {lc.symbol for lc in result}
+        assert symbols == {"BTC", "ETH"}
+
+    def test_get_all_active_empty(self, repo):
+        assert repo.get_all_active() == []
+
+    def test_superseded_lifecycle_not_in_active(self, repo):
+        old = _make_lifecycle(symbol="BTC", created_offset_seconds=-100)
+        repo.create_with_supersede(old)
+        new = _make_lifecycle(symbol="BTC", created_offset_seconds=0)
+        repo.create_with_supersede(new)
+
+        result = repo.get_all_active()
+        assert len(result) == 1
+        assert result[0].signal_id == new.signal_id
+
+    def test_expired_lifecycle_not_in_active(self, repo):
+        lc = _make_lifecycle(symbol="BTC")
+        repo.create_with_supersede(lc)
+        repo.mark_expired(lc.signal_id, SignalLifecycleExpireReason.TIME)
+
+        assert repo.get_all_active() == []

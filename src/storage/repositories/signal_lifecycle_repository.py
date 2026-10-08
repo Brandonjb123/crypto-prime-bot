@@ -14,6 +14,11 @@ class SignalLifecycleRepository(ABC):
         ...
 
     @abstractmethod
+    def get_all_active(self) -> list[SignalLifecycle]:
+        """Return semua lifecycle dengan status ACTIVE (untuk evaluation cycle)."""
+        ...
+
+    @abstractmethod
     def create_with_supersede(
         self, new_lifecycle: SignalLifecycle
     ) -> SignalLifecycle:

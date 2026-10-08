@@ -32,9 +32,9 @@ class Bootstrap:
     async def shutdown(self):
         self.logger.info("Shutting down...")
         await self.container.scheduler.stop()
-        self.logger.info("Shutdown complete.")
         if hasattr(self, "price_refresh"):
             await self.price_refresh.stop()
+        self.logger.info("Shutdown complete.")
 
     def _step(self, msg, fn):
         print(msg, end="... ")
