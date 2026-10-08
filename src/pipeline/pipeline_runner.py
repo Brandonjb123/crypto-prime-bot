@@ -3,11 +3,89 @@
 from datetime import UTC, datetime
 
 from src.core.models.analysis_result import AnalysisResult as PipelineResult
-from src.core.types.enums import PipelineStatus
+from src.core.models.signal_lifecycle import SignalLifecycle
+from src.core.types.enums import PipelineStatus, SignalLifecycleStatus
 from src.logging.logger import get_logger
+from src.signal.lifecycle_expiry_calculator import calculate_expires_at
 
 logger = get_logger("pipeline.runner")
 
+# === C0.0.2 — Zone calculation + RR validation ===
+
+ZONE_HALF_WIDTH_ATR = 0.25
+MIN_EFFECTIVE_RR = 2.5
+
+
+def _calculate_zone_with_clipping(
+    entry_price: float,
+    stop_loss: float,
+    take_profit: float,
+    atr: float,
+    side: str,
+) -> tuple[float, float, float | None]:
+    """Calculate symmetric ±0.25 ATR entry zone with RR-based clipping.
+
+    Returns (zone_low, zone_high, worst_rr).
+    worst_rr is None if RR < MIN_EFFECTIVE_RR even after maximum clipping
+    (degenerate → caller demotes to INVALID).
+
+    LONG: unsafe side = zone_high (bayar tertinggi)
+    SHORT: unsafe side = zone_low (jual terendah)
+    """
+    if atr <= 0:
+        # No valid actionable zone without positive ATR.
+        # Caller must demote signal to INVALID — no fallback zone.
+        return None, None, None
+
+    half = ZONE_HALF_WIDTH_ATR * atr
+    zone_low = entry_price - half
+    zone_high = entry_price + half
+
+    if side == "BUY":
+        risk = zone_high - stop_loss
+        reward = take_profit - zone_high
+    else:  # SELL
+        risk = stop_loss - zone_low
+        reward = zone_low - take_profit
+
+    if risk <= 0 or reward <= 0:
+        return zone_low, zone_high, None
+
+    worst_rr = reward / risk
+    if worst_rr >= MIN_EFFECTIVE_RR:
+        return zone_low, zone_high, worst_rr
+
+    # Clip unsafe side only, preserve safe side at ±0.25 ATR
+    if side == "BUY":
+        sl_dist = entry_price - stop_loss
+        tp_dist = take_profit - entry_price
+    else:  # SELL
+        sl_dist = stop_loss - entry_price
+        tp_dist = entry_price - take_profit
+
+    d_max = (tp_dist - MIN_EFFECTIVE_RR * sl_dist) / (1 + MIN_EFFECTIVE_RR)
+    if d_max < 0:
+        return zone_low, zone_high, None
+
+    d_clipped = min(half, d_max)
+
+    if side == "BUY":
+        zone_high = entry_price + d_clipped
+        risk = zone_high - stop_loss
+        reward = take_profit - zone_high
+    else:  # SELL
+        zone_low = entry_price - d_clipped
+        risk = stop_loss - zone_low
+        reward = zone_low - take_profit
+
+    if risk <= 0 or reward <= 0:
+        return zone_low, zone_high, None
+
+    worst_rr = reward / risk
+    if worst_rr < MIN_EFFECTIVE_RR:
+        return zone_low, zone_high, None
+
+    return zone_low, zone_high, worst_rr
 
 class PipelineRunner:
     def __init__(
@@ -25,6 +103,7 @@ class PipelineRunner:
         price_provider=None,
         lifecycle_engine=None,
         signal_repository=None,
+        lifecycle_repository=None,
     ):
         self.collector = collector
         self.indicator_engine = indicator_engine
@@ -38,6 +117,7 @@ class PipelineRunner:
         self.health_monitor = health_monitor
         self.price_provider = price_provider
         self.signal_repository = signal_repository
+        self.lifecycle_repository = lifecycle_repository
         self.lifecycle_engine = lifecycle_engine
 
         # Runtime state untuk Telegram
@@ -179,6 +259,39 @@ class PipelineRunner:
                 timestamp=datetime.now(UTC),
             )
 
+        # Step 6.5 — Zone calculation + RR validation (C0.0.2)
+        zone_low: float | None = None
+        zone_high: float | None = None
+        if (
+            trade_plan
+            and trade_plan.decision in ("BUY", "SELL")
+            and trade_plan.entry_price is not None
+            and trade_plan.stop_loss is not None
+            and trade_plan.take_profit is not None
+        ):
+            zone_low, zone_high, worst_rr = _calculate_zone_with_clipping(
+                entry_price=trade_plan.entry_price,
+                stop_loss=trade_plan.stop_loss,
+                take_profit=trade_plan.take_profit,
+                atr=atr,
+                side=trade_plan.decision,
+            )
+            if worst_rr is None:
+                logger.warning(
+                    f"RR validation failed after clipping for {symbol} "
+                    f"(demoting to INVALID via position_size=0)"
+                )
+                trade_plan = trade_plan.model_copy(
+                    update={"position_size": 0.0}
+                )
+                zone_low = None
+                zone_high = None
+            else:
+                logger.info(
+                    f"Zone: [{zone_low:.2f}, {zone_high:.2f}] "
+                    f"worst_rr={worst_rr:.3f}"
+                )
+
         # Step 7 — Signal
         try:
             if self.signal_engine and trade_plan:
@@ -200,8 +313,71 @@ class PipelineRunner:
                 timestamp=datetime.now(UTC),
             )
 
-        # Step 8 — Paper Execution (if enabled)
-        if self.paper_trading_engine and signal and getattr(signal, "status", None) == "ACTIVE":
+        # Step 7.5 — Lifecycle creation (C0.0.2, only for ACTIVE)
+        # INVARIANT: ACTIVE signal MUST have a valid lifecycle before paper execution.
+        lifecycle_created = False
+        if signal is not None and signal.status == "ACTIVE":
+            if self.lifecycle_repository is None:
+                msg = "ACTIVE signal but lifecycle_repository is not wired"
+                logger.error(msg)
+                self._set_failed(msg)
+                return PipelineResult(
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    status="failed",
+                    error_message=msg,
+                    timestamp=datetime.now(UTC),
+                )
+            if zone_low is None or zone_high is None:
+                msg = (
+                    "ACTIVE signal but no valid entry zone "
+                    "(zone calculation failed) — refusing to execute"
+                )
+                logger.error(msg)
+                self._set_failed(msg)
+                return PipelineResult(
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    status="failed",
+                    error_message=msg,
+                    timestamp=datetime.now(UTC),
+                )
+
+            try:
+                expires_at = calculate_expires_at(signal.created_at)
+                lifecycle = SignalLifecycle(
+                    signal_id=signal.signal_id,
+                    symbol=signal.symbol,
+                    status=SignalLifecycleStatus.ACTIVE,
+                    expire_reason=None,
+                    created_at=signal.created_at,
+                    expires_at=expires_at,
+                    zone_low=zone_low,
+                    zone_high=zone_high,
+                    terminal_at=None,
+                )
+                self.lifecycle_repository.create_with_supersede(lifecycle)
+                lifecycle_created = True
+                logger.info(f"SignalLifecycle created: {signal.signal_id}")
+            except Exception as e:
+                logger.error(f"Lifecycle creation failed: {e}")
+                self._set_failed(str(e))
+                return PipelineResult(
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    status="failed",
+                    error_message=str(e),
+                    timestamp=datetime.now(UTC),
+                )
+
+        # Step 8 — Paper Execution
+        # INVARIANT: paper execution only after lifecycle_created == True for ACTIVE signals.
+        if (
+            self.paper_trading_engine
+            and signal
+            and getattr(signal, "status", None) == "ACTIVE"
+            and lifecycle_created
+        ):
             try:
                 logger.info("Executing paper trade...")
                 _ = self.paper_trading_engine.execute(signal)

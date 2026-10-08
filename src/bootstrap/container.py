@@ -49,6 +49,7 @@ from src.storage.adapters.in_memory_order_repository import InMemoryOrderReposit
 from src.storage.adapters.in_memory_portfolio_repository import InMemoryPortfolioRepository
 from src.storage.adapters.turso_client import TursoClient
 from src.storage.adapters.turso_position_repository import TursoPositionRepository
+from src.storage.adapters.turso_signal_lifecycle_repository import TursoSignalLifecycleRepository
 from src.storage.adapters.turso_signal_repository import TursoSignalRepository
 from src.storage.repositories.signal_repository import SignalRepository
 from src.telegram.bot import TelegramBot
@@ -71,6 +72,9 @@ class Container:
 
         self.position_repo = TursoPositionRepository(self.turso_client)
         self.signal_repository = TursoSignalRepository(self.turso_client)
+        self.signal_lifecycle_repository = TursoSignalLifecycleRepository(
+            self.turso_client
+        )
         self.order_repo = InMemoryOrderRepository()
         self.portfolio_repo = InMemoryPortfolioRepository()
 
@@ -159,6 +163,7 @@ class Container:
             price_provider=self.price_provider,
             lifecycle_engine=self.lifecycle_engine,
             signal_repository=self.signal_repository,
+            lifecycle_repository=self.signal_lifecycle_repository,
         )
 
         self.scheduler = SimpleScheduler(self.pipeline_runner, interval_seconds=14400)

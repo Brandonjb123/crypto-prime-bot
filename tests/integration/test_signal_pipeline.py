@@ -56,6 +56,9 @@ class TestSignalPipeline:
         risk = TradeRiskEngine()
         signal = SignalEngine()
 
+        lifecycle_repo = MagicMock()
+        lifecycle_repo.create_with_supersede = MagicMock(return_value=None)
+
         runner = PipelineRunner(
             collector=collector,
             indicator_engine=indicator,
@@ -64,6 +67,7 @@ class TestSignalPipeline:
             validation_engine=validation,
             risk_engine=risk,
             signal_engine=signal,
+            lifecycle_repository=lifecycle_repo,
         )
 
         result = await runner.run("BTC", "4h")
