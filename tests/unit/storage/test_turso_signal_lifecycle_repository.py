@@ -388,3 +388,52 @@ class TestGetAllActive:
         repo.mark_expired(lc.signal_id, SignalLifecycleExpireReason.TIME)
 
         assert repo.get_all_active() == []
+
+class TestRepositoryViaTursoClientWrapper:
+    """Regression: repository create_with_supersede() harus call TursoClient.batch().
+
+    Verifikasi bahwa wrapper TursoClient (bukan _SqliteWrapper) memiliki batch()
+    dan bisa dipakai oleh TursoSignalLifecycleRepository.
+    """
+
+    def test_turso_client_exposes_batch(self):
+        """C0.0.3 blocker: TursoClient harus punya batch() method."""
+        from src.storage.adapters.turso_client import TursoClient
+
+        assert hasattr(TursoClient, "batch"), (
+            "TursoClient missing batch() — create_with_supersede() will crash "
+            "in production (C0.0.3 blocker)"
+        )
+        assert callable(TursoClient.batch)
+
+    def test_create_with_supersede_uses_batch_not_single_execute(self):
+        """Verifikasi repo memanggil batch() (atomic), bukan execute() berulang."""
+        from unittest.mock import MagicMock
+
+        from src.storage.adapters.turso_signal_lifecycle_repository import (
+            TursoSignalLifecycleRepository,
+        )
+
+        # Fake TursoClient-like object
+        fake_client = MagicMock()
+        fake_client.batch = MagicMock(return_value=[])
+
+        repo = TursoSignalLifecycleRepository(fake_client)
+
+        lifecycle = SignalLifecycle(
+            signal_id=uuid4(),
+            symbol="BTC",
+            status=SignalLifecycleStatus.ACTIVE,
+            expire_reason=None,
+            created_at=datetime.now(UTC),
+            expires_at=datetime.now(UTC) + timedelta(seconds=3600),
+            zone_low=100.0,
+            zone_high=110.0,
+            terminal_at=None,
+        )
+        repo.create_with_supersede(lifecycle)
+
+        # MUST call batch (atomic), not execute
+        fake_client.batch.assert_called_once()
+        batch_args = fake_client.batch.call_args[0][0]
+        assert len(batch_args) == 2  # expire_old + insert_new

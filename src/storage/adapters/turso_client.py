@@ -39,6 +39,16 @@ class TursoClient:
             raise RuntimeError("TursoClient not connected. Call connect() first.")
         return self._client.execute(sql, params or [])
 
+    def batch(self, stmts: list):
+        """Execute multiple statements atomically via libsql_client.batch().
+
+        Delegates ke underlying SyncClient.batch() yang wrap BEGIN/COMMIT/
+        ROLLBACK secara atomic di server (verified C0.0.1 blocker resolution).
+        """
+        if self._client is None:
+            raise RuntimeError("TursoClient not connected. Call connect() first.")
+        return self._client.batch(stmts)
+
     def close(self) -> None:
         """Tutup koneksi."""
         if self._client is not None:
