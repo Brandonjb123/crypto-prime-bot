@@ -27,3 +27,4 @@ class SignalLifecycle(BaseModel):
     zone_low: float
     zone_high: float
     terminal_at: datetime | None = None
+    superseded_by_signal_id: UUID | None = None

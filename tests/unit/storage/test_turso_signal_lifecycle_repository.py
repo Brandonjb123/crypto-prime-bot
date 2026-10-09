@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS signal_lifecycle (
     expires_at      TEXT NOT NULL,
     zone_low        REAL NOT NULL,
     zone_high       REAL NOT NULL,
-    terminal_at     TEXT
+    terminal_at     TEXT,
+    superseded_by_signal_id TEXT
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_signal_lifecycle_active_per_symbol
     ON signal_lifecycle(symbol) WHERE status = 'ACTIVE';

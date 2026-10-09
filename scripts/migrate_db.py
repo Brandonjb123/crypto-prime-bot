@@ -91,7 +91,37 @@ SCHEMA_SQL = [
     CREATE INDEX IF NOT EXISTS idx_signal_lifecycle_symbol_created
     ON signal_lifecycle(symbol, created_at DESC)
     """,
+    """
+    CREATE TABLE IF NOT EXISTS notification_outbox (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        signal_id       TEXT NOT NULL,
+        event_type      TEXT NOT NULL,
+        telegram_id     INTEGER NOT NULL,
+        status          TEXT NOT NULL DEFAULT 'PENDING',
+        attempts        INTEGER NOT NULL DEFAULT 0,
+        sent_at         TEXT NULL,
+        message_id      INTEGER NULL,
+        last_error      TEXT NULL,
+        next_retry_at   TEXT NULL,
+        created_at      TEXT NOT NULL,
+        updated_at      TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_notification_outbox_unique_event
+    ON notification_outbox(signal_id, event_type, telegram_id)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_notification_outbox_due
+    ON notification_outbox(status, next_retry_at)
+    """,
 ]
+
+
+def _column_exists(client: TursoClient, table: str, column: str) -> bool:
+    """Check if column exists via PRAGMA. SQLite has no ADD COLUMN IF NOT EXISTS."""
+    result = client.execute(f"PRAGMA table_info({table})")
+    return any(row[1] == column for row in result.rows)
 
 
 def main() -> None:
@@ -106,6 +136,17 @@ def main() -> None:
     for i, sql in enumerate(SCHEMA_SQL, 1):
         print(f"Applying schema step {i}/{len(SCHEMA_SQL)}...")
         client.execute(sql)
+
+    # C0.0.4A: guarded ALTER TABLE signal_lifecycle
+    if not _column_exists(client, "signal_lifecycle", "superseded_by_signal_id"):
+        print("Applying guarded migration: ADD COLUMN superseded_by_signal_id...")
+        client.execute(
+            "ALTER TABLE signal_lifecycle "
+            "ADD COLUMN superseded_by_signal_id TEXT"
+        )
+        print("  applied")
+    else:
+        print("Guarded migration: superseded_by_signal_id already exists — skip")
 
     print("Migration complete.")
     client.close()

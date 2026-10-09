@@ -50,6 +50,9 @@ from src.storage.adapters.in_memory_execution_repository import InMemoryExecutio
 from src.storage.adapters.in_memory_order_repository import InMemoryOrderRepository
 from src.storage.adapters.in_memory_portfolio_repository import InMemoryPortfolioRepository
 from src.storage.adapters.turso_client import TursoClient
+from src.storage.adapters.turso_notification_outbox_repository import (
+    TursoNotificationOutboxRepository,
+)
 from src.storage.adapters.turso_position_repository import TursoPositionRepository
 from src.storage.adapters.turso_signal_lifecycle_repository import TursoSignalLifecycleRepository
 from src.storage.adapters.turso_signal_repository import TursoSignalRepository
@@ -75,6 +78,9 @@ class Container:
         self.position_repo = TursoPositionRepository(self.turso_client)
         self.signal_repository = TursoSignalRepository(self.turso_client)
         self.signal_lifecycle_repository = TursoSignalLifecycleRepository(
+            self.turso_client
+        )
+        self.notification_outbox_repository = TursoNotificationOutboxRepository(
             self.turso_client
         )
         self.order_repo = InMemoryOrderRepository()

@@ -7,6 +7,8 @@ load_dotenv()
 class Settings(BaseSettings):
     # Telegram
     TELEGRAM_BOT_TOKEN: str
+    NOTIFICATION_OUTBOX_ENABLED: bool = False
+    NOTIFICATION_RECIPIENT_IDS: str = ""
     ADMIN_CHAT_ID: int
 
     # Exchange Testnet
