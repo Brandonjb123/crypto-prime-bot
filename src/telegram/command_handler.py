@@ -20,6 +20,7 @@ from src.telegram.formatter import (
     format_signals_summary,
     format_status,
 )
+from src.telegram.lifecycle_display import resolve_lifecycle_states
 
 
 def _text_response(text: str) -> TelegramResponse:
@@ -78,13 +79,14 @@ def last_signal_handler(msg=None, ctx=None):
     if repo is None:
         return _text_response("📡 *Sinyal Terkini*\n\nBelum ada sinyal aktif yang tersedia.")
 
-    # Ambil history, signal terbaru = yang pertama (sorted desc by created_at)
     history = repo.history()
     if not history:
         return _text_response("📡 *Sinyal Terkini*\n\nBelum ada sinyal aktif yang tersedia.")
 
     latest = history[0]
-    return _text_response(format_signal(latest))
+    states = resolve_lifecycle_states(repo, [latest.signal_id])
+    state = states.get(latest.signal_id, "UNKNOWN")
+    return _text_response(format_signal(latest, lifecycle_state=state))
 
 
 def signals_handler(msg=None, ctx=None):
@@ -103,7 +105,10 @@ def signals_handler(msg=None, ctx=None):
         if sig is not None:
             signals.append(sig)
 
-    return _text_response(format_signals_summary(signals))
+    states = resolve_lifecycle_states(repo, [s.signal_id for s in signals])
+    return _text_response(
+        format_signals_summary(signals, lifecycle_map=states)
+    )
 
 
 def portfolio_handler(msg=None, ctx=None):

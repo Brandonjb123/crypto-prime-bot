@@ -43,6 +43,7 @@ from src.telegram.keyboards import (
     SIGNALS_MENU,
     TRACKRECORD_MENU,
 )
+from src.telegram.lifecycle_display import resolve_lifecycle_states
 from src.telegram.use_cases import (
     read_history,
     read_last_signal,
@@ -203,11 +204,22 @@ class TelegramBot:
 
     def _view_signals(self) -> tuple[str, InlineKeyboardMarkup]:
         signals = read_latest_signals(self.context, DEFAULT_SYMBOLS)
-        return format_signals_summary(signals), SIGNALS_MENU
+        repo = self.context.get("signal_repository") if self.context else None
+        states = (
+            resolve_lifecycle_states(repo, [s.signal_id for s in signals])
+            if repo else {}
+        )
+        return format_signals_summary(signals, lifecycle_map=states), SIGNALS_MENU
 
     def _view_last_signal(self) -> tuple[str, InlineKeyboardMarkup]:
         sig = read_last_signal(self.context)
-        return format_signal_card(sig), SIGNALS_MENU
+        repo = self.context.get("signal_repository") if self.context else None
+        state = "UNKNOWN"
+        if repo and sig is not None:
+            state = resolve_lifecycle_states(
+                repo, [sig.signal_id]
+            ).get(sig.signal_id, "UNKNOWN")
+        return format_signal_card(sig, lifecycle_state=state), SIGNALS_MENU
 
     def _parse_command(self, text: str) -> TelegramCommand | None:
         text = text.strip().lower()

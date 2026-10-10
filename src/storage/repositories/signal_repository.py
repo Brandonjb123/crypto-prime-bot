@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 from datetime import datetime
+from uuid import UUID
 
 from src.core.models.trading_signal import TradingSignal
 
@@ -25,3 +26,18 @@ class SignalRepository(ABC):
     ) -> list[TradingSignal]:
         """Return history, sorted desc by created_at. Optional filter symbol & since."""
         ...
+
+    @abstractmethod
+    def get_lifecycle_states(
+        self, signal_ids: list[UUID]
+    ) -> dict[UUID, str]:
+        """Bulk read lifecycle state for signal IDs.
+
+        Returns {signal_id: 'ACTIVE'|'EXPIRED'} for IDs that have a
+        signal_lifecycle row. Missing keys = no lifecycle row (caller
+        interprets as LEGACY).
+
+        Raises on query failure (caller must catch and fall back to
+        UNKNOWN — never LEGACY).
+        """
+        ...    

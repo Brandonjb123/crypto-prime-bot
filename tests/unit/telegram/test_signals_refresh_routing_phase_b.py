@@ -42,11 +42,11 @@ class TestSignalsRefreshRouting:
 
         import src.telegram.bot as bot_module
 
-        def _spy_summary(signals):
+        def _spy_summary(signals, **kwargs):
             called["summary"] = True
             return "SUMMARY"
 
-        def _spy_card(signal):
+        def _spy_card(signal, **kwargs):
             called["card"] = True
             return "CARD"
 
@@ -69,11 +69,11 @@ class TestSignalsRefreshRouting:
 
         import src.telegram.bot as bot_module
 
-        def _spy_summary(signals):
+        def _spy_summary(signals, **kwargs):
             called["summary"] = True
             return "SUMMARY"
 
-        def _spy_card(signal):
+        def _spy_card(signal, **kwargs):
             called["card"] = True
             return "CARD"
 

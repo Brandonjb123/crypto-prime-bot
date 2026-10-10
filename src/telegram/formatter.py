@@ -51,7 +51,18 @@ def format_market(market_snapshot: Any) -> str:
     )
 
 
-def format_signal(signal: Any) -> str:
+def _lifecycle_prefix(lifecycle_state: str) -> str:
+    """Conservative lifecycle prefix for display surfaces."""
+    if lifecycle_state == "ACTIVE":
+        return ""
+    if lifecycle_state == "EXPIRED":
+        return "⚠️ STALE — lifecycle expired\n\n"
+    if lifecycle_state == "LEGACY":
+        return "⚠️ LEGACY — no lifecycle tracking\n\n"
+    return "⚠️ lifecycle state unavailable\n\n"
+
+
+def format_signal(signal: Any, *, lifecycle_state: str = "UNKNOWN") -> str:
     if signal is None:
         return "📭 No signal available"
 
@@ -72,9 +83,11 @@ def format_signal(signal: Any) -> str:
             "Symbol: " + getattr(signal, "symbol", "N/A")
         )
 
+    prefix = _lifecycle_prefix(lifecycle_state)
     return (
         "📈 *Latest Signal*\n\n"
-        f"🟢 {getattr(signal, 'side', 'N/A')} {getattr(signal, 'symbol', 'N/A')}\n\n"
+        + prefix
+        + f"🟢 {getattr(signal, 'side', 'N/A')} {getattr(signal, 'symbol', 'N/A')}\n\n"
         f"Entry: ${getattr(signal, 'entry_price', 0.0):,.2f}\n"
         f"SL: ${getattr(signal, 'stop_loss', 0.0):,.2f}\n"
         f"TP: ${getattr(signal, 'take_profit', 0.0):,.2f}\n\n"
@@ -148,14 +161,12 @@ def format_performance(report: Any) -> str:
         f"Short Win Rate: {report.short_win_rate}%"
     )
 
-def format_signals_summary(signals: list) -> str:
-    """Format latest signal per symbol — compact list view.
-
-    Setiap entry satu baris ringkas. Dipakai oleh /signals untuk
-    menampilkan signal terbaru dari setiap tracked symbol.
-    """
+def format_signals_summary(signals: list, *, lifecycle_map: dict | None = None) -> str:
+    """Format latest signal per symbol — compact list view."""
     if not signals:
         return "📡 *Sinyal Terkini*\n\nBelum ada sinyal tersedia."
+
+    lm = lifecycle_map or {}
 
     lines = [f"📡 *Sinyal Terkini — {len(signals)} symbol*\n"]
 
@@ -166,16 +177,25 @@ def format_signals_summary(signals: list) -> str:
         confidence = getattr(sig, "confidence", 0)
         risk_level = getattr(sig, "risk_level", "MEDIUM")
 
+        state = lm.get(getattr(sig, "signal_id", None), "UNKNOWN")
+
         if status == "ACTIVE":
-            emoji = "🟢" if side == "BUY" else "🔴"
-            entry = getattr(sig, "entry_price", 0) or 0
-            sl = getattr(sig, "stop_loss", 0) or 0
-            tp = getattr(sig, "take_profit", 0) or 0
-            lines.append(
-                f"{emoji} *{symbol}* {side}\n"
-                f"   Entry: ${entry:,.2f} | SL: ${sl:,.2f} | TP: ${tp:,.2f}\n"
-                f"   Conf: {confidence}% | Risk: {risk_level}\n"
-            )
+            if state == "ACTIVE":
+                emoji = "🟢" if side == "BUY" else "🔴"
+                entry = getattr(sig, "entry_price", 0) or 0
+                sl = getattr(sig, "stop_loss", 0) or 0
+                tp = getattr(sig, "take_profit", 0) or 0
+                lines.append(
+                    f"{emoji} *{symbol}* {side}\n"
+                    f"   Entry: ${entry:,.2f} | SL: ${sl:,.2f} | TP: ${tp:,.2f}\n"
+                    f"   Conf: {confidence}% | Risk: {risk_level}\n"
+                )
+            elif state == "EXPIRED":
+                lines.append(f"⚠️ *{symbol}* {side} — STALE (lifecycle expired)\n")
+            elif state == "LEGACY":
+                lines.append(f"⚠️ *{symbol}* {side} — LEGACY (no lifecycle)\n")
+            else:
+                lines.append(f"⚠️ *{symbol}* {side} — lifecycle state unavailable\n")
         elif status == "SKIPPED":
             lines.append(f"🟡 *{symbol}* WAIT (SKIPPED)\n")
         else:  # INVALID
@@ -243,7 +263,7 @@ def _truncate(text: str, max_len: int = 200) -> str:
 # ---------- Phase B card formatters ----------
 
 
-def format_signal_card(signal: Any) -> str:
+def format_signal_card(signal: Any, *, lifecycle_state: str = "UNKNOWN") -> str:
     """Rich signal card. Reasoning dipertahankan verbatim (hanya truncate)."""
     if signal is None:
         return "📭 No signal available"
@@ -296,9 +316,11 @@ def format_signal_card(signal: Any) -> str:
                 lines.append(f"• {safe_item}")
             reasoning_block = "\n".join(lines)
 
+    prefix = _lifecycle_prefix(lifecycle_state)
     return (
         "📈 *Signal Card*\n\n"
-        f"{emoji} *{_md_safe(symbol)}* {_md_safe(side)}\n"
+        + prefix
+        + f"{emoji} *{_md_safe(symbol)}* {_md_safe(side)}\n"
         f"Status: {_md_safe(status)}\n\n"
         f"Entry: ${entry:,.2f}\n"
         f"SL: ${sl:,.2f}\n"
