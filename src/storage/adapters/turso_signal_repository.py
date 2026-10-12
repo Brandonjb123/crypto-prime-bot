@@ -86,19 +86,6 @@ class TursoSignalRepository(SignalRepository):
         result = self.client.execute("SELECT COUNT(*) FROM trading_signals", [])
         return int(result.rows[0][0]) if result.rows else 0
 
-    def get_lifecycle_states(
-        self, signal_ids: list[UUID]
-    ) -> dict[UUID, str]:
-        if not signal_ids:
-            return {}
-        placeholders = ",".join(["?"] * len(signal_ids))
-        sql = (
-            f"SELECT signal_id, status FROM signal_lifecycle "
-            f"WHERE signal_id IN ({placeholders})"
-        )
-        result = self.client.execute(sql, [str(sid) for sid in signal_ids])
-        return {UUID(row[0]): row[1] for row in result.rows}
-
     # ---------- helpers ----------
 
     def _query(self, sql: str, params: list) -> list[TradingSignal]:

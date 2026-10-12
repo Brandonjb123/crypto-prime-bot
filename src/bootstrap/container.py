@@ -117,6 +117,9 @@ class Container:
         self.telegram_bot = TelegramBot()
         self.telegram_bot.set_runtime_provider(self.portfolio_state_manager)
         self.telegram_bot.set_signal_repository(self.signal_repository)
+        self.telegram_bot.set_signal_lifecycle_repository(
+            self.signal_lifecycle_repository
+        )
         self.notification_dispatcher = NotificationDispatcher(self.telegram_notifier)
         self.notification_dispatcher.register(OrderExecutedEvent, OrderExecutedFormatter())
         self.notification_dispatcher.register(PositionOpenedEvent, PositionOpenedFormatter())

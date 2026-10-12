@@ -1,21 +1,26 @@
-"""Direct callback tests untuk lifecycle state passing (H3.2 GAP-1).
+"""Direct callback tests untuk lifecycle state passing (H3.2 R2)."""
 
-Memverifikasi bahwa callback/handler meneruskan lifecycle_map/state
-yang benar ke formatter — bukan hanya tidak crash.
-"""
-
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
 
+from src.core.models.lifecycle_lookup import (
+    LifecycleLookupResult,
+    LifecycleRecord,
+)
 from src.telegram.bot import TelegramBot
+from src.telegram.lifecycle_display import LIFECYCLE_EPOCH_UTC
+
+FUTURE = datetime.now(UTC) + timedelta(hours=1)
+PRE_EPOCH = LIFECYCLE_EPOCH_UTC - timedelta(days=1)
 
 
-def _make_signal(signal_id=None, symbol="BTC", status="ACTIVE"):
+def _make_signal(status="ACTIVE", created_at=None):
     sig = MagicMock()
-    sig.signal_id = signal_id or uuid4()
-    sig.symbol = symbol
+    sig.signal_id = uuid4()
+    sig.symbol = "BTC"
     sig.side = "BUY"
     sig.status = status
     sig.entry_price = 100.0
@@ -24,10 +29,29 @@ def _make_signal(signal_id=None, symbol="BTC", status="ACTIVE"):
     sig.confidence = 80
     sig.risk_level = "MEDIUM"
     sig.position_size = 1.0
+    sig.created_at = created_at or datetime.now(UTC)
     return sig
 
 
-def _make_bot(signals=None, lifecycle_map=None, lifecycle_raises=False):
+def _make_lifecycle_repo(records=None, failed=None, raises=False):
+    repo = MagicMock()
+    if raises:
+        repo.get_lifecycle_lookup.side_effect = RuntimeError("db down")
+        return repo
+    records = records or {}
+    failed = failed or set()
+
+    def _lookup(signal_ids):
+        found = {sid: records[sid] for sid in signal_ids if sid in records}
+        fail = {sid for sid in signal_ids if sid in failed}
+        absent = {sid for sid in signal_ids if sid not in found and sid not in fail}
+        return LifecycleLookupResult(found=found, absent=absent, failed=fail)
+
+    repo.get_lifecycle_lookup.side_effect = _lookup
+    return repo
+
+
+def _make_bot(signal=None, lifecycle_records=None, lifecycle_raises=False):
     bot = TelegramBot()
     runtime = MagicMock()
     runtime.get_context.return_value = {
@@ -38,27 +62,25 @@ def _make_bot(signals=None, lifecycle_map=None, lifecycle_raises=False):
     runtime.price_provider = object()
     bot.set_runtime_provider(runtime)
 
-    sig = signals if signals is not None else _make_signal()
+    sig = signal if signal is not None else _make_signal()
 
-    repo = MagicMock()
-    repo.latest_by_symbol.return_value = sig
-    repo.history.return_value = [sig] if sig is not None else []
+    sig_repo = MagicMock()
+    sig_repo.latest_by_symbol.return_value = sig
+    sig_repo.history.return_value = [sig] if sig is not None else []
 
-    if lifecycle_raises:
-        repo.get_lifecycle_states.side_effect = RuntimeError("db down")
-    else:
-        repo.get_lifecycle_states.return_value = lifecycle_map or {}
+    lc_repo = _make_lifecycle_repo(
+        records=lifecycle_records or {}, raises=lifecycle_raises
+    )
 
-    bot.set_signal_repository(repo)
-
-    # Set context dengan signal_repository — karena _view_last_signal
-    # dibaca langsung dari self.context, bukan via handle_callback.
+    bot.set_signal_repository(sig_repo)
+    bot.set_signal_lifecycle_repository(lc_repo)
     bot.set_context(
         {
             "positions": [],
             "closed_positions": [],
             "portfolio_snapshot": None,
-            "signal_repository": repo,
+            "signal_repository": sig_repo,
+            "signal_lifecycle_repository": lc_repo,
         }
     )
     return bot
@@ -75,11 +97,13 @@ def _make_callback_update(data: str):
 
 class TestViewSignalsPassesLifecycleMap:
     @pytest.mark.asyncio
-    async def test_passes_nonempty_map_with_active_state(self, monkeypatch):
-        sig = _make_signal(status="ACTIVE")
+    async def test_passes_active_state(self, monkeypatch):
+        sig = _make_signal()
         bot = _make_bot(
-            signals=sig,
-            lifecycle_map={sig.signal_id: "ACTIVE"},
+            signal=sig,
+            lifecycle_records={
+                sig.signal_id: LifecycleRecord(sig.signal_id, "ACTIVE", FUTURE)
+            },
         )
 
         import src.telegram.bot as bot_module
@@ -87,25 +111,22 @@ class TestViewSignalsPassesLifecycleMap:
         captured = {}
 
         def _spy(signals, *, lifecycle_map=None):
-            captured["signals"] = signals
             captured["lifecycle_map"] = lifecycle_map
             return "SUMMARY"
 
         monkeypatch.setattr(bot_module, "format_signals_summary", _spy)
 
-        update = _make_callback_update("menu_signals")
-        await bot.handle_callback(update, None)
-
-        assert captured["lifecycle_map"] is not None
-        assert captured["lifecycle_map"] != {}
+        await bot.handle_callback(_make_callback_update("menu_signals"), None)
         assert captured["lifecycle_map"][sig.signal_id] == "ACTIVE"
 
     @pytest.mark.asyncio
     async def test_passes_expired_state(self, monkeypatch):
-        sig = _make_signal(status="ACTIVE")
+        sig = _make_signal()
         bot = _make_bot(
-            signals=sig,
-            lifecycle_map={sig.signal_id: "EXPIRED"},
+            signal=sig,
+            lifecycle_records={
+                sig.signal_id: LifecycleRecord(sig.signal_id, "EXPIRED", None)
+            },
         )
 
         import src.telegram.bot as bot_module
@@ -118,15 +139,13 @@ class TestViewSignalsPassesLifecycleMap:
 
         monkeypatch.setattr(bot_module, "format_signals_summary", _spy)
 
-        update = _make_callback_update("menu_signals")
-        await bot.handle_callback(update, None)
-
+        await bot.handle_callback(_make_callback_update("menu_signals"), None)
         assert captured["lifecycle_map"][sig.signal_id] == "EXPIRED"
 
     @pytest.mark.asyncio
-    async def test_legacy_state_when_no_lifecycle_row(self, monkeypatch):
-        sig = _make_signal(status="ACTIVE")
-        bot = _make_bot(signals=sig, lifecycle_map={})
+    async def test_legacy_state_when_pre_epoch_no_row(self, monkeypatch):
+        sig = _make_signal(created_at=PRE_EPOCH)
+        bot = _make_bot(signal=sig, lifecycle_records={})
 
         import src.telegram.bot as bot_module
 
@@ -138,15 +157,13 @@ class TestViewSignalsPassesLifecycleMap:
 
         monkeypatch.setattr(bot_module, "format_signals_summary", _spy)
 
-        update = _make_callback_update("menu_signals")
-        await bot.handle_callback(update, None)
-
+        await bot.handle_callback(_make_callback_update("menu_signals"), None)
         assert captured["lifecycle_map"][sig.signal_id] == "LEGACY"
 
     @pytest.mark.asyncio
-    async def test_unknown_state_on_query_failure(self, monkeypatch):
-        sig = _make_signal(status="ACTIVE")
-        bot = _make_bot(signals=sig, lifecycle_raises=True)
+    async def test_unknown_on_query_failure(self, monkeypatch):
+        sig = _make_signal()
+        bot = _make_bot(signal=sig, lifecycle_raises=True)
 
         import src.telegram.bot as bot_module
 
@@ -158,17 +175,17 @@ class TestViewSignalsPassesLifecycleMap:
 
         monkeypatch.setattr(bot_module, "format_signals_summary", _spy)
 
-        update = _make_callback_update("menu_signals")
-        await bot.handle_callback(update, None)
-
+        await bot.handle_callback(_make_callback_update("menu_signals"), None)
         assert captured["lifecycle_map"][sig.signal_id] == "UNKNOWN"
 
     @pytest.mark.asyncio
     async def test_refresh_signals_also_passes_lifecycle_map(self, monkeypatch):
-        sig = _make_signal(status="ACTIVE")
+        sig = _make_signal()
         bot = _make_bot(
-            signals=sig,
-            lifecycle_map={sig.signal_id: "EXPIRED"},
+            signal=sig,
+            lifecycle_records={
+                sig.signal_id: LifecycleRecord(sig.signal_id, "EXPIRED", None)
+            },
         )
 
         import src.telegram.bot as bot_module
@@ -181,20 +198,12 @@ class TestViewSignalsPassesLifecycleMap:
 
         monkeypatch.setattr(bot_module, "format_signals_summary", _spy)
 
-        update = _make_callback_update("refresh_signals")
-        await bot.handle_callback(update, None)
-
+        await bot.handle_callback(_make_callback_update("refresh_signals"), None)
         assert captured["lifecycle_map"][sig.signal_id] == "EXPIRED"
 
 
 class TestViewLastSignalPassesLifecycleState:
-    def test_passes_active_state(self, monkeypatch):
-        sig = _make_signal(status="ACTIVE")
-        bot = _make_bot(
-            signals=sig,
-            lifecycle_map={sig.signal_id: "ACTIVE"},
-        )
-
+    def _run(self, monkeypatch, bot):
         import src.telegram.bot as bot_module
 
         captured = {}
@@ -204,64 +213,92 @@ class TestViewLastSignalPassesLifecycleState:
             return "CARD"
 
         monkeypatch.setattr(bot_module, "format_signal_card", _spy)
-
         bot._view_last_signal()
+        return captured
 
-        assert captured["lifecycle_state"] == "ACTIVE"
-
-    def test_passes_expired_state(self, monkeypatch):
-        sig = _make_signal(status="ACTIVE")
+    def test_active(self, monkeypatch):
+        sig = _make_signal()
         bot = _make_bot(
-            signals=sig,
-            lifecycle_map={sig.signal_id: "EXPIRED"},
+            signal=sig,
+            lifecycle_records={
+                sig.signal_id: LifecycleRecord(sig.signal_id, "ACTIVE", FUTURE)
+            },
         )
+        assert self._run(monkeypatch, bot)["lifecycle_state"] == "ACTIVE"
 
-        import src.telegram.bot as bot_module
-
-        captured = {}
-
-        def _spy(signal, *, lifecycle_state="UNKNOWN"):
-            captured["lifecycle_state"] = lifecycle_state
-            return "CARD"
-
-        monkeypatch.setattr(bot_module, "format_signal_card", _spy)
-
-        bot._view_last_signal()
-
-        assert captured["lifecycle_state"] == "EXPIRED"
+    def test_expired(self, monkeypatch):
+        sig = _make_signal()
+        bot = _make_bot(
+            signal=sig,
+            lifecycle_records={
+                sig.signal_id: LifecycleRecord(sig.signal_id, "EXPIRED", None)
+            },
+        )
+        assert self._run(monkeypatch, bot)["lifecycle_state"] == "EXPIRED"
 
     def test_unknown_on_query_failure(self, monkeypatch):
-        sig = _make_signal(status="ACTIVE")
-        bot = _make_bot(signals=sig, lifecycle_raises=True)
+        sig = _make_signal()
+        bot = _make_bot(signal=sig, lifecycle_raises=True)
+        assert self._run(monkeypatch, bot)["lifecycle_state"] == "UNKNOWN"
 
-        import src.telegram.bot as bot_module
+    def test_legacy_pre_epoch_no_row(self, monkeypatch):
+        sig = _make_signal(created_at=PRE_EPOCH)
+        bot = _make_bot(signal=sig, lifecycle_records={})
+        assert self._run(monkeypatch, bot)["lifecycle_state"] == "LEGACY"
 
-        captured = {}
 
-        def _spy(signal, *, lifecycle_state="UNKNOWN"):
-            captured["lifecycle_state"] = lifecycle_state
-            return "CARD"
+class TestViewLastSignalSkippedInvalidBypass:
+    """R9: callback last-signal SKIPPED/INVALID must not trigger lookup."""
 
-        monkeypatch.setattr(bot_module, "format_signal_card", _spy)
+    def _build_bot(self, sig):
+        bot = TelegramBot()
+        runtime = MagicMock()
+        runtime.get_context.return_value = {
+            "positions": [],
+            "closed_positions": [],
+            "portfolio_snapshot": None,
+        }
+        runtime.price_provider = object()
+        bot.set_runtime_provider(runtime)
 
-        bot._view_last_signal()
+        sig_repo = MagicMock()
+        sig_repo.latest_by_symbol.return_value = sig
+        sig_repo.history.return_value = [sig]
 
-        assert captured["lifecycle_state"] == "UNKNOWN"
+        probe = MagicMock()
 
-    def test_legacy_when_no_row(self, monkeypatch):
-        sig = _make_signal(status="ACTIVE")
-        bot = _make_bot(signals=sig, lifecycle_map={})
+        def _must_not_call(signal_ids):
+            raise AssertionError("lifecycle lookup must not be called")
 
-        import src.telegram.bot as bot_module
+        probe.get_lifecycle_lookup.side_effect = _must_not_call
 
-        captured = {}
+        bot.set_signal_repository(sig_repo)
+        bot.set_signal_lifecycle_repository(probe)
+        bot.set_context(
+            {
+                "positions": [],
+                "closed_positions": [],
+                "portfolio_snapshot": None,
+                "signal_repository": sig_repo,
+                "signal_lifecycle_repository": probe,
+            }
+        )
+        return bot, probe
 
-        def _spy(signal, *, lifecycle_state="UNKNOWN"):
-            captured["lifecycle_state"] = lifecycle_state
-            return "CARD"
+    def test_skipped_bypasses_lookup(self):
+        sig = _make_signal(status="SKIPPED")
+        bot, probe = self._build_bot(sig)
+        text, _ = bot._view_last_signal()
+        assert probe.get_lifecycle_lookup.call_count == 0
+        assert "lifecycle state unavailable" not in text
+        assert "STALE" not in text
+        assert "LEGACY" not in text
 
-        monkeypatch.setattr(bot_module, "format_signal_card", _spy)
-
-        bot._view_last_signal()
-
-        assert captured["lifecycle_state"] == "LEGACY"
+    def test_invalid_bypasses_lookup(self):
+        sig = _make_signal(status="INVALID")
+        bot, probe = self._build_bot(sig)
+        text, _ = bot._view_last_signal()
+        assert probe.get_lifecycle_lookup.call_count == 0
+        assert "lifecycle state unavailable" not in text
+        assert "STALE" not in text
+        assert "LEGACY" not in text

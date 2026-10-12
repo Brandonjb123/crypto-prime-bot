@@ -91,6 +91,14 @@ class TelegramBot:
         if hasattr(self, "signal_repository") and self.signal_repository:
             self.context["signal_repository"] = self.signal_repository
 
+        if (
+            hasattr(self, "signal_lifecycle_repository")
+            and self.signal_lifecycle_repository
+        ):
+            self.context["signal_lifecycle_repository"] = (
+                self.signal_lifecycle_repository
+            )
+
         if command == TelegramCommand.START:
             response = start_handler(None, self.context)
             await update.message.reply_text(
@@ -137,6 +145,14 @@ class TelegramBot:
 
         if hasattr(self, "signal_repository") and self.signal_repository:
             self.context["signal_repository"] = self.signal_repository
+
+        if (
+            hasattr(self, "signal_lifecycle_repository")
+            and self.signal_lifecycle_repository
+        ):
+            self.context["signal_lifecycle_repository"] = (
+                self.signal_lifecycle_repository
+            )
 
         # Root navigation
         if data == "menu_back":
@@ -204,20 +220,25 @@ class TelegramBot:
 
     def _view_signals(self) -> tuple[str, InlineKeyboardMarkup]:
         signals = read_latest_signals(self.context, DEFAULT_SYMBOLS)
-        repo = self.context.get("signal_repository") if self.context else None
+        repo = self.context.get("signal_lifecycle_repository") if self.context else None
+        now_utc = datetime.now(UTC)
         states = (
-            resolve_lifecycle_states(repo, [s.signal_id for s in signals])
+            resolve_lifecycle_states(repo, signals, now_utc)
             if repo else {}
         )
         return format_signals_summary(signals, lifecycle_map=states), SIGNALS_MENU
 
     def _view_last_signal(self) -> tuple[str, InlineKeyboardMarkup]:
         sig = read_last_signal(self.context)
-        repo = self.context.get("signal_repository") if self.context else None
+        # R9: SKIPPED/INVALID bypass lifecycle lookup entirely
+        if sig is not None and getattr(sig, "status", None) in ("SKIPPED", "INVALID"):
+            return format_signal_card(sig), SIGNALS_MENU
+        repo = self.context.get("signal_lifecycle_repository") if self.context else None
+        now_utc = datetime.now(UTC)
         state = "UNKNOWN"
         if repo and sig is not None:
             state = resolve_lifecycle_states(
-                repo, [sig.signal_id]
+                repo, [sig], now_utc
             ).get(sig.signal_id, "UNKNOWN")
         return format_signal_card(sig, lifecycle_state=state), SIGNALS_MENU
 
@@ -254,6 +275,9 @@ class TelegramBot:
 
     def set_signal_repository(self, signal_repository) -> None:
         self.signal_repository = signal_repository
+
+    def set_signal_lifecycle_repository(self, repo) -> None:
+        self.signal_lifecycle_repository = repo
 
     async def _safe_edit_message(self, query, text: str, reply_markup) -> None:
         """Edit message dengan fallback plain text kalau Markdown parse gagal.

@@ -30,11 +30,3 @@ class InMemorySignalRepository(SignalRepository):
         if since is not None:
             results = [s for s in results if s.created_at >= since]
         return sorted(results, key=lambda s: s.created_at, reverse=True)
-
-    def get_lifecycle_states(self, signal_ids: list) -> dict:
-        """In-memory stub — selalu return {} (semua dianggap LEGACY).
-
-        Tests yang butuh lifecycle state harus pakai subclass atau
-        monkeypatch method ini.
-        """
-        return {}

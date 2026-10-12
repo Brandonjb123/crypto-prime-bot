@@ -6,6 +6,10 @@ from uuid import UUID
 from loguru import logger
 
 from config.settings import settings
+from src.core.models.lifecycle_lookup import (
+    LifecycleLookupResult,
+    LifecycleRecord,
+)
 from src.core.models.signal_lifecycle import SignalLifecycle
 from src.core.types.enums import (
     SignalLifecycleExpireReason,
@@ -252,6 +256,107 @@ class TursoSignalLifecycleRepository(SignalLifecycleRepository):
             except Exception as e:
                 logger.error(f"mark_expired failed for {signal_id}: {e}")
                 raise
+
+    _LIFECYCLE_CHUNK_SIZE = 500
+
+    def get_lifecycle_lookup(
+        self, signal_ids: list[UUID]
+    ) -> LifecycleLookupResult:
+        if not signal_ids:
+            return LifecycleLookupResult()
+
+        unique_ids = list(dict.fromkeys(signal_ids))
+
+        found: dict[UUID, LifecycleRecord] = {}
+        absent: set[UUID] = set()
+        failed: set[UUID] = set()
+
+        for i in range(0, len(unique_ids), self._LIFECYCLE_CHUNK_SIZE):
+            chunk = unique_ids[i : i + self._LIFECYCLE_CHUNK_SIZE]
+            try:
+                placeholders = ",".join(["?"] * len(chunk))
+                sql = (
+                    f"SELECT signal_id, status, expires_at FROM signal_lifecycle "
+                    f"WHERE signal_id IN ({placeholders})"
+                )
+                result = self.client.execute(sql, [str(sid) for sid in chunk])
+            except Exception as e:
+                logger.warning(
+                    f"[lifecycle_lookup] chunk failed for {len(chunk)} ids: {e}"
+                )
+                for sid in chunk:
+                    failed.add(sid)
+                continue
+
+            chunk_found: set[UUID] = set()
+            chunk_ambiguous = False
+            per_row_failed: set[UUID] = set()
+
+            for row in result.rows:
+                raw_id = row[0] if len(row) > 0 else None
+                sid: UUID | None = None
+                try:
+                    sid = UUID(raw_id)
+                except Exception as e:
+                    logger.error(
+                        f"[lifecycle_lookup] cannot parse signal_id "
+                        f"from row: {raw_id!r} — chunk marked ambiguous ({e})"
+                    )
+                    chunk_ambiguous = True
+                    continue
+
+                try:
+                    status = row[1]
+                    expires_at = None
+                    if len(row) > 2 and row[2] is not None:
+                        expires_at = datetime.fromisoformat(row[2])
+                    # R6: reject unknown status before adding to found
+                    if status not in ("ACTIVE", "EXPIRED"):
+                        logger.error(
+                            f"[lifecycle_lookup] invalid lifecycle status "
+                            f"'{status}' for {sid} — treating as failed"
+                        )
+                        per_row_failed.add(sid)
+                        continue
+                    # B1: ACTIVE rows must have a valid expires_at
+                    if status == "ACTIVE" and expires_at is None:
+                        logger.error(
+                            f"[lifecycle_lookup] ACTIVE row for {sid} "
+                            f"missing expires_at — treating as failed"
+                        )
+                        per_row_failed.add(sid)
+                        continue
+                    found[sid] = LifecycleRecord(sid, status, expires_at)
+                    chunk_found.add(sid)
+                except Exception as e:
+                    logger.error(
+                        f"[lifecycle_lookup] failed to parse row for "
+                        f"{sid}: {e}"
+                    )
+                    per_row_failed.add(sid)
+
+            # R5: chunk_ambiguous overrides everything in this chunk
+            if chunk_ambiguous:
+                for sid in chunk:
+                    failed.add(sid)
+                    found.pop(sid, None)
+            else:
+                for sid in chunk:
+                    # R8: failed wins over found/absent for same id
+                    if sid in per_row_failed:
+                        failed.add(sid)
+                        found.pop(sid, None)
+                        continue
+                    if sid in chunk_found:
+                        continue
+                    absent.add(sid)
+
+        # R8: final guarantee — each id in exactly one bucket
+        for sid in failed:
+            found.pop(sid, None)
+            absent.discard(sid)
+
+        return LifecycleLookupResult(found=found, absent=absent, failed=failed)
 
     # ---------- helpers ----------
 

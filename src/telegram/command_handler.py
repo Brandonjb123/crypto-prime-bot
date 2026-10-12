@@ -84,8 +84,15 @@ def last_signal_handler(msg=None, ctx=None):
         return _text_response("📡 *Sinyal Terkini*\n\nBelum ada sinyal aktif yang tersedia.")
 
     latest = history[0]
-    states = resolve_lifecycle_states(repo, [latest.signal_id])
-    state = states.get(latest.signal_id, "UNKNOWN")
+    # R9: SKIPPED/INVALID bypass lifecycle lookup entirely
+    if getattr(latest, "status", None) in ("SKIPPED", "INVALID"):
+        return _text_response(format_signal(latest))
+    lifecycle_repo = ctx.get("signal_lifecycle_repository") if ctx else None
+    now_utc = datetime.now(UTC)
+    state = "UNKNOWN"
+    if lifecycle_repo is not None:
+        states = resolve_lifecycle_states(lifecycle_repo, [latest], now_utc)
+        state = states.get(latest.signal_id, "UNKNOWN")
     return _text_response(format_signal(latest, lifecycle_state=state))
 
 
@@ -105,7 +112,12 @@ def signals_handler(msg=None, ctx=None):
         if sig is not None:
             signals.append(sig)
 
-    states = resolve_lifecycle_states(repo, [s.signal_id for s in signals])
+    lifecycle_repo = ctx.get("signal_lifecycle_repository") if ctx else None
+    now_utc = datetime.now(UTC)
+    states = (
+        resolve_lifecycle_states(lifecycle_repo, signals, now_utc)
+        if lifecycle_repo is not None else {}
+    )
     return _text_response(
         format_signals_summary(signals, lifecycle_map=states)
     )

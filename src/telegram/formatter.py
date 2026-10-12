@@ -52,14 +52,20 @@ def format_market(market_snapshot: Any) -> str:
 
 
 def _lifecycle_prefix(lifecycle_state: str) -> str:
-    """Conservative lifecycle prefix for display surfaces."""
+    """Conservative lifecycle prefix.
+
+    Only ACTIVE renders without warning. RECENT is intentionally treated
+    as unconfirmed (like UNKNOWN) so it is never mistaken for an
+    actionable signal.
+    """
     if lifecycle_state == "ACTIVE":
         return ""
     if lifecycle_state == "EXPIRED":
-        return "⚠️ STALE — lifecycle expired\n\n"
+        return "⚠ STALE — lifecycle expired\n\n"
     if lifecycle_state == "LEGACY":
-        return "⚠️ LEGACY — no lifecycle tracking\n\n"
-    return "⚠️ lifecycle state unavailable\n\n"
+        return "⚠ LEGACY — no lifecycle tracking\n\n"
+    # RECENT and UNKNOWN share conservative wording.
+    return "⚠ lifecycle state unavailable\n\n"
 
 
 def format_signal(signal: Any, *, lifecycle_state: str = "UNKNOWN") -> str:
@@ -191,11 +197,14 @@ def format_signals_summary(signals: list, *, lifecycle_map: dict | None = None) 
                     f"   Conf: {confidence}% | Risk: {risk_level}\n"
                 )
             elif state == "EXPIRED":
-                lines.append(f"⚠️ *{symbol}* {side} — STALE (lifecycle expired)\n")
+                lines.append(f"⚠ *{symbol}* {side} — STALE (lifecycle expired)\n")
             elif state == "LEGACY":
-                lines.append(f"⚠️ *{symbol}* {side} — LEGACY (no lifecycle)\n")
+                lines.append(f"⚠ *{symbol}* {side} — LEGACY (no lifecycle)\n")
             else:
-                lines.append(f"⚠️ *{symbol}* {side} — lifecycle state unavailable\n")
+                # RECENT, UNKNOWN, or any other state → conservative
+                lines.append(
+                    f"⚠ *{symbol}* {side} — lifecycle state unavailable\n"
+                )
         elif status == "SKIPPED":
             lines.append(f"🟡 *{symbol}* WAIT (SKIPPED)\n")
         else:  # INVALID
